@@ -68,10 +68,16 @@ export default async function ProfilePage() {
             ) : null}
           </div>
           <div className="flex flex-wrap gap-3">
+            <Link
+              href="/devices"
+              className="rounded-full bg-[var(--accent)] px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90"
+            >
+              My devices
+            </Link>
             {user.role === "ADMIN" ? (
               <Link
                 href="/admin/users"
-                className="rounded-full bg-[var(--accent)] px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90"
+                className="rounded-full border border-[var(--border-strong)] px-5 py-3 text-sm font-semibold text-[var(--foreground)] transition hover:bg-[var(--surface-alt)]"
               >
                 Open admin users
               </Link>
