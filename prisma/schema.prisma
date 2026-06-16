@@ -38,23 +38,26 @@ enum NotificationStatus {
 }
 
 model User {
-  id             String               @id @default(cuid())
-  fullName       String               @map("full_name")
-  universityId   String?              @unique @map("university_id")
-  faculty        String?
-  department     String?
-  phone          String?
-  email          String               @unique
-  passwordHash   String               @map("password_hash")
-  role           UserRole             @default(STUDENT)
-  devices        Device[]
-  assignedTickets RepairTicket[]      @relation("TechnicianTickets")
-  repairLogs     RepairLog[]          @relation("RepairLogTechnician")
+  id                 String               @id @default(cuid())
+  fullName           String               @map("full_name")
+  universityId       String?              @unique @map("university_id")
+  faculty            String?
+  department         String?
+  phone              String?
+  email              String               @unique
+  passwordHash       String               @map("password_hash")
+  role               UserRole             @default(STUDENT)
+  devices            Device[]
+  assignedTickets    RepairTicket[]       @relation("TechnicianTickets")
+  repairLogs         RepairLog[]          @relation("RepairLogTechnician")
   technicianActivity TechnicianActivity[]
-  notifications  Notification[]
-  createdAt      DateTime             @default(now()) @map("created_at")
-  updatedAt      DateTime             @updatedAt @map("updated_at")
+  notifications      Notification[]
+  createdAt          DateTime             @default(now()) @map("created_at")
+  updatedAt          DateTime             @updatedAt @map("updated_at")
 
+  @@index([role])
+  @@index([faculty])
+  @@index([createdAt])
   @@map("users")
 }
 
@@ -72,27 +75,31 @@ model Device {
 
   @@index([ownerId])
   @@index([serialNumber])
+  @@index([deviceType])
+  @@index([createdAt])
   @@map("devices")
 }
 
 model RepairTicket {
-  id               String        @id @default(cuid())
-  ticketId         String        @unique @map("ticket_id")
-  deviceId         String        @map("device_id")
-  device           Device        @relation(fields: [deviceId], references: [id], onDelete: Cascade)
-  technicianId     String?       @map("technician_id")
-  technician       User?         @relation("TechnicianTickets", fields: [technicianId], references: [id], onDelete: SetNull)
-  issueDescription String        @map("issue_description")
-  photoUrl         String?       @map("photo_url")
-  status           RepairStatus  @default(REGISTRATION_COMPLETED)
+  id               String         @id @default(cuid())
+  ticketId         String         @unique @map("ticket_id")
+  deviceId         String         @map("device_id")
+  device           Device         @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  technicianId     String?        @map("technician_id")
+  technician       User?          @relation("TechnicianTickets", fields: [technicianId], references: [id], onDelete: SetNull)
+  issueDescription String         @map("issue_description")
+  photoUrl         String?        @map("photo_url")
+  status           RepairStatus   @default(REGISTRATION_COMPLETED)
   logs             RepairLog[]
   notifications    Notification[]
-  createdAt        DateTime      @default(now()) @map("created_at")
-  updatedAt        DateTime      @updatedAt @map("updated_at")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
 
   @@index([deviceId])
   @@index([technicianId])
   @@index([status])
+  @@index([status, createdAt])
+  @@index([createdAt])
   @@map("repair_tickets")
 }
 
@@ -110,6 +117,7 @@ model RepairLog {
 
   @@index([ticketId])
   @@index([technicianId])
+  @@index([createdAt])
   @@map("repair_logs")
 }
 
@@ -124,25 +132,28 @@ model TechnicianActivity {
   updatedAt        DateTime  @updatedAt @map("updated_at")
 
   @@index([technicianId])
+  @@index([checkIn])
   @@map("technician_activity")
 }
 
 model Notification {
-  id        String             @id @default(cuid())
-  userId    String             @map("user_id")
-  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  ticketId  String?            @map("ticket_id")
-  ticket    RepairTicket?      @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  id        String              @id @default(cuid())
+  userId    String              @map("user_id")
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ticketId  String?             @map("ticket_id")
+  ticket    RepairTicket?       @relation(fields: [ticketId], references: [id], onDelete: Cascade)
   channel   NotificationChannel @default(DASHBOARD)
   status    NotificationStatus  @default(PENDING)
   title     String
   message   String
-  readAt    DateTime?          @map("read_at")
-  createdAt DateTime           @default(now()) @map("created_at")
-  updatedAt DateTime           @updatedAt @map("updated_at")
+  readAt    DateTime?           @map("read_at")
+  createdAt DateTime            @default(now()) @map("created_at")
+  updatedAt DateTime            @updatedAt @map("updated_at")
 
   @@index([userId])
   @@index([ticketId])
   @@index([status])
+  @@index([userId, status])
+  @@index([createdAt])
   @@map("notifications")
 }

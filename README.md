@@ -17,6 +17,7 @@ The platform replaces paper and Excel-based tracking with centralized repair req
 - [Project Setup](docs/PROJECT_SETUP.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Constraints](docs/CONSTRAINTS.md)
+- [Development Plan](docs/DEVELOPMENT_PLAN.md)
 
 ## MVP Focus
 
