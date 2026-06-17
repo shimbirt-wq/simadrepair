@@ -1,3 +1,4 @@
+import { RepairStatus } from "@prisma/client";
 import { z } from "zod";
 
 export const createRepairTicketSchema = z.object({
@@ -19,5 +20,10 @@ export const assignRepairTicketSchema = z.object({
   technicianId: z.string().min(1, "Technician is required"),
 });
 
+export const updateRepairTicketStatusSchema = z.object({
+  status: z.nativeEnum(RepairStatus),
+});
+
 export type CreateRepairTicketInput = z.infer<typeof createRepairTicketSchema>;
 export type AssignRepairTicketInput = z.infer<typeof assignRepairTicketSchema>;
+export type UpdateRepairTicketStatusInput = z.infer<typeof updateRepairTicketStatusSchema>;

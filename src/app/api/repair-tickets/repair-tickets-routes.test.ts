@@ -1,4 +1,4 @@
-import type { RepairLog, RepairTicket, User } from "@prisma/client";
+import type { Notification, RepairLog, RepairTicket, User } from "@prisma/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { signSessionToken } from "@/lib/auth/session";
 
@@ -85,6 +85,13 @@ function buildRepairTicketDetail(overrides: Partial<RepairTicket> = {}) {
 
   return {
     ...ticket,
+    technician: ticket.technicianId
+      ? {
+          id: ticket.technicianId,
+          fullName: ticket.technicianId === "tech_123" ? "Assigned Technician" : "Other Technician",
+          email: ticket.technicianId === "tech_123" ? "tech@example.invalid" : "other-tech@example.invalid",
+        }
+      : null,
     device: {
       id: ticket.deviceId,
       ownerId: ticket.deviceId === "other_device" ? "other_user" : "user_123",
@@ -120,6 +127,22 @@ function buildRepairLog(overrides: Partial<RepairLog> = {}) {
     status: "REGISTRATION_COMPLETED",
     diagnosis: null,
     repairNotes: "Repair ticket registered.",
+    createdAt: now,
+    updatedAt: now,
+    ...overrides,
+  };
+}
+
+function buildNotification(overrides: Partial<Notification> = {}): Notification {
+  return {
+    id: "notification_123",
+    userId: "user_123",
+    ticketId: "ticket_123",
+    channel: "DASHBOARD",
+    status: "PENDING",
+    title: "Repair ticket status updated",
+    message: "Ticket TCK-20260101-ABC123 moved to Device Received.",
+    readAt: null,
     createdAt: now,
     updatedAt: now,
     ...overrides,
@@ -504,6 +527,166 @@ describe("repair ticket route handlers", () => {
     expect(response.status).toBe(200);
     expect(body.tickets).toHaveLength(1);
     expect(body.tickets[0].technicianId).toBe("tech_123");
+    vi.unstubAllEnvs();
+  });
+
+  it("allows the assigned technician to move to the next status and creates log plus notification records", async () => {
+    vi.stubEnv("JWT_SECRET", "test-secret-value-that-is-long-enough");
+    const token = await signSessionToken({ id: "tech_123", role: "TECHNICIAN" });
+    mockPrisma.user.findUnique.mockResolvedValue(buildUser({ id: "tech_123", role: "TECHNICIAN" }));
+    mockPrisma.repairTicket.findUnique
+      .mockResolvedValueOnce({
+        id: "ticket_123",
+        ticketId: "TCK-20260101-ABC123",
+        status: "REGISTRATION_COMPLETED",
+        technicianId: "tech_123",
+        device: {
+          ownerId: "user_123",
+        },
+      })
+      .mockResolvedValueOnce(
+        buildRepairTicketDetail({
+          id: "ticket_123",
+          technicianId: "tech_123",
+          status: "DEVICE_RECEIVED",
+        }),
+      );
+    mockPrisma.repairTicket.update.mockResolvedValue(buildRepairTicket({ id: "ticket_123", technicianId: "tech_123", status: "DEVICE_RECEIVED" }));
+    mockPrisma.repairLog.create.mockResolvedValue(buildRepairLog({ technicianId: "tech_123", status: "DEVICE_RECEIVED" }));
+    mockPrisma.notification.create.mockResolvedValue(buildNotification());
+    mockPrisma.$transaction.mockImplementation(async (callback: (tx: typeof mockPrisma) => unknown) => callback(mockPrisma));
+    const { PATCH } = await import("./[ticketId]/status/route");
+
+    const response = await PATCH(
+      buildRequest("/api/repair-tickets/ticket_123/status", {
+        method: "PATCH",
+        headers: {
+          "content-type": "application/json",
+          cookie: `farsamotech_session=${token}`,
+        },
+        body: JSON.stringify({
+          status: "DEVICE_RECEIVED",
+        }),
+      }),
+      { params: Promise.resolve({ ticketId: "ticket_123" }) },
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(mockPrisma.repairTicket.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "ticket_123" },
+        data: { status: "DEVICE_RECEIVED" },
+      }),
+    );
+    expect(mockPrisma.repairLog.create).toHaveBeenCalledTimes(1);
+    expect(mockPrisma.notification.create).toHaveBeenCalledTimes(1);
+    expect(body.ticket.status).toBe("DEVICE_RECEIVED");
+    vi.unstubAllEnvs();
+  });
+
+  it("rejects skipped status transitions", async () => {
+    vi.stubEnv("JWT_SECRET", "test-secret-value-that-is-long-enough");
+    const token = await signSessionToken({ id: "tech_123", role: "TECHNICIAN" });
+    mockPrisma.user.findUnique.mockResolvedValue(buildUser({ id: "tech_123", role: "TECHNICIAN" }));
+    mockPrisma.repairTicket.findUnique.mockResolvedValue({
+      id: "ticket_123",
+      ticketId: "TCK-20260101-ABC123",
+      status: "REGISTRATION_COMPLETED",
+      technicianId: "tech_123",
+      device: {
+        ownerId: "user_123",
+      },
+    });
+    const { PATCH } = await import("./[ticketId]/status/route");
+
+    const response = await PATCH(
+      buildRequest("/api/repair-tickets/ticket_123/status", {
+        method: "PATCH",
+        headers: {
+          "content-type": "application/json",
+          cookie: `farsamotech_session=${token}`,
+        },
+        body: JSON.stringify({
+          status: "READY_FOR_COLLECTION",
+        }),
+      }),
+      { params: Promise.resolve({ ticketId: "ticket_123" }) },
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(409);
+    expect(body.error).toBe("Repair ticket status must follow the next step in the repair journey.");
+    vi.unstubAllEnvs();
+  });
+
+  it("rejects unassigned technicians from updating ticket status", async () => {
+    vi.stubEnv("JWT_SECRET", "test-secret-value-that-is-long-enough");
+    const token = await signSessionToken({ id: "tech_other", role: "TECHNICIAN" });
+    mockPrisma.user.findUnique.mockResolvedValue(buildUser({ id: "tech_other", role: "TECHNICIAN" }));
+    mockPrisma.repairTicket.findUnique.mockResolvedValue({
+      id: "ticket_123",
+      ticketId: "TCK-20260101-ABC123",
+      status: "REGISTRATION_COMPLETED",
+      technicianId: "tech_123",
+      device: {
+        ownerId: "user_123",
+      },
+    });
+    const { PATCH } = await import("./[ticketId]/status/route");
+
+    const response = await PATCH(
+      buildRequest("/api/repair-tickets/ticket_123/status", {
+        method: "PATCH",
+        headers: {
+          "content-type": "application/json",
+          cookie: `farsamotech_session=${token}`,
+        },
+        body: JSON.stringify({
+          status: "DEVICE_RECEIVED",
+        }),
+      }),
+      { params: Promise.resolve({ ticketId: "ticket_123" }) },
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(403);
+    expect(body.error).toBe("Only the assigned technician or an admin can update ticket status.");
+    vi.unstubAllEnvs();
+  });
+
+  it("rejects students from updating ticket status", async () => {
+    vi.stubEnv("JWT_SECRET", "test-secret-value-that-is-long-enough");
+    const token = await signSessionToken({ id: "user_123", role: "STUDENT" });
+    mockPrisma.user.findUnique.mockResolvedValue(buildUser({ id: "user_123", role: "STUDENT" }));
+    mockPrisma.repairTicket.findUnique.mockResolvedValue({
+      id: "ticket_123",
+      ticketId: "TCK-20260101-ABC123",
+      status: "REGISTRATION_COMPLETED",
+      technicianId: "tech_123",
+      device: {
+        ownerId: "user_123",
+      },
+    });
+    const { PATCH } = await import("./[ticketId]/status/route");
+
+    const response = await PATCH(
+      buildRequest("/api/repair-tickets/ticket_123/status", {
+        method: "PATCH",
+        headers: {
+          "content-type": "application/json",
+          cookie: `farsamotech_session=${token}`,
+        },
+        body: JSON.stringify({
+          status: "DEVICE_RECEIVED",
+        }),
+      }),
+      { params: Promise.resolve({ ticketId: "ticket_123" }) },
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(403);
+    expect(body.error).toBe("Only the assigned technician or an admin can update ticket status.");
     vi.unstubAllEnvs();
   });
 

@@ -26,3 +26,13 @@ export function canTransitionRepairStatus(current: RepairStatus, next: RepairSta
 
   return currentIndex >= 0 && nextIndex === currentIndex + 1;
 }
+
+export function getNextRepairStatus(current: RepairStatus): RepairStatus | null {
+  const currentIndex = REPAIR_STATUS_FLOW.indexOf(current);
+
+  if (currentIndex < 0 || currentIndex >= REPAIR_STATUS_FLOW.length - 1) {
+    return null;
+  }
+
+  return REPAIR_STATUS_FLOW[currentIndex + 1];
+}

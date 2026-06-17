@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assignRepairTicketSchema, createRepairTicketSchema } from "./repair-ticket";
+import { assignRepairTicketSchema, createRepairTicketSchema, updateRepairTicketStatusSchema } from "./repair-ticket";
 
 describe("createRepairTicketSchema", () => {
   it("accepts valid ticket input without a photo", () => {
@@ -83,6 +83,24 @@ describe("assignRepairTicketSchema", () => {
   it("rejects an empty technician id", () => {
     const result = assignRepairTicketSchema.safeParse({
       technicianId: "",
+    });
+
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("updateRepairTicketStatusSchema", () => {
+  it("accepts a valid repair status", () => {
+    const result = updateRepairTicketStatusSchema.safeParse({
+      status: "DEVICE_RECEIVED",
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects an invalid repair status", () => {
+    const result = updateRepairTicketStatusSchema.safeParse({
+      status: "NOT_A_STATUS",
     });
 
     expect(result.success).toBe(false);

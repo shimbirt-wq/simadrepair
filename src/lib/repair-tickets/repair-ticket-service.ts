@@ -1,7 +1,8 @@
 import { RepairStatus } from "@prisma/client";
 import type { PrismaClient } from "@prisma/client";
 import type { PublicUser } from "@/lib/auth/public-user";
-import type { AssignRepairTicketInput, CreateRepairTicketInput } from "@/lib/validations/repair-ticket";
+import { canTransitionRepairStatus, REPAIR_STATUS_LABELS } from "@/lib/constants/repair-status";
+import type { AssignRepairTicketInput, CreateRepairTicketInput, UpdateRepairTicketStatusInput } from "@/lib/validations/repair-ticket";
 import type { RepairTicketListQuery } from "@/lib/validations/repair-ticket-filters";
 
 export type PublicRepairTicket = {
@@ -537,6 +538,113 @@ export async function assignTechnicianToRepairTicket(
         status: "PENDING",
         title: "New repair ticket assignment",
         message: `You have been assigned ticket ${ticket.ticketId}.`,
+      },
+    });
+
+    return tx.repairTicket.findUnique({
+      where: { id: ticketId },
+      select: repairTicketDetailSelect,
+    });
+  });
+
+  if (!updatedTicket) {
+    return {
+      ok: false,
+      status: 404,
+      message: "Repair ticket not found.",
+    };
+  }
+
+  return {
+    ok: true,
+    ticket: toRepairTicketDetail(updatedTicket),
+  };
+}
+
+export async function updateRepairTicketStatus(
+  prisma: PrismaClient,
+  user: PublicUser,
+  ticketId: string,
+  input: UpdateRepairTicketStatusInput,
+): Promise<
+  | {
+      ok: true;
+      ticket: RepairTicketDetail;
+    }
+  | {
+      ok: false;
+      status: 403 | 404 | 409;
+      message: string;
+    }
+> {
+  const ticket = await prisma.repairTicket.findUnique({
+    where: { id: ticketId },
+    select: {
+      id: true,
+      ticketId: true,
+      status: true,
+      technicianId: true,
+      device: {
+        select: {
+          ownerId: true,
+        },
+      },
+    },
+  });
+
+  if (!ticket) {
+    return {
+      ok: false,
+      status: 404,
+      message: "Repair ticket not found.",
+    };
+  }
+
+  const isAdmin = user.role === "ADMIN";
+  const isAssignedTechnician = user.role === "TECHNICIAN" && ticket.technicianId === user.id;
+
+  if (!isAdmin && !isAssignedTechnician) {
+    return {
+      ok: false,
+      status: 403,
+      message: "Only the assigned technician or an admin can update ticket status.",
+    };
+  }
+
+  if (!canTransitionRepairStatus(ticket.status, input.status)) {
+    return {
+      ok: false,
+      status: 409,
+      message: "Repair ticket status must follow the next step in the repair journey.",
+    };
+  }
+
+  const updatedTicket = await prisma.$transaction(async (tx) => {
+    await tx.repairTicket.update({
+      where: { id: ticketId },
+      data: {
+        status: input.status,
+      },
+    });
+
+    await tx.repairLog.create({
+      data: {
+        ticketId: ticket.id,
+        technicianId: user.id,
+        status: input.status,
+        diagnosis: null,
+        repairNotes: `Status changed from ${REPAIR_STATUS_LABELS[ticket.status]} to ${REPAIR_STATUS_LABELS[input.status]}.`,
+      },
+    });
+
+    await tx.notification.create({
+      data: {
+        userId: ticket.device.ownerId,
+        ticketId: ticket.id,
+        channel: "DASHBOARD",
+        status: "PENDING",
+        title: "Repair ticket status updated",
+        message: `Ticket ${ticket.ticketId} moved to ${REPAIR_STATUS_LABELS[input.status]}.`,
       },
     });
 

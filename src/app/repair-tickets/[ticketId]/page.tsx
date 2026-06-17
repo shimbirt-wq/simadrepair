@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { REPAIR_STATUS_LABELS } from "@/lib/constants/repair-status";
+import { getNextRepairStatus, REPAIR_STATUS_LABELS } from "@/lib/constants/repair-status";
 import { TechnicianAssignmentForm } from "@/app/repair-tickets/technician-assignment-form";
+import { StatusUpdateForm } from "@/app/repair-tickets/status-update-form";
 import { getCurrentServerUser } from "@/lib/auth/server-user";
 import { prisma } from "@/lib/db/prisma";
 import { getRepairTicketDetail } from "@/lib/repair-tickets/repair-ticket-service";
@@ -36,6 +37,8 @@ export default async function RepairTicketDetailPage({ params }: RepairTicketDet
   }
 
   const { ticket } = result;
+  const nextStatus = getNextRepairStatus(ticket.status);
+  const canUpdateStatus = user.role === "ADMIN" || (user.role === "TECHNICIAN" && ticket.technicianId === user.id);
 
   return (
     <main className="mx-auto min-h-screen max-w-5xl px-6 py-14">
@@ -88,6 +91,17 @@ export default async function RepairTicketDetailPage({ params }: RepairTicketDet
                 fullName: technician.fullName,
                 email: technician.email,
               }))}
+              ticketId={ticket.id}
+            />
+          </div>
+        ) : null}
+
+        {canUpdateStatus && nextStatus ? (
+          <div className="mt-8">
+            <StatusUpdateForm
+              currentStatus={ticket.status}
+              nextStatus={nextStatus}
+              nextStatusLabel={REPAIR_STATUS_LABELS[nextStatus]}
               ticketId={ticket.id}
             />
           </div>

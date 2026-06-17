@@ -1,6 +1,6 @@
 import type { RepairStatus } from "@prisma/client";
 import { describe, expect, it } from "vitest";
-import { canTransitionRepairStatus, REPAIR_STATUS_FLOW, REPAIR_STATUS_LABELS } from "./repair-status";
+import { canTransitionRepairStatus, getNextRepairStatus, REPAIR_STATUS_FLOW, REPAIR_STATUS_LABELS } from "./repair-status";
 
 describe("repair status constants", () => {
   it("defines a label for every repair status in the flow", () => {
@@ -37,5 +37,20 @@ describe("canTransitionRepairStatus", () => {
 
     expect(canTransitionRepairStatus(unknownStatus, "DEVICE_RECEIVED")).toBe(false);
     expect(canTransitionRepairStatus("REGISTRATION_COMPLETED", unknownStatus)).toBe(false);
+  });
+});
+
+describe("getNextRepairStatus", () => {
+  it("returns the next status in the controlled flow", () => {
+    expect(getNextRepairStatus("REGISTRATION_COMPLETED")).toBe("DEVICE_RECEIVED");
+    expect(getNextRepairStatus("DEVICE_RECEIVED")).toBe("DIAGNOSIS_IN_PROGRESS");
+  });
+
+  it("returns null for the final status", () => {
+    expect(getNextRepairStatus("DEVICE_COLLECTED")).toBeNull();
+  });
+
+  it("returns null for unknown status values defensively", () => {
+    expect(getNextRepairStatus("UNKNOWN_STATUS" as RepairStatus)).toBeNull();
   });
 });
