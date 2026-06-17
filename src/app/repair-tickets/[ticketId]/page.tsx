@@ -1,8 +1,10 @@
 import Link from "next/link";
+import Image from "next/image";
 import { notFound, redirect } from "next/navigation";
 import { REPAIR_STATUS_LABELS } from "@/lib/constants/repair-status";
 import { getCurrentServerUser } from "@/lib/auth/server-user";
 import { prisma } from "@/lib/db/prisma";
+import { buildTicketQrCodeUrl, buildTicketLookupUrl } from "@/lib/lookup/ticket-lookup-service";
 import { getRepairTicketDetail } from "@/lib/repair-tickets/repair-ticket-service";
 
 type RepairTicketDetailPageProps = {
@@ -31,6 +33,8 @@ export default async function RepairTicketDetailPage({ params }: RepairTicketDet
   }
 
   const { ticket } = result;
+  const lookupUrl = buildTicketLookupUrl(ticket.ticketId);
+  const qrCodeUrl = buildTicketQrCodeUrl(ticket.ticketId);
 
   return (
     <main className="mx-auto min-h-screen max-w-5xl px-6 py-14">
@@ -67,6 +71,13 @@ export default async function RepairTicketDetailPage({ params }: RepairTicketDet
           <article className="rounded-2xl border border-[var(--border)] bg-white p-5">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">Photo URL</p>
             <p className="mt-3 text-base font-medium text-[var(--foreground)]">{ticket.photoUrl ?? "Not provided"}</p>
+          </article>
+          <article className="rounded-2xl border border-[var(--border)] bg-white p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">QR lookup</p>
+            <Image src={qrCodeUrl} alt={`QR code for ${ticket.ticketId}`} width={112} height={112} className="mt-3 h-28 w-28" />
+            <Link href={lookupUrl} className="mt-3 inline-flex text-sm font-semibold text-[var(--accent)]">
+              Open limited lookup
+            </Link>
           </article>
         </div>
 
