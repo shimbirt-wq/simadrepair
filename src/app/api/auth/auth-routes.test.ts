@@ -56,7 +56,28 @@ const validRegistration = {
 };
 
 describe("auth route handlers", () => {
+  it("returns a configuration error when auth runtime is not ready", async () => {
+    vi.stubEnv("DATABASE_URL", "postgresql://postgres:[PASSWORD]@[PROJECT_REF].pooler.supabase.com:6543/postgres");
+    vi.stubEnv("DIRECT_URL", "postgresql://postgres:[PASSWORD]@db.[PROJECT_REF].supabase.co:5432/postgres");
+    const { POST } = await import("./login/route");
+
+    const response = await POST(
+      buildJsonRequest("/api/auth/login", {
+        email: "student@example.invalid",
+        password: "StrongPassword123!",
+      }),
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(503);
+    expect(body.error).toContain("Database configuration is incomplete.");
+    vi.unstubAllEnvs();
+  });
+
   it("rejects invalid registration data", async () => {
+    vi.stubEnv("DATABASE_URL", "postgresql://localhost:5432/farsamotech");
+    vi.stubEnv("DIRECT_URL", "postgresql://localhost:5432/farsamotech");
+    vi.stubEnv("JWT_SECRET", "test-secret-value-that-is-long-enough");
     const { POST } = await import("./register/route");
 
     const response = await POST(buildJsonRequest("/api/auth/register", { email: "bad" }));
@@ -64,9 +85,12 @@ describe("auth route handlers", () => {
 
     expect(response.status).toBe(400);
     expect(body.error).toBe("Invalid registration data.");
+    vi.unstubAllEnvs();
   });
 
   it("registers a user and sets an http-only session cookie", async () => {
+    vi.stubEnv("DATABASE_URL", "postgresql://localhost:5432/farsamotech");
+    vi.stubEnv("DIRECT_URL", "postgresql://localhost:5432/farsamotech");
     vi.stubEnv("JWT_SECRET", "test-secret-value-that-is-long-enough");
     mockPrisma.user.findFirst.mockResolvedValue(null);
     mockPrisma.user.create.mockResolvedValue(buildUser());
@@ -84,6 +108,9 @@ describe("auth route handlers", () => {
   });
 
   it("rejects duplicate registration", async () => {
+    vi.stubEnv("DATABASE_URL", "postgresql://localhost:5432/farsamotech");
+    vi.stubEnv("DIRECT_URL", "postgresql://localhost:5432/farsamotech");
+    vi.stubEnv("JWT_SECRET", "test-secret-value-that-is-long-enough");
     mockPrisma.user.findFirst.mockResolvedValue({ id: "existing_user" });
     const { POST } = await import("./register/route");
 
@@ -92,9 +119,13 @@ describe("auth route handlers", () => {
 
     expect(response.status).toBe(409);
     expect(body.error).toBe("An account already exists for this email or university ID.");
+    vi.unstubAllEnvs();
   });
 
   it("rejects invalid login credentials with a generic error", async () => {
+    vi.stubEnv("DATABASE_URL", "postgresql://localhost:5432/farsamotech");
+    vi.stubEnv("DIRECT_URL", "postgresql://localhost:5432/farsamotech");
+    vi.stubEnv("JWT_SECRET", "test-secret-value-that-is-long-enough");
     mockPrisma.user.findUnique.mockResolvedValue(null);
     const { POST } = await import("./login/route");
 
@@ -108,9 +139,12 @@ describe("auth route handlers", () => {
 
     expect(response.status).toBe(401);
     expect(body.error).toBe("Invalid email or password.");
+    vi.unstubAllEnvs();
   });
 
   it("logs in with valid credentials and sets an http-only session cookie", async () => {
+    vi.stubEnv("DATABASE_URL", "postgresql://localhost:5432/farsamotech");
+    vi.stubEnv("DIRECT_URL", "postgresql://localhost:5432/farsamotech");
     vi.stubEnv("JWT_SECRET", "test-secret-value-that-is-long-enough");
     const passwordHash = await hashPassword("StrongPassword123!");
     mockPrisma.user.findUnique.mockResolvedValue(buildUser({ passwordHash }));

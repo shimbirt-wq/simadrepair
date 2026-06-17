@@ -3,11 +3,16 @@
 @tailwind utilities;
 
 :root {
-  --background: #f7f9fc;
+  --background: #f5f8ff;
   --foreground: #172033;
   --muted: #5b6578;
-  --border: #d8dee9;
-  --surface: #ffffff;
+  --muted-strong: #34415b;
+  --border: #d3dcea;
+  --border-strong: #9da9bf;
+  --surface: rgba(255, 255, 255, 0.9);
+  --surface-alt: #eef3fb;
+  --accent: #0b786b;
+  --accent-strong: #095449;
 }
 
 * {
@@ -23,7 +28,7 @@ body {
   margin: 0;
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Avenir Next", "Segoe UI", sans-serif;
 }
 
 a {
