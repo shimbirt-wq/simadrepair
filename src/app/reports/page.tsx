@@ -28,10 +28,16 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   }
 
   const params = await searchParams;
-  const filters = reportDateRangeSchema.parse({
+  const parsedFilters = reportDateRangeSchema.safeParse({
     dateFrom: readSearchParam(params.dateFrom),
     dateTo: readSearchParam(params.dateTo),
   });
+
+  if (!parsedFilters.success) {
+    redirect("/reports");
+  }
+
+  const filters = parsedFilters.data;
   const overview = await getReportsOverview(prisma, filters);
 
   return (
