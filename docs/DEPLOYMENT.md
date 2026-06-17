@@ -10,6 +10,9 @@ Set these environment variables in Vercel before creating a production deploymen
 - `NEXT_PUBLIC_APP_URL`: Canonical deployed application URL.
 - `UPLOAD_MAX_SIZE_MB`: Maximum accepted repair photo size, default `5`.
 - `UPLOAD_PUBLIC_BASE_URL`: Optional public object-storage base URL for stored repair photos.
+- `UPLOAD_BUCKET`: Supabase Storage bucket for repair photos, default `repair-ticket-photos`.
+- `SUPABASE_URL`: Supabase project URL for Storage REST uploads.
+- `SUPABASE_SERVICE_ROLE_KEY`: Server-only Supabase key used by upload routes.
 
 Run Prisma migrations from a controlled environment before promoting the deployment:
 

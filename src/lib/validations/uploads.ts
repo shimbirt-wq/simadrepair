@@ -18,6 +18,14 @@ export const uploadIntentSchema = z.object({
 
 export type UploadIntentInput = z.infer<typeof uploadIntentSchema>;
 
+export function isAllowedPhotoReference(value: string) {
+  if (value.startsWith("https://") || value.startsWith("http://")) {
+    return z.string().url().safeParse(value).success;
+  }
+
+  return /^[a-z0-9][a-z0-9-]{2,63}\/[a-zA-Z0-9_-]+\/[a-f0-9-]+-[a-z0-9-]+\.(jpg|jpeg|png|webp)$/.test(value);
+}
+
 export function validateUploadIntent(input: UploadIntentInput) {
   const lowerName = input.fileName.toLowerCase();
   const hasAllowedExtension = ALLOWED_UPLOAD_EXTENSIONS.some((extension) => lowerName.endsWith(extension));

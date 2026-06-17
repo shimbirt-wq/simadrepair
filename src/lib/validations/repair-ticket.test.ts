@@ -21,6 +21,16 @@ describe("createRepairTicketSchema", () => {
     expect(result.success).toBe(true);
   });
 
+  it("accepts valid ticket input with a controlled photo storage path", () => {
+    const result = createRepairTicketSchema.safeParse({
+      deviceId: "device_123",
+      issueDescription: "Laptop screen flickers after startup.",
+      photoUrl: "repair-ticket-photos/user_123/550e8400-e29b-41d4-a716-446655440000-device-photo.webp",
+    });
+
+    expect(result.success).toBe(true);
+  });
+
   it("trims the issue description before validation", () => {
     const result = createRepairTicketSchema.safeParse({
       deviceId: "device_123",
@@ -60,11 +70,11 @@ describe("createRepairTicketSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("rejects invalid photo URLs", () => {
+  it("rejects invalid photo references", () => {
     const result = createRepairTicketSchema.safeParse({
       deviceId: "device_123",
       issueDescription: "Laptop screen flickers after startup.",
-      photoUrl: "not-a-url",
+      photoUrl: "uploads/script.js",
     });
 
     expect(result.success).toBe(false);

@@ -11,7 +11,7 @@ type ErrorCode =
   | "INTERNAL_ERROR";
 
 export function apiErrorResponse(
-  status: 400 | 401 | 403 | 404 | 429 | 500 | 503,
+  status: 400 | 401 | 403 | 404 | 429 | 500 | 502 | 503,
   code: ErrorCode,
   message: string,
   details?: Record<string, unknown>,
