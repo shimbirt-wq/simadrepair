@@ -24,6 +24,27 @@ export function RepairTicketForm({ devices }: RepairTicketFormProps) {
     const formData = new FormData(form);
 
     startTransition(async () => {
+      const photo = formData.get("photo");
+      let photoUrl: string | undefined;
+
+      if (photo instanceof File && photo.size > 0) {
+        const uploadData = new FormData();
+        uploadData.set("photo", photo);
+
+        const uploadResponse = await fetch("/api/uploads/repair-ticket-photo", {
+          method: "POST",
+          body: uploadData,
+        });
+        const uploadBody = (await uploadResponse.json().catch(() => null)) as { error?: string; upload?: { photoUrl: string } } | null;
+
+        if (!uploadResponse.ok) {
+          setMessage(uploadBody?.error ?? "Unable to upload the repair photo.");
+          return;
+        }
+
+        photoUrl = uploadBody?.upload?.photoUrl;
+      }
+
       const response = await fetch("/api/repair-tickets", {
         method: "POST",
         headers: {
@@ -32,7 +53,7 @@ export function RepairTicketForm({ devices }: RepairTicketFormProps) {
         body: JSON.stringify({
           deviceId: String(formData.get("deviceId") ?? ""),
           issueDescription: String(formData.get("issueDescription") ?? "").trim(),
-          photoUrl: String(formData.get("photoUrl") ?? "").trim() || undefined,
+          photoUrl,
         }),
       });
 
@@ -79,10 +100,11 @@ export function RepairTicketForm({ devices }: RepairTicketFormProps) {
           />
         </label>
         <label className="flex flex-col gap-2 text-sm font-medium text-[var(--foreground)]">
-          Photo URL
+          Problem photo
           <input
-            name="photoUrl"
-            placeholder="Optional"
+            name="photo"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
             className="rounded-2xl border border-[var(--border-strong)] bg-white px-4 py-3 text-sm outline-none transition focus:border-[var(--accent)]"
           />
         </label>

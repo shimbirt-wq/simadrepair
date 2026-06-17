@@ -163,6 +163,46 @@ describe("repair ticket route handlers", () => {
     vi.unstubAllEnvs();
   });
 
+  it("saves a photo reference only after upload validation succeeds", async () => {
+    vi.stubEnv("JWT_SECRET", "test-secret-value-that-is-long-enough");
+    const token = await signSessionToken({ id: "user_123", role: "STUDENT" });
+    const photoUrl = "repair-ticket-photos/user_123/550e8400-e29b-41d4-a716-446655440000-device-photo.png";
+    mockPrisma.user.findUnique.mockResolvedValue(buildUser());
+    mockPrisma.device.findUnique.mockResolvedValue({ id: "device_123", ownerId: "user_123" });
+    mockPrisma.repairTicket.findUnique.mockResolvedValue(null);
+    mockPrisma.repairTicket.create.mockResolvedValue(buildRepairTicketWithDevice({ photoUrl }));
+    mockPrisma.repairLog.create.mockResolvedValue(buildRepairLog());
+    mockPrisma.$transaction.mockImplementation(async (callback: (tx: typeof mockPrisma) => unknown) => callback(mockPrisma));
+    const { POST } = await import("./route");
+
+    const response = await POST(
+      buildRequest("/api/repair-tickets", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          cookie: `farsamotech_session=${token}`,
+        },
+        body: JSON.stringify({
+          deviceId: "device_123",
+          issueDescription: "Laptop battery drains too quickly during normal use.",
+          photoUrl,
+        }),
+      }),
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(201);
+    expect(body.ticket.photoUrl).toBe(photoUrl);
+    expect(mockPrisma.repairTicket.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          photoUrl,
+        }),
+      }),
+    );
+    vi.unstubAllEnvs();
+  });
+
   it("returns only owned tickets for students", async () => {
     vi.stubEnv("JWT_SECRET", "test-secret-value-that-is-long-enough");
     const token = await signSessionToken({ id: "user_123", role: "STUDENT" });
@@ -361,5 +401,18 @@ describe("repair ticket route handlers", () => {
     expect(response.status).toBe(403);
     expect(body.error).toBe("You do not have permission to access this repair ticket.");
     vi.unstubAllEnvs();
+  });
+
+  it("requires authentication for full ticket detail", async () => {
+    const { GET } = await import("./[ticketId]/route");
+
+    const response = await GET(buildRequest("/api/repair-tickets/ticket_1"), {
+      params: Promise.resolve({ ticketId: "ticket_1" }),
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(401);
+    expect(body.error).toBe("Authentication required.");
+    expect(mockPrisma.repairTicket.findUnique).not.toHaveBeenCalled();
   });
 });

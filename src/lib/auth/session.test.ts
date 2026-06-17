@@ -36,6 +36,14 @@ describe("session helpers", () => {
     expect(cookie.path).toBe("/");
   });
 
+  it("uses secure cookies in production", () => {
+    vi.stubEnv("NODE_ENV", "production");
+
+    expect(createSessionCookie("token-value").secure).toBe(true);
+    expect(createClearedSessionCookie().secure).toBe(true);
+    vi.unstubAllEnvs();
+  });
+
   it("creates a cleared session cookie", () => {
     const cookie = createClearedSessionCookie();
 

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isAllowedPhotoReference } from "@/lib/validations/uploads";
 
 export const createRepairTicketSchema = z.object({
   deviceId: z.string().min(1, "Device is required"),
@@ -10,9 +11,9 @@ export const createRepairTicketSchema = z.object({
   photoUrl: z
     .string()
     .trim()
-    .url("Photo URL must be a valid URL")
     .optional()
-    .transform((value) => value || undefined),
+    .transform((value) => value || undefined)
+    .refine((value) => !value || isAllowedPhotoReference(value), "Photo reference must be a valid upload URL or storage path"),
 });
 
 export type CreateRepairTicketInput = z.infer<typeof createRepairTicketSchema>;
