@@ -5,7 +5,7 @@ import Link from "next/link";
 const teamMembers = [
   {
     name: "Engineer Ruweydo",
-    role: "System Engineer",
+    role: "Software developer",
     image: "/images/hero/Ruweydo.jpeg",
     imagePosition: "center 20%",
     accent: "bg-[#8B5CF6]",
@@ -13,7 +13,7 @@ const teamMembers = [
   },
   {
     name: "Engineer Ishak",
-    role: "Backend Developer",
+    role: "Full-stack software engineer",
     image: "/images/hero/Ishak%20Image%20.jpg",
     imagePosition: "center 20%",
     accent: "bg-[#14B8A6]",
@@ -29,7 +29,7 @@ const teamMembers = [
   },
   {
     name: "Engineer Abdirahman",
-    role: "Support Specialist",
+    role: "Full-stack software engineer",
     image: "/images/hero/Abdisalaam%20.jpeg",
     imagePosition: "center top",
     accent: "bg-[rgb(180,140,70)]",
