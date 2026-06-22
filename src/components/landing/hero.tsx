@@ -161,7 +161,7 @@ export function LandingHero() {
   return (
     <section
       id="home"
-      className="scroll-mt-[100px] overflow-hidden bg-white px-4 pb-8 pt-40 transition-colors duration-300 sm:px-6 sm:pt-44 lg:px-8 lg:pt-52 dark:bg-[#020617]"
+      className="scroll-mt-[100px] overflow-hidden bg-white px-4 pb-8 pt-36 transition-colors duration-300 sm:px-6 sm:pt-40 lg:px-8 lg:pt-48 dark:bg-[#020617]"
     >
       <div className="mx-auto min-h-[720px] max-w-[1400px]">
         <div className="mx-auto flex max-w-[760px] flex-col items-center text-center">
