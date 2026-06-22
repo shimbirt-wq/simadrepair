@@ -4,9 +4,9 @@ import Link from "next/link";
 
 const teamMembers = [
   {
-    name: "Engineer Abdisalaam",
+    name: "Engineer Ruweydo",
     role: "System Engineer",
-    image: "/images/hero/Abdisalaam%20.jpeg",
+    image: "/images/hero/Ruweydo.jpeg",
     imagePosition: "center 20%",
     accent: "bg-[#8B5CF6]",
     glow: "bg-[rgba(139,92,246,0.16)]"
@@ -28,9 +28,9 @@ const teamMembers = [
     glow: "bg-[rgba(71,85,105,0.14)]"
   },
   {
-    name: "Engineer Ruweydo",
+    name: "Engineer Abdirahman",
     role: "Support Specialist",
-    image: "/images/hero/Ruweydo.jpeg",
+    image: "/images/hero/Abdisalaam%20.jpeg",
     imagePosition: "center top",
     accent: "bg-[rgb(180,140,70)]",
     glow: "bg-[rgba(180,140,70,0.16)]"
