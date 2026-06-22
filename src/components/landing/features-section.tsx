@@ -118,13 +118,13 @@ export function LandingFeaturesSection() {
   } as const;
 
   return (
-    <section className="bg-white">
+    <section className="bg-white transition-colors duration-300 dark:bg-[#020617]">
       <div className="mx-auto w-full max-w-[1440px] px-4 pb-12 pt-14 sm:px-8">
         <div className="mx-auto max-w-[920px] text-center">
-          <h2 className="text-[32px] font-extrabold leading-[1.15] tracking-[-0.03em] text-[#0F172A] sm:text-[40px]">
+          <h2 className="text-[32px] font-extrabold leading-[1.15] tracking-[-0.03em] text-[#0F172A] sm:text-[40px] dark:text-[#F8FAFC]">
             Everything you need to manage repairs efficiently
           </h2>
-          <p className="mx-auto mt-4 max-w-[720px] text-[18px] leading-[1.7] text-[#64748B]">
+          <p className="mx-auto mt-4 max-w-[720px] text-[18px] leading-[1.7] text-[#64748B] dark:text-[#CBD5E1]">
             Built with modern technology to help teams work smarter and deliver better service.
           </p>
         </div>
@@ -136,7 +136,7 @@ export function LandingFeaturesSection() {
             return (
               <article
                 key={card.title}
-                className="group flex h-[220px] flex-col rounded-[20px] border border-[#E2E8F0] bg-white p-7 shadow-[0_16px_40px_rgba(15,23,42,0.06)] transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_24px_50px_rgba(15,23,42,0.10)]"
+                className="group flex h-[220px] flex-col rounded-[20px] border border-[#E2E8F0] bg-white p-7 shadow-[0_16px_40px_rgba(15,23,42,0.06)] transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_24px_50px_rgba(15,23,42,0.10)] dark:border-[#1E293B] dark:bg-[#111827]"
                 style={{
                   animationDelay: `${index * 40}ms`
                 }}
@@ -146,8 +146,8 @@ export function LandingFeaturesSection() {
                 >
                   <Icon />
                 </div>
-                <h3 className="mt-6 text-[22px] font-bold leading-[1.25] tracking-[-0.02em] text-[#0F172A]">{card.title}</h3>
-                <p className="mt-3 text-[15px] leading-7 text-[#64748B]">{card.description}</p>
+                <h3 className="mt-6 text-[22px] font-bold leading-[1.25] tracking-[-0.02em] text-[#0F172A] dark:text-[#F8FAFC]">{card.title}</h3>
+                <p className="mt-3 text-[15px] leading-7 text-[#64748B] dark:text-[#CBD5E1]">{card.description}</p>
               </article>
             );
           })}

@@ -95,9 +95,9 @@ export function LandingStatisticsSection() {
   } as const;
 
   return (
-    <section className="relative left-1/2 right-1/2 w-screen -translate-x-1/2 bg-[linear-gradient(90deg,#ECFDF5_0%,#F0FDFA_50%,#ECFEFF_100%)] py-14">
+    <section className="relative left-1/2 right-1/2 w-screen -translate-x-1/2 bg-[linear-gradient(90deg,#ECFDF5_0%,#F0FDFA_50%,#ECFEFF_100%)] py-14 transition-colors duration-300 dark:bg-[#020617]">
       <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-16">
-        <div className="mt-0 rounded-[24px] bg-white/45 px-6 py-14 backdrop-blur-[1px] sm:px-10">
+        <div className="mt-0 rounded-[24px] bg-white/45 px-6 py-14 backdrop-blur-[1px] sm:px-10 dark:bg-[#111827]">
           <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-4">
             {statistics.map((stat) => {
               const Icon = stat.icon;
@@ -110,8 +110,8 @@ export function LandingStatisticsSection() {
                     <Icon />
                   </div>
                   <div>
-                    <p className="text-[36px] font-extrabold leading-none tracking-[-0.03em] text-[#0F172A]">{stat.value}</p>
-                    <p className="mt-2 text-[16px] font-medium text-[#64748B]">{stat.label}</p>
+                    <p className="text-[36px] font-extrabold leading-none tracking-[-0.03em] text-[#0F172A] dark:text-[#F8FAFC]">{stat.value}</p>
+                    <p className="mt-2 text-[16px] font-medium text-[#64748B] dark:text-[#CBD5E1]">{stat.label}</p>
                   </div>
                 </div>
               );

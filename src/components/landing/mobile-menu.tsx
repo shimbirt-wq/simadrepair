@@ -65,38 +65,13 @@ export function MobileMenu({ items, isOpen, onClose }: MobileMenuProps) {
         </nav>
 
         <div className="space-y-4 border-t border-slate-200 pt-5">
-          <Link
-            href="/api/health"
-            onClick={onClose}
-            className="inline-flex h-12 items-center justify-center gap-3 rounded-xl bg-[linear-gradient(135deg,#0F766E,_#10B981)] px-6 text-sm font-bold text-white shadow-[0_12px_24px_rgba(16,185,129,0.24)] transition duration-200 hover:brightness-105"
-          >
-            <span>API health</span>
-            <svg viewBox="0 0 24 24" aria-hidden="true" className="h-4 w-4">
-              <path
-                d="M2 13h4l2.2-5 3.6 10L14 13h3l1.6-3 1.4 3H22"
-                fill="none"
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="1.8"
-              />
-            </svg>
-          </Link>
-
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3">
             <Link
               href="/auth/login"
               onClick={onClose}
-              className="inline-flex items-center justify-center rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-[#0F172A] transition duration-200 hover:text-[#0F766E]"
+              className="inline-flex items-center justify-center rounded-xl bg-[#0F172A] px-4 py-3 text-sm font-semibold text-white transition duration-200 hover:bg-[#0b1324]"
             >
               Sign in
-            </Link>
-            <Link
-              href="/auth/register"
-              onClick={onClose}
-              className="inline-flex items-center justify-center rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-[#0F172A] transition duration-200 hover:text-[#0F766E]"
-            >
-              Register
             </Link>
           </div>
         </div>

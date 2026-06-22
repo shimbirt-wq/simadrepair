@@ -232,16 +232,16 @@ function Sparkline({ accent }: { accent: "teal" | "amber" | "violet" }) {
 
 function DashboardPreview() {
   return (
-    <div className="h-[620px] w-[1200px] min-w-[1200px] max-w-none overflow-hidden rounded-[24px] border border-[#E2E8F0] bg-white shadow-[0_30px_80px_rgba(15,23,42,0.10)]">
+    <div className="h-[620px] w-[1200px] min-w-[1200px] max-w-none overflow-hidden rounded-[24px] border border-[#E2E8F0] bg-white shadow-[0_30px_80px_rgba(15,23,42,0.10)] transition-colors duration-300 dark:border-[#1E293B] dark:bg-[#111827]">
       <div className="grid h-full grid-cols-[210px_minmax(0,1fr)]">
-        <aside className="border-r border-[#E2E8F0] bg-[#F8FAFC] px-5 py-5">
+        <aside className="border-r border-[#E2E8F0] bg-[#F8FAFC] px-5 py-5 transition-colors duration-300 dark:border-[#1E293B] dark:bg-slate-900">
           <div className="flex items-center gap-3">
             <span className="flex h-11 w-11 items-center justify-center rounded-2xl border border-teal-200 bg-white text-[#0F766E]">
               <BrandMark />
             </span>
             <div>
-              <p className="text-[14px] font-bold leading-tight text-[#0F172A]">FarsamoTech</p>
-              <p className="mt-1 text-[11px] font-medium leading-tight text-slate-500">Repair Hub</p>
+              <p className="text-[14px] font-bold leading-tight text-[#0F172A] dark:text-[#F8FAFC]">FarsamoTech</p>
+              <p className="mt-1 text-[11px] font-medium leading-tight text-slate-500 dark:text-[#CBD5E1]">Repair Hub</p>
             </div>
           </div>
 
@@ -253,12 +253,12 @@ function DashboardPreview() {
               <div
                 key={item.label}
                 className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-[14px] font-medium ${
-                  index === 0 ? "bg-[#ECFDF5] text-[#0F766E]" : "text-slate-600"
+                  index === 0 ? "bg-[#ECFDF5] text-[#0F766E] dark:bg-teal-950/40 dark:text-[#5EEAD4]" : "text-slate-600 dark:text-[#CBD5E1]"
                 }`}
               >
                 <span
                   className={`flex h-8 w-8 items-center justify-center rounded-full ${
-                    index === 0 ? "bg-[#DDFBF3] text-[#0F766E]" : "bg-[#F8FAFC] text-[#64748B]"
+                    index === 0 ? "bg-[#DDFBF3] text-[#0F766E] dark:bg-teal-900/60 dark:text-[#5EEAD4]" : "bg-[#F8FAFC] text-[#64748B] dark:bg-slate-800 dark:text-[#CBD5E1]"
                   }`}
                 >
                   <Icon />
@@ -273,11 +273,11 @@ function DashboardPreview() {
         <div className="p-8">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h2 className="text-[20px] font-bold tracking-[-0.03em] text-[#0F172A]">Welcome back, Admin 👋</h2>
-              <p className="mt-2 text-[12px] font-medium text-slate-500">Here&apos;s what&apos;s happening with your system today.</p>
+              <h2 className="text-[20px] font-bold tracking-[-0.03em] text-[#0F172A] dark:text-[#F8FAFC]">Welcome back, Admin 👋</h2>
+              <p className="mt-2 text-[12px] font-medium text-slate-500 dark:text-[#CBD5E1]">Here&apos;s what&apos;s happening with your system today.</p>
             </div>
 
-            <div className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#E2E8F0] bg-white px-4 text-[13px] font-semibold text-slate-600">
+            <div className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#E2E8F0] bg-white px-4 text-[13px] font-semibold text-slate-600 transition-colors duration-300 dark:border-[#1E293B] dark:bg-[#111827] dark:text-[#CBD5E1]">
               <DateIcon />
               <span>May 17, 2026</span>
             </div>
@@ -287,15 +287,15 @@ function DashboardPreview() {
             {metrics.map((metric) => (
               <article
                 key={metric.label}
-                className="flex h-[170px] min-w-0 flex-col rounded-[18px] border border-slate-100 bg-white p-[18px] shadow-[0_10px_26px_rgba(15,23,42,0.05)]"
+                className="flex h-[170px] min-w-0 flex-col rounded-[18px] border border-slate-100 bg-white p-[18px] shadow-[0_10px_26px_rgba(15,23,42,0.05)] transition-colors duration-300 dark:border-[#1E293B] dark:bg-[#111827]"
               >
                 <div className="flex items-center gap-2.5">
                   <TrendIcon accent={metric.accent} />
-                  <p className="text-[12px] font-bold leading-4 text-[#475569]">{metric.label}</p>
+                  <p className="text-[12px] font-bold leading-4 text-[#475569] dark:text-[#CBD5E1]">{metric.label}</p>
                 </div>
-                <p className="mt-4 text-[30px] font-extrabold leading-none tracking-[-0.03em] text-[#0F172A]">{metric.value}</p>
+                <p className="mt-4 text-[30px] font-extrabold leading-none tracking-[-0.03em] text-[#0F172A] dark:text-[#F8FAFC]">{metric.value}</p>
                 <p className="mt-3 text-[11px] font-semibold text-[#0F766E]">
-                  {metric.trend} <span className="font-medium text-slate-400">from last 7 days</span>
+                  {metric.trend} <span className="font-medium text-slate-400 dark:text-[#94A3B8]">from last 7 days</span>
                 </p>
                 <div className="mt-auto pt-3">
                   <Sparkline accent={metric.accent} />
@@ -305,13 +305,13 @@ function DashboardPreview() {
           </div>
 
           <div className="mt-4 grid grid-cols-[minmax(0,1fr)_210px] gap-[14px]">
-            <article className="h-[250px] rounded-[22px] border border-slate-100 bg-white shadow-[0_10px_26px_rgba(15,23,42,0.05)]">
+            <article className="h-[250px] rounded-[22px] border border-slate-100 bg-white shadow-[0_10px_26px_rgba(15,23,42,0.05)] transition-colors duration-300 dark:border-[#1E293B] dark:bg-[#111827]">
               <div className="border-b border-slate-100 px-5 py-4">
-                <h3 className="text-[15px] font-bold text-[#0F172A]">Recent Repair Tickets</h3>
+                <h3 className="text-[15px] font-bold text-[#0F172A] dark:text-[#F8FAFC]">Recent Repair Tickets</h3>
               </div>
               <div className="px-2 pb-2">
                 <table className="min-w-full table-fixed text-left">
-                  <thead className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
+                  <thead className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400 dark:text-[#94A3B8]">
                     <tr>
                       <th className="px-3 py-2">Ticket ID</th>
                       <th className="px-3 py-2">Device</th>
@@ -322,8 +322,8 @@ function DashboardPreview() {
                   </thead>
                   <tbody>
                     {repairRows.map((row) => (
-                      <tr key={row.ticket} className="border-t border-slate-100 text-[11px] text-slate-600">
-                        <td className="px-3 py-2 font-bold text-slate-700">{row.ticket}</td>
+                      <tr key={row.ticket} className="border-t border-slate-100 text-[11px] text-slate-600 dark:text-[#CBD5E1]">
+                        <td className="px-3 py-2 font-bold text-slate-700 dark:text-[#F8FAFC]">{row.ticket}</td>
                         <td className="px-3 py-2">{row.device}</td>
                         <td className="px-3 py-2">{row.issue}</td>
                         <td className="px-3 py-2">
@@ -359,15 +359,15 @@ function DashboardPreview() {
               </div>
             </article>
 
-            <article className="h-[250px] w-[210px] rounded-[22px] border border-slate-100 bg-white p-5 shadow-[0_10px_26px_rgba(15,23,42,0.05)]">
-              <h3 className="text-[15px] font-bold text-[#0F172A]">System Health</h3>
+            <article className="h-[250px] w-[210px] rounded-[22px] border border-slate-100 bg-white p-5 shadow-[0_10px_26px_rgba(15,23,42,0.05)] transition-colors duration-300 dark:border-[#1E293B] dark:bg-[#111827]">
+              <h3 className="text-[15px] font-bold text-[#0F172A] dark:text-[#F8FAFC]">System Health</h3>
               <div className="mx-auto mt-8 flex h-[108px] w-[108px] items-center justify-center rounded-full border-[8px] border-teal-100 border-t-[#0F766E]">
                 <div className="text-center">
-                  <p className="text-[18px] font-bold leading-none text-[#0F172A]">98%</p>
-                  <p className="mt-1 text-[11px] font-medium text-slate-500">Healthy</p>
+                  <p className="text-[18px] font-bold leading-none text-[#0F172A] dark:text-[#F8FAFC]">98%</p>
+                  <p className="mt-1 text-[11px] font-medium text-slate-500 dark:text-[#CBD5E1]">Healthy</p>
                 </div>
               </div>
-              <div className="mt-8 inline-flex items-center gap-2 text-[11px] font-medium text-slate-500">
+              <div className="mt-8 inline-flex items-center gap-2 text-[11px] font-medium text-slate-500 dark:text-[#CBD5E1]">
                 <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
                 <span>All systems operational</span>
               </div>
@@ -381,7 +381,7 @@ function DashboardPreview() {
 
 export function LandingHero() {
   return (
-    <section className="relative overflow-hidden bg-[linear-gradient(180deg,#ffffff_0%,#f7fffc_58%,#fbfefe_100%)]">
+    <section className="relative overflow-hidden bg-[linear-gradient(180deg,#ffffff_0%,#f7fffc_58%,#fbfefe_100%)] transition-colors duration-300 dark:bg-[#020617]">
       <div className="absolute inset-x-0 bottom-0 -z-10 h-56 bg-[radial-gradient(circle_at_left_bottom,_rgba(20,184,166,0.08),_transparent_42%)]" />
       <div className="mx-auto grid w-full max-w-[1800px] grid-cols-1 justify-center px-4 pb-[110px] pt-[110px] sm:px-8 lg:grid-cols-[520px_1200px] lg:px-20 lg:items-start lg:gap-x-[180px]">
         <div className="flex w-[520px] max-w-[520px] flex-col items-start text-left">
@@ -392,12 +392,12 @@ export function LandingHero() {
             <span>Powerful. Secure. Built for Efficiency.</span>
           </div>
 
-          <h1 className="mt-7 max-w-[640px] text-[52px] font-extrabold leading-[1.05] tracking-[-0.04em] text-[#0F172A] sm:text-[64px] lg:text-[72px]">
+          <h1 className="mt-7 max-w-[640px] text-[52px] font-extrabold leading-[1.05] tracking-[-0.04em] text-[#0F172A] sm:text-[64px] lg:text-[72px] dark:text-[#F8FAFC]">
             <span className="block">FarsamoTech</span>
             <span className="block text-[#0F766E]">Repair Hub</span>
           </h1>
 
-          <p className="mt-6 max-w-[620px] text-[18px] leading-[1.7] text-[#475569] sm:text-[20px]">
+          <p className="mt-6 max-w-[620px] text-[18px] leading-[1.7] text-[#475569] sm:text-[20px] dark:text-[#CBD5E1]">
             A modern platform for managing repairs, users, devices, and administration with security and performance at
             its core.
           </p>
@@ -415,7 +415,7 @@ export function LandingHero() {
 
             <Link
               href="/devices"
-              className="inline-flex h-14 items-center justify-center gap-3 rounded-[14px] border border-[#E2E8F0] bg-white px-[30px] text-[16px] font-bold text-[#0F172A] shadow-[0_10px_22px_rgba(15,23,42,0.05)] transition duration-200 hover:border-slate-300"
+              className="inline-flex h-14 items-center justify-center gap-3 rounded-[14px] border border-[#E2E8F0] bg-white px-[30px] text-[16px] font-bold text-[#0F172A] shadow-[0_10px_22px_rgba(15,23,42,0.05)] transition duration-200 hover:border-slate-300 dark:border-[#1E293B] dark:bg-[#111827] dark:text-[#F8FAFC]"
             >
               <span>Learn More</span>
               <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5">
@@ -431,7 +431,7 @@ export function LandingHero() {
             </Link>
           </div>
 
-          <div className="mt-10 flex items-center gap-9 text-[15px] font-semibold text-[#334155]">
+          <div className="mt-10 flex items-center gap-9 text-[15px] font-semibold text-[#334155] dark:text-[#CBD5E1]">
             {highlights.map((item) => {
               const Icon = item.icon;
 

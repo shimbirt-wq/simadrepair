@@ -1,0 +1,28 @@
+<svg width="1600" height="1200" viewBox="0 0 1600 1200" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Farsamotech logo</title>
+  <desc id="desc">Minimal geometric hexagon logo for Farsamotech with a central abstract eye, company name, and tagline.</desc>
+  <rect width="1600" height="1200" fill="#FFFFFF"/>
+
+  <g transform="translate(0 24)" stroke="#00796B" stroke-width="22" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M800 118L986 225V439L800 546L614 439V225L800 118Z"/>
+    <path d="M800 118V546"/>
+    <path d="M614 225L800 332L986 225"/>
+    <path d="M614 439L800 332L986 439"/>
+    <path d="M614 225L800 439L986 225"/>
+    <path d="M614 439L800 225L986 439"/>
+    <path d="M736 333C753 316 774 307 800 307C826 307 847 316 864 333"/>
+    <path d="M736 333C753 350 774 359 800 359C826 359 847 350 864 333"/>
+    <circle cx="800" cy="333" r="12" fill="#00796B" stroke="none"/>
+  </g>
+
+  <g fill="#00796B" text-anchor="middle">
+    <text x="800" y="760" font-family="Inter, Manrope, Satoshi, Montserrat, Arial, sans-serif" font-size="124" font-weight="800" letter-spacing="-0.04em">
+      Farsamotech
+    </text>
+    <line x1="260" y1="862" x2="448" y2="862" stroke="#00796B" stroke-width="4"/>
+    <line x1="1152" y1="862" x2="1340" y2="862" stroke="#00796B" stroke-width="4"/>
+    <text x="800" y="878" font-family="Inter, Manrope, Satoshi, Montserrat, Arial, sans-serif" font-size="44" font-weight="500" letter-spacing="0.02em">
+      Smart Solutions. Better Future.
+    </text>
+  </g>
+</svg>
