@@ -26,7 +26,7 @@ export function LandingNavbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-30 h-20 border-b border-[#EAEFF3] bg-white transition-colors duration-300 dark:border-[#1E293B] dark:bg-[#0F172A]">
+      <header className="fixed inset-x-0 top-0 z-30 h-20 border-b border-[#EAEFF3] bg-white transition-colors duration-300 dark:border-[#1E293B] dark:bg-[#0F172A]">
         <div className="mx-auto grid h-full w-full max-w-[1680px] grid-cols-[1fr_auto] items-center px-4 sm:px-8 lg:grid-cols-[280px_1fr_280px] lg:px-12">
           <div className="flex min-w-0 justify-start lg:w-[280px] lg:justify-self-start">
             <Logo />
