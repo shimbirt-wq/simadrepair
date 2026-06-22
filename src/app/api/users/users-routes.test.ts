@@ -46,8 +46,8 @@ describe("user route handlers", () => {
 
   it("returns the current profile without a password hash", async () => {
     vi.stubEnv("JWT_SECRET", "test-secret-value-that-is-long-enough");
-    const token = await signSessionToken({ id: "user_123", role: "STUDENT" });
-    mockPrisma.user.findUnique.mockResolvedValue(buildUser({ role: "STUDENT" }));
+    const token = await signSessionToken({ id: "user_123", role: "ADMIN" });
+    mockPrisma.user.findUnique.mockResolvedValue(buildUser());
     const { GET } = await import("./me/route");
 
     const response = await GET(
@@ -67,8 +67,8 @@ describe("user route handlers", () => {
 
   it("blocks non-admin users from listing all users", async () => {
     vi.stubEnv("JWT_SECRET", "test-secret-value-that-is-long-enough");
-    const token = await signSessionToken({ id: "student_123", role: "STUDENT" });
-    mockPrisma.user.findUnique.mockResolvedValue(buildUser({ id: "student_123", role: "STUDENT" }));
+    const token = await signSessionToken({ id: "tech_123", role: "TECHNICIAN" });
+    mockPrisma.user.findUnique.mockResolvedValue(buildUser({ id: "tech_123", role: "TECHNICIAN" }));
     const { GET } = await import("./route");
 
     const response = await GET(
@@ -90,8 +90,8 @@ describe("user route handlers", () => {
     const token = await signSessionToken({ id: "admin_123", role: "ADMIN" });
     mockPrisma.user.findUnique.mockResolvedValue(buildUser({ id: "admin_123" }));
     mockPrisma.user.findMany.mockResolvedValue([
-      buildUser({ id: "user_1", fullName: "First User", email: "first@example.invalid", role: "STUDENT" }),
-      buildUser({ id: "user_2", fullName: "Second User", email: "second@example.invalid", role: "LECTURER" }),
+      buildUser({ id: "user_1", fullName: "First User", email: "first@example.invalid", role: "TECHNICIAN" }),
+      buildUser({ id: "user_2", fullName: "Second User", email: "second@example.invalid", role: "LEAD_TECHNICIAN" }),
     ]);
     mockPrisma.user.count.mockResolvedValue(12);
     const { GET } = await import("./route");
@@ -175,28 +175,28 @@ describe("user route handlers", () => {
     const token = await signSessionToken({ id: "admin_123", role: "ADMIN" });
     mockPrisma.user.findUnique
       .mockResolvedValueOnce(buildUser({ id: "admin_123" }))
-      .mockResolvedValueOnce({ id: "student_123", role: "STUDENT", isActive: true });
-    mockPrisma.user.update.mockResolvedValue(buildUser({ id: "student_123", role: "STUDENT", isActive: false }));
+      .mockResolvedValueOnce({ id: "tech_123", role: "TECHNICIAN", isActive: true });
+    mockPrisma.user.update.mockResolvedValue(buildUser({ id: "tech_123", role: "TECHNICIAN", isActive: false }));
     const { PATCH } = await import("./[userId]/route");
 
     const response = await PATCH(
-      buildRequest("/api/users/student_123", {
+      buildRequest("/api/users/tech_123", {
         method: "PATCH",
         headers: {
           "content-type": "application/json",
           cookie: `farsamotech_session=${token}`,
         },
-        body: JSON.stringify({ role: "STUDENT", isActive: false }),
+        body: JSON.stringify({ role: "TECHNICIAN", isActive: false }),
       }),
-      { params: Promise.resolve({ userId: "student_123" }) },
+      { params: Promise.resolve({ userId: "tech_123" }) },
     );
     const body = await response.json();
 
     expect(response.status).toBe(200);
     expect(mockPrisma.user.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: "student_123" },
-        data: { role: "STUDENT", isActive: false },
+        where: { id: "tech_123" },
+        data: { role: "TECHNICIAN", isActive: false },
       }),
     );
     expect(body.user.isActive).toBe(false);

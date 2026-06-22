@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
-import { authorizationErrorResponse, requireAuthenticatedUser } from "@/lib/auth/authorization";
+import { authorizationErrorResponse, requireAuthenticatedRole } from "@/lib/auth/authorization";
+import { INTERNAL_USER_ROLES } from "@/lib/auth/roles";
 import { prisma } from "@/lib/db/prisma";
 import { createDevice, listDevices } from "@/lib/devices/device-service";
 import { createDeviceSchema, deviceListQuerySchema } from "@/lib/validations/devices";
 
 export async function GET(request: Request) {
-  const authResult = await requireAuthenticatedUser(prisma, request);
+  const authResult = await requireAuthenticatedRole(prisma, request, INTERNAL_USER_ROLES);
 
   if (!authResult.ok) {
     return authorizationErrorResponse(authResult);
@@ -35,7 +36,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const authResult = await requireAuthenticatedUser(prisma, request);
+  const authResult = await requireAuthenticatedRole(prisma, request, INTERNAL_USER_ROLES);
 
   if (!authResult.ok) {
     return authorizationErrorResponse(authResult);

@@ -98,6 +98,26 @@ function getStatusClass(status: string) {
   return statusClasses[status] ?? "status-registration";
 }
 
+function getSeverityBorderClass(severity: string | null) {
+  const severityClasses: Record<string, string> = {
+    CRITICAL: "border-l-[var(--red-700)]",
+    HIGH: "border-l-[var(--amber-700)]",
+    MEDIUM: "border-l-[var(--blue-700)]",
+    LOW: "border-l-[var(--slate-400)]",
+  };
+
+  return severity ? severityClasses[severity] ?? "border-l-[var(--slate-300)]" : "border-l-[var(--slate-300)]";
+}
+
+function QueueStat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-lg border border-[var(--border)] bg-white p-4">
+      <p className="eyebrow">{label}</p>
+      <p className="metric-value mt-2 text-2xl font-bold text-[var(--foreground)]">{value}</p>
+    </div>
+  );
+}
+
 function QueueCard({
   isSelected,
   onSelect,
@@ -107,17 +127,19 @@ function QueueCard({
   onSelect: () => void;
   ticket: QueueTicket;
 }) {
+  const severityBorderClass = getSeverityBorderClass(ticket.severity);
+
   return (
     <button
       type="button"
       onClick={onSelect}
-      className={`panel w-full p-4 text-left transition ${
-        isSelected ? "border-[var(--accent)] shadow-sm" : "hover:border-[var(--border-strong)]"
+      className={`panel w-full border-l-4 p-4 text-left transition ${severityBorderClass} ${
+        isSelected ? "border-[var(--accent)] bg-[var(--surface-selected)] shadow-[var(--shadow-sm)]" : "hover:border-[var(--border-strong)]"
       }`}
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-sm font-black text-[var(--foreground)]">{ticket.trackingCode ?? ticket.ticketId}</p>
+          <p className="tracking-code text-sm font-black text-[var(--foreground)]">{ticket.trackingCode ?? ticket.ticketId}</p>
           <p className="mt-1 text-sm text-[var(--muted)]">
             {ticket.requester.fullName ?? "Requester"} - {ticket.requester.faculty ?? "Faculty not set"}
           </p>
@@ -148,7 +170,7 @@ function QueueCard({
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border)] pt-3 text-sm">
         <span className="text-[var(--muted)]">Assigned: {ticket.technician?.fullName ?? "Unassigned"}</span>
-        <span className="font-medium text-[var(--muted-strong)]">{formatDate(ticket.createdAt)}</span>
+        <span className="tnum font-medium text-[var(--muted-strong)]">{formatDate(ticket.createdAt)}</span>
       </div>
     </button>
   );
@@ -165,6 +187,14 @@ export function LeadCommandCenter() {
   const selectedQueueTicket = useMemo(
     () => tickets.find((ticket) => ticket.id === selectedTicketId) ?? null,
     [selectedTicketId, tickets],
+  );
+  const queueStats = useMemo(
+    () => ({
+      total: tickets.length,
+      unassigned: tickets.filter((ticket) => !ticket.technician).length,
+      triage: tickets.filter((ticket) => ticket.status === "REGISTRATION_COMPLETED").length,
+    }),
+    [tickets],
   );
 
   function loadQueue(nextSelectedTicketId?: string | null) {
@@ -220,70 +250,91 @@ export function LeadCommandCenter() {
   }, [selectedTicketId]);
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[0.9fr_1.25fr]">
-      <section className="grid gap-4">
-        <div className="panel p-5">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <p className="eyebrow">Queue</p>
-              <h2 className="mt-2 text-xl font-bold text-[var(--foreground)]">Needs triage or assignment</h2>
-            </div>
-            <button type="button" onClick={() => loadQueue(selectedTicketId)} className="btn-secondary">
-              Refresh
-            </button>
+    <div className="grid gap-6">
+      <section className="panel p-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="eyebrow">Lead command center</p>
+            <h2 className="mt-2 text-xl font-semibold text-[var(--foreground)]">Triage, route, and verify repair work</h2>
+            <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--muted-strong)]">
+              Review submitted requests, classify the repair path, assign technicians, and keep custody checks attached
+              to the same operational record.
+            </p>
           </div>
-          <p className="mt-3 text-sm leading-7 text-[var(--muted)]">
-            Review submitted requests, classify the repair path, and assign work without opening public-facing pages.
-          </p>
+          <button type="button" onClick={() => loadQueue(selectedTicketId)} className="btn-secondary">
+            Refresh
+          </button>
         </div>
 
-        {queueError ? (
-          <div className="panel border-red-200 bg-[var(--danger-bg)] p-4 text-sm font-medium text-[var(--danger)]">
-            {queueError}
-          </div>
-        ) : null}
+        <div className="mt-5 grid gap-3 sm:grid-cols-3">
+          <QueueStat label="Queue" value={queueStats.total} />
+          <QueueStat label="Unassigned" value={queueStats.unassigned} />
+          <QueueStat label="New triage" value={queueStats.triage} />
+        </div>
+      </section>
 
-        <div className="grid gap-3">
-          {tickets.length > 0 ? (
-            tickets.map((ticket) => (
-              <QueueCard
-                key={ticket.id}
-                ticket={ticket}
-                isSelected={ticket.id === selectedTicketId}
-                onSelect={() => setSelectedTicketId(ticket.id)}
-              />
-            ))
+      <div className="grid gap-6 xl:grid-cols-[0.86fr_1.34fr]">
+        <section className="grid content-start gap-4">
+          <div className="panel p-5">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="eyebrow">Queue</p>
+                <h2 className="mt-2 text-xl font-bold text-[var(--foreground)]">Needs triage or assignment</h2>
+              </div>
+            </div>
+            <p className="mt-3 text-sm leading-7 text-[var(--muted-strong)]">
+              Select a ticket to open triage, assignment, custody, and audit details.
+            </p>
+          </div>
+
+          {queueError ? (
+            <div className="panel border-[var(--fill-danger-soft-border)] bg-[var(--danger-bg)] p-4 text-sm font-medium text-[var(--danger)]">
+              {queueError}
+            </div>
+          ) : null}
+
+          <div className="grid gap-3">
+            {tickets.length > 0 ? (
+              tickets.map((ticket) => (
+                <QueueCard
+                  key={ticket.id}
+                  ticket={ticket}
+                  isSelected={ticket.id === selectedTicketId}
+                  onSelect={() => setSelectedTicketId(ticket.id)}
+                />
+              ))
+            ) : (
+              <div className="panel p-5">
+                <p className="text-sm text-[var(--muted)]">
+                  {isPending ? "Loading queue..." : "No tickets currently need triage or assignment."}
+                </p>
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section className="min-w-0">
+          {detailError ? (
+            <div className="panel border-[var(--fill-danger-soft-border)] bg-[var(--danger-bg)] p-5 text-sm font-medium text-[var(--danger)]">
+              {detailError}
+            </div>
+          ) : null}
+
+          {selectedTicket ? (
+            <LeadTicketDetail ticket={selectedTicket} onTicketUpdated={handleTicketUpdated} />
           ) : (
-            <div className="panel p-5">
-              <p className="text-sm text-[var(--muted)]">
-                {isPending ? "Loading queue..." : "No tickets currently need triage or assignment."}
+            <div className="panel p-8">
+              <p className="eyebrow">Ticket detail</p>
+              <h2 className="mt-3 text-2xl font-bold text-[var(--foreground)]">
+                {selectedQueueTicket ? "Loading ticket detail" : "Select a ticket"}
+              </h2>
+              <p className="mt-3 text-sm leading-7 text-[var(--muted)]">
+                Choose a queue item to review requester contact, device information, events, triage controls, and assignment.
               </p>
             </div>
           )}
-        </div>
-      </section>
-
-      <section className="min-w-0">
-        {detailError ? (
-          <div className="panel border-red-200 bg-[var(--danger-bg)] p-5 text-sm font-medium text-[var(--danger)]">
-            {detailError}
-          </div>
-        ) : null}
-
-        {selectedTicket ? (
-          <LeadTicketDetail ticket={selectedTicket} onTicketUpdated={handleTicketUpdated} />
-        ) : (
-          <div className="panel p-8">
-            <p className="eyebrow">Ticket detail</p>
-            <h2 className="mt-3 text-2xl font-bold text-[var(--foreground)]">
-              {selectedQueueTicket ? "Loading ticket detail" : "Select a ticket"}
-            </h2>
-            <p className="mt-3 text-sm leading-7 text-[var(--muted)]">
-              Choose a queue item to review requester contact, device information, events, triage controls, and assignment.
-            </p>
-          </div>
-        )}
-      </section>
+        </section>
+      </div>
     </div>
   );
 }

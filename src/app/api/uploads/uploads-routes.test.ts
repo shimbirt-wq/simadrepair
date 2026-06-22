@@ -17,14 +17,14 @@ const now = new Date("2026-01-01T00:00:00.000Z");
 function buildUser(overrides: Partial<User> = {}): User {
   return {
     id: "user_123",
-    fullName: "Ticket Owner",
+    fullName: "Technician User",
     universityId: "SIMAD-TICKET-001",
     faculty: "Computing",
     department: "Computer Science",
     phone: "+252610001111",
-    email: "owner@example.invalid",
+    email: "tech@example.invalid",
     passwordHash: "$2a$12$hash",
-    role: "STUDENT",
+    role: "TECHNICIAN",
     isActive: true,
     createdAt: now,
     updatedAt: now,
@@ -59,7 +59,7 @@ describe("upload route handlers", () => {
     vi.stubEnv("UPLOAD_BUCKET", "repair-ticket-photos");
     const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 201 }));
     vi.stubGlobal("fetch", fetchMock);
-    const token = await signSessionToken({ id: "user_123", role: "STUDENT" });
+    const token = await signSessionToken({ id: "user_123", role: "TECHNICIAN" });
     mockPrisma.user.findUnique.mockResolvedValue(buildUser());
     const { POST } = await import("./repair-ticket-photo/route");
 
@@ -88,7 +88,7 @@ describe("upload route handlers", () => {
     vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "service-role-key");
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
-    const token = await signSessionToken({ id: "user_123", role: "STUDENT" });
+    const token = await signSessionToken({ id: "user_123", role: "TECHNICIAN" });
     mockPrisma.user.findUnique.mockResolvedValue(buildUser());
     const { POST } = await import("./repair-ticket-photo/route");
 

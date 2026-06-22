@@ -3,10 +3,9 @@ import { AppShell } from "@/app/app-shell";
 import { redirect } from "next/navigation";
 import { REPAIR_STATUS_LABELS } from "@/lib/constants/repair-status";
 import { prisma } from "@/lib/db/prisma";
-import { listDevices } from "@/lib/devices/device-service";
 import { listRepairTickets } from "@/lib/repair-tickets/repair-ticket-service";
 import { getCurrentServerUser } from "@/lib/auth/server-user";
-import { RepairTicketForm } from "@/app/repair-tickets/repair-ticket-form";
+import { isInternalUserRole } from "@/lib/auth/roles";
 import { StatusBadge } from "@/app/repair-tickets/status-badge";
 import { repairTicketListQuerySchema } from "@/lib/validations/repair-ticket-filters";
 
@@ -25,6 +24,10 @@ export default async function RepairTicketsPage({ searchParams }: RepairTicketsP
     redirect("/auth/login?next=/repair-tickets");
   }
 
+  if (!isInternalUserRole(user.role)) {
+    redirect("/track");
+  }
+
   const params = await searchParams;
   const filters = repairTicketListQuerySchema.parse({
     page: readSearchParam(params.page),
@@ -35,23 +38,13 @@ export default async function RepairTicketsPage({ searchParams }: RepairTicketsP
     dateTo: readSearchParam(params.dateTo),
   });
 
-  const [ticketsResult, deviceResult] = await Promise.all([
-    listRepairTickets(prisma, user, filters),
-    user.role === "STUDENT" || user.role === "LECTURER"
-      ? listDevices(prisma, user, {
-          page: 1,
-          pageSize: 25,
-          query: undefined,
-          ownerId: user.id,
-        })
-      : Promise.resolve({ devices: [], pagination: { page: 1, pageSize: 25, totalItems: 0, totalPages: 1 } }),
-  ]);
+  const ticketsResult = await listRepairTickets(prisma, user, filters);
 
   return (
     <AppShell
       active="tickets"
       eyebrow="Repair tickets"
-      title={user.role === "TECHNICIAN" ? "Assigned ticket list" : user.role === "ADMIN" ? "Admin ticket list" : "My repair requests"}
+      title={user.role === "TECHNICIAN" ? "Assigned ticket list" : "Service desk ticket list"}
       user={user}
       actions={
         <Link href="/devices" className="btn-secondary">
@@ -60,26 +53,16 @@ export default async function RepairTicketsPage({ searchParams }: RepairTicketsP
       }
     >
       <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
-        {user.role === "STUDENT" || user.role === "LECTURER" ? (
-          <RepairTicketForm
-            devices={deviceResult.devices.map((device) => ({
-              id: device.id,
-              brand: device.brand,
-              model: device.model,
-              deviceType: device.deviceType,
-            }))}
-          />
-        ) : (
-          <section className="panel p-8">
-            <p className="eyebrow">Ticket scope</p>
-            <h1 className="mt-3 text-3xl font-semibold text-[var(--foreground)]">
-              {user.role === "TECHNICIAN" ? "Assigned tickets" : "All repair tickets"}
-            </h1>
-            <p className="mt-4 text-sm leading-7 text-[var(--muted)]">
-              Filters and list results are enforced server-side based on your role.
-            </p>
-          </section>
-        )}
+        <section className="panel p-8">
+          <p className="eyebrow">Ticket scope</p>
+          <h1 className="mt-3 text-3xl font-semibold text-[var(--foreground)]">
+            {user.role === "TECHNICIAN" ? "Assigned tickets" : "All repair tickets"}
+          </h1>
+          <p className="mt-4 text-sm leading-7 text-[var(--muted)]">
+            Students and lecturers submit new requests through the public repair intake. This workspace is for internal
+            service desk review and execution.
+          </p>
+        </section>
 
         <section className="panel p-6">
           <form className="mt-8 grid gap-4 rounded-2xl border border-[var(--border)] bg-[var(--surface-alt)] p-5 sm:grid-cols-2">

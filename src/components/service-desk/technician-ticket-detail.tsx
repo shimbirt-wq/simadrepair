@@ -318,7 +318,7 @@ export function TechnicianTicketDetail({ onTicketUpdated, ticket }: TechnicianTi
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="eyebrow">Repair ticket</p>
-              <h2 className="mt-2 break-all text-2xl font-black text-[var(--foreground)]">
+              <h2 className="tracking-code mt-2 break-all text-2xl font-black text-[var(--foreground)]">
                 {ticket.trackingCode ?? ticket.ticketId}
               </h2>
             </div>

@@ -69,15 +69,15 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
       <section className="mt-8 grid gap-4 sm:grid-cols-3">
         <article className="panel p-5">
           <p className="text-sm text-[var(--muted)]">Tickets</p>
-          <p className="mt-2 text-3xl font-semibold">{overview.totals.tickets}</p>
+          <p className="metric-value mt-2 text-3xl font-semibold">{overview.totals.tickets}</p>
         </article>
         <article className="panel p-5">
           <p className="text-sm text-[var(--muted)]">Active</p>
-          <p className="mt-2 text-3xl font-semibold">{overview.totals.active}</p>
+          <p className="metric-value mt-2 text-3xl font-semibold">{overview.totals.active}</p>
         </article>
         <article className="panel p-5">
           <p className="text-sm text-[var(--muted)]">Completed</p>
-          <p className="mt-2 text-3xl font-semibold">{overview.totals.completed}</p>
+          <p className="metric-value mt-2 text-3xl font-semibold">{overview.totals.completed}</p>
         </article>
       </section>
 
@@ -104,7 +104,7 @@ function ReportTable({ title, rows }: { title: string; rows: Array<[string, stri
     <article className="panel p-5">
       <h2 className="text-lg font-semibold text-[var(--foreground)]">{title}</h2>
       <div className="mt-4 overflow-x-auto">
-        <table className="w-full text-left text-sm">
+        <table className="data-table text-left text-sm">
           <tbody>
             {rows.length === 0 ? (
               <tr>

@@ -170,6 +170,20 @@ function formatIssueCategory(value: string | null) {
   return ISSUE_CATEGORY_LABELS[value as (typeof ISSUE_CATEGORY_OPTIONS)[number]];
 }
 
+function getStatusClass(status: string) {
+  const statusClasses: Record<string, string> = {
+    REGISTRATION_COMPLETED: "status-registration",
+    DEVICE_RECEIVED: "status-received",
+    DIAGNOSIS_IN_PROGRESS: "status-diagnosis",
+    REPAIR_IN_PROGRESS: "status-repair",
+    QUALITY_INSPECTION: "status-quality",
+    READY_FOR_COLLECTION: "status-ready",
+    DEVICE_COLLECTED: "status-collected",
+  };
+
+  return statusClasses[status] ?? "status-registration";
+}
+
 function DetailItem({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="rounded-lg border border-[var(--border)] bg-white p-4">
@@ -235,11 +249,11 @@ export function LeadTicketDetail({
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="eyebrow">Ticket detail</p>
-              <h2 className="mt-2 break-all text-2xl font-black text-[var(--foreground)]">
+              <h2 className="tracking-code mt-2 break-all text-2xl font-black text-[var(--foreground)]">
                 {ticket.trackingCode ?? ticket.ticketId}
               </h2>
             </div>
-            <span className="status-badge status-registration">{formatStatus(ticket.status)}</span>
+            <span className={`status-badge ${getStatusClass(ticket.status)}`}>{formatStatus(ticket.status)}</span>
           </div>
         </div>
 

@@ -198,7 +198,7 @@ export function DeviceCustodyPanel({
       </p>
 
       {error ? (
-        <div className="mt-4 rounded-lg border border-red-200 bg-[var(--danger-bg)] p-4 text-sm font-medium text-[var(--danger)]">
+        <div className="mt-4 rounded-lg border border-[var(--fill-danger-soft-border)] bg-[var(--danger-bg)] p-4 text-sm font-medium text-[var(--danger)]">
           {error}
         </div>
       ) : null}

@@ -12,10 +12,10 @@ describe("session helpers", () => {
   it("signs and verifies minimal session tokens", async () => {
     vi.stubEnv("JWT_SECRET", "test-secret-value-that-is-long-enough");
 
-    const token = await signSessionToken({ id: "user_123", role: "STUDENT" });
+    const token = await signSessionToken({ id: "user_123", role: "TECHNICIAN" });
     const session = await verifySessionToken(token);
 
-    expect(session).toEqual({ id: "user_123", role: "STUDENT" });
+    expect(session).toEqual({ id: "user_123", role: "TECHNICIAN" });
     vi.unstubAllEnvs();
   });
 

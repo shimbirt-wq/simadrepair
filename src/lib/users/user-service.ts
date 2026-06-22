@@ -1,6 +1,8 @@
 import type { PrismaClient, UserRole } from "@prisma/client";
+import { hashPassword } from "@/lib/auth/password";
 import { publicUserSelect, toPublicUser, type PublicUser } from "@/lib/auth/public-user";
-import type { UpdateUserRoleInput, UserListQuery } from "@/lib/validations/users";
+import { INTERNAL_USER_ROLES } from "@/lib/auth/roles";
+import type { CreateStaffAccountInput, UpdateUserRoleInput, UserListQuery } from "@/lib/validations/users";
 
 export type UserListResult = {
   users: PublicUser[];
@@ -29,7 +31,12 @@ function buildUserSearchFilter(query?: string) {
 }
 
 export async function listUsers(prisma: PrismaClient, input: UserListQuery): Promise<UserListResult> {
-  const where = buildUserSearchFilter(input.query);
+  const where = {
+    role: {
+      in: [...INTERNAL_USER_ROLES],
+    },
+    ...buildUserSearchFilter(input.query),
+  };
   const skip = (input.page - 1) * input.pageSize;
 
   const [users, totalItems] = await Promise.all([
@@ -61,6 +68,60 @@ export async function getUserById(prisma: PrismaClient, userId: string): Promise
   });
 
   return user ? toPublicUser(user) : null;
+}
+
+export async function createStaffAccount(
+  prisma: PrismaClient,
+  actor: PublicUser,
+  input: CreateStaffAccountInput,
+): Promise<{ ok: true; user: PublicUser } | { ok: false; status: 403 | 409; message: string }> {
+  if (actor.role === "LEAD_TECHNICIAN" && input.role !== "TECHNICIAN") {
+    return {
+      ok: false,
+      status: 403,
+      message: "Lead technicians can only create technician accounts.",
+    };
+  }
+
+  if (actor.role !== "ADMIN" && actor.role !== "LEAD_TECHNICIAN") {
+    return {
+      ok: false,
+      status: 403,
+      message: "You do not have permission to create staff accounts.",
+    };
+  }
+
+  const existing = await prisma.user.findFirst({
+    where: { OR: [{ email: input.email }, { universityId: input.universityId }] },
+    select: { id: true },
+  });
+
+  if (existing) {
+    return {
+      ok: false,
+      status: 409,
+      message: "An account with this email or university ID already exists.",
+    };
+  }
+
+  const passwordHash = await hashPassword(input.password);
+
+  const user = await prisma.user.create({
+    data: {
+      fullName: input.fullName,
+      universityId: input.universityId,
+      faculty: input.faculty,
+      department: input.department,
+      phone: input.phone,
+      email: input.email,
+      passwordHash,
+      role: input.role,
+      isActive: true,
+    },
+    select: publicUserSelect,
+  });
+
+  return { ok: true, user: toPublicUser(user) };
 }
 
 export async function listAssignableTechnicians(prisma: PrismaClient): Promise<AssignableTechnician[]> {

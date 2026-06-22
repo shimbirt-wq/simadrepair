@@ -20,14 +20,14 @@ const now = new Date("2026-01-01T00:00:00.000Z");
 function buildUser(overrides: Partial<User> = {}): User {
   return {
     id: "user_123",
-    fullName: "Test Student",
+    fullName: "Test Technician",
     universityId: "SIMAD-AUTH-001",
     faculty: "Computing",
     department: "Computer Science",
     phone: "+252610001111",
-    email: "student@example.invalid",
+    email: "tech@example.invalid",
     passwordHash: "$2a$12$hash",
-    role: "STUDENT",
+    role: "TECHNICIAN",
     isActive: true,
     createdAt: now,
     updatedAt: now,
@@ -44,17 +44,6 @@ function buildJsonRequest(path: string, body: unknown): Request {
     body: JSON.stringify(body),
   });
 }
-
-const validRegistration = {
-  fullName: "Test Student",
-  universityId: "SIMAD-AUTH-001",
-  faculty: "Computing",
-  department: "Computer Science",
-  phone: "+252610001111",
-  email: "student@example.invalid",
-  password: "StrongPassword123!",
-  role: "STUDENT",
-};
 
 describe("auth route handlers", () => {
   it("returns a configuration error when auth runtime is not ready", async () => {
@@ -75,54 +64,6 @@ describe("auth route handlers", () => {
     vi.unstubAllEnvs();
   });
 
-  it("rejects invalid registration data", async () => {
-    vi.stubEnv("DATABASE_URL", "postgresql://localhost:5432/farsamotech");
-    vi.stubEnv("DIRECT_URL", "postgresql://localhost:5432/farsamotech");
-    vi.stubEnv("JWT_SECRET", "test-secret-value-that-is-long-enough");
-    const { POST } = await import("./register/route");
-
-    const response = await POST(buildJsonRequest("/api/auth/register", { email: "bad" }));
-    const body = await response.json();
-
-    expect(response.status).toBe(400);
-    expect(body.error).toBe("Invalid registration data.");
-    vi.unstubAllEnvs();
-  });
-
-  it("registers a user and sets an http-only session cookie", async () => {
-    vi.stubEnv("DATABASE_URL", "postgresql://localhost:5432/farsamotech");
-    vi.stubEnv("DIRECT_URL", "postgresql://localhost:5432/farsamotech");
-    vi.stubEnv("JWT_SECRET", "test-secret-value-that-is-long-enough");
-    mockPrisma.user.findFirst.mockResolvedValue(null);
-    mockPrisma.user.create.mockResolvedValue(buildUser());
-    const { POST } = await import("./register/route");
-
-    const response = await POST(buildJsonRequest("/api/auth/register", validRegistration));
-    const body = await response.json();
-
-    expect(response.status).toBe(201);
-    expect(body.user.email).toBe("student@example.invalid");
-    expect(body.user.passwordHash).toBeUndefined();
-    expect(response.headers.get("set-cookie")).toContain("farsamotech_session=");
-    expect(response.headers.get("set-cookie")).toContain("HttpOnly");
-    vi.unstubAllEnvs();
-  });
-
-  it("rejects duplicate registration", async () => {
-    vi.stubEnv("DATABASE_URL", "postgresql://localhost:5432/farsamotech");
-    vi.stubEnv("DIRECT_URL", "postgresql://localhost:5432/farsamotech");
-    vi.stubEnv("JWT_SECRET", "test-secret-value-that-is-long-enough");
-    mockPrisma.user.findFirst.mockResolvedValue({ id: "existing_user" });
-    const { POST } = await import("./register/route");
-
-    const response = await POST(buildJsonRequest("/api/auth/register", validRegistration));
-    const body = await response.json();
-
-    expect(response.status).toBe(409);
-    expect(body.error).toBe("An account already exists for this email or university ID.");
-    vi.unstubAllEnvs();
-  });
-
   it("rejects invalid login credentials with a generic error", async () => {
     vi.stubEnv("DATABASE_URL", "postgresql://localhost:5432/farsamotech");
     vi.stubEnv("DIRECT_URL", "postgresql://localhost:5432/farsamotech");
@@ -132,7 +73,7 @@ describe("auth route handlers", () => {
 
     const response = await POST(
       buildJsonRequest("/api/auth/login", {
-        email: "student@example.invalid",
+        email: "tech@example.invalid",
         password: "WrongPassword123!",
       }),
     );
@@ -160,7 +101,7 @@ describe("auth route handlers", () => {
     const body = await response.json();
 
     expect(response.status).toBe(200);
-    expect(body.user.email).toBe("student@example.invalid");
+    expect(body.user.email).toBe("tech@example.invalid");
     expect(body.user.passwordHash).toBeUndefined();
     expect(response.headers.get("set-cookie")).toContain("farsamotech_session=");
     expect(response.headers.get("set-cookie")).toContain("HttpOnly");
@@ -169,7 +110,7 @@ describe("auth route handlers", () => {
 
   it("returns the current user without a password hash", async () => {
     vi.stubEnv("JWT_SECRET", "test-secret-value-that-is-long-enough");
-    const token = await signSessionToken({ id: "user_123", role: "STUDENT" });
+    const token = await signSessionToken({ id: "user_123", role: "TECHNICIAN" });
     mockPrisma.user.findUnique.mockResolvedValue(buildUser());
     const { GET } = await import("./me/route");
 

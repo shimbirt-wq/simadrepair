@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import { buildLocalSeedData, hashLocalSeedPassword, LOCAL_SEED_PASSWORD } from "./seed-helpers";
+import { buildLocalSeedData, hashLocalSeedPassword, LOCAL_SEED_LOGIN_ACCOUNTS, LOCAL_SEED_PASSWORD } from "./seed-helpers";
 
 const prisma = new PrismaClient();
 
@@ -9,9 +9,10 @@ async function main() {
 
   for (const user of seedData.users) {
     await prisma.user.upsert({
-      where: { email: user.email },
+      where: { id: user.id },
       update: {
         fullName: user.fullName,
+        email: user.email,
         universityId: user.universityId,
         faculty: user.faculty,
         department: user.department,
@@ -95,6 +96,10 @@ async function main() {
 
   console.log("Local seed data inserted.");
   console.log(`Local seed password for all sample users: ${LOCAL_SEED_PASSWORD}`);
+  console.log("Local seed login accounts:");
+  for (const account of LOCAL_SEED_LOGIN_ACCOUNTS) {
+    console.log(`- ${account.label}: ${account.email}`);
+  }
 }
 
 main()

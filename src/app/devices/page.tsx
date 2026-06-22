@@ -3,6 +3,7 @@ import { AppShell } from "@/app/app-shell";
 import { redirect } from "next/navigation";
 import { DeviceForm } from "@/app/devices/device-form";
 import { getCurrentServerUser } from "@/lib/auth/server-user";
+import { isInternalUserRole } from "@/lib/auth/roles";
 import { prisma } from "@/lib/db/prisma";
 import { listDevices } from "@/lib/devices/device-service";
 
@@ -11,6 +12,10 @@ export default async function DevicesPage() {
 
   if (!user) {
     redirect("/auth/login?next=/devices");
+  }
+
+  if (!isInternalUserRole(user.role)) {
+    redirect("/request-repair");
   }
 
   const result = await listDevices(prisma, user, {

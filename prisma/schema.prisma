@@ -9,8 +9,6 @@ datasource db {
 }
 
 enum UserRole {
-  STUDENT
-  LECTURER
   TECHNICIAN
   LEAD_TECHNICIAN
   ADMIN
@@ -107,7 +105,7 @@ model User {
   phone              String?
   email              String               @unique
   passwordHash       String               @map("password_hash")
-  role               UserRole             @default(STUDENT)
+  role               UserRole             @default(TECHNICIAN)
   isActive           Boolean              @default(true) @map("is_active")
   devices            Device[]
   assignedTickets    RepairTicket[]       @relation("TechnicianTickets")

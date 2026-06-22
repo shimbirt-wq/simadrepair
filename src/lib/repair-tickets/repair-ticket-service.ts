@@ -54,8 +54,11 @@ export type RepairTicketDetail = PublicRepairTicket & {
       fullName: string;
       email: string;
       universityId: string | null;
-    };
+    } | null;
   };
+  requester?: {
+    fullName: string;
+  } | null;
 };
 
 export type RepairTicketListResult = {
@@ -97,6 +100,11 @@ const repairTicketDetailSelect = {
       id: true,
       fullName: true,
       email: true,
+    },
+  },
+  requester: {
+    select: {
+      fullName: true,
     },
   },
   device: {
@@ -176,6 +184,9 @@ function toRepairTicketDetail(
       fullName: string;
       email: string;
     } | null;
+    requester?: {
+      fullName: string;
+    } | null;
     device: {
       id: string;
       ownerId: string | null;
@@ -204,16 +215,12 @@ function toRepairTicketDetail(
     }>;
   },
 ): RepairTicketDetail {
-  if (!ticket.device.ownerId || !ticket.device.owner) {
-    throw new Error("Owner-backed repair ticket expected.");
-  }
-
   return {
     ...ticket,
     device: {
       ...ticket.device,
       ownerId: ticket.device.ownerId,
-      owner: ticket.device.owner,
+      owner: ticket.device.owner ?? null,
     },
   };
 }
@@ -277,14 +284,6 @@ export async function createRepairTicket(
       message: string;
     }
 > {
-  if (user.role !== "STUDENT" && user.role !== "LECTURER") {
-    return {
-      ok: false,
-      status: 403,
-      message: "Only students and lecturers can create repair tickets.",
-    };
-  }
-
   const device = await prisma.device.findUnique({
     where: { id: input.deviceId },
     select: {
@@ -366,7 +365,7 @@ export async function listRepairTickets(
   const skip = (input.page - 1) * input.pageSize;
 
   const where =
-    user.role === "ADMIN"
+    user.role === "ADMIN" || user.role === "LEAD_TECHNICIAN"
       ? {
           ...baseFilter,
           device: {
@@ -378,12 +377,7 @@ export async function listRepairTickets(
             ...baseFilter,
             technicianId: user.id,
           }
-        : {
-            ...baseFilter,
-            device: {
-              ownerId: user.id,
-            },
-          };
+        : (() => { throw new Error("listRepairTickets: unexpected role"); })();
 
   const [tickets, totalItems] = await Promise.all([
     prisma.repairTicket.findMany({
@@ -435,17 +429,9 @@ export async function getRepairTicketDetail(
     };
   }
 
-  const ownerId = ticket.device.ownerId;
   const assignedTechnicianId = ticket.technicianId;
 
-  if (user.role === "ADMIN") {
-    return {
-      ok: true,
-      ticket: toRepairTicketDetail(ticket),
-    };
-  }
-
-  if ((user.role === "STUDENT" || user.role === "LECTURER") && ownerId === user.id) {
+  if (user.role === "ADMIN" || user.role === "LEAD_TECHNICIAN") {
     return {
       ok: true,
       ticket: toRepairTicketDetail(ticket),

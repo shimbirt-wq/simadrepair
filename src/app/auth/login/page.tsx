@@ -1,6 +1,6 @@
 import { LoginForm } from "@/app/auth/login/login-form";
 import { getAuthRuntimeIssue } from "@/lib/config/runtime";
-import { LOCAL_SEED_EMAIL_DOMAIN, LOCAL_SEED_PASSWORD } from "../../../../prisma/seed-helpers";
+import { LOCAL_SEED_LOGIN_ACCOUNTS, LOCAL_SEED_PASSWORD } from "../../../../prisma/seed-helpers";
 
 type LoginPageProps = {
   searchParams?: Promise<{
@@ -28,17 +28,24 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           </p>
 
           {runtimeIssue ? (
-            <div className="mt-6 rounded-2xl border border-[#fecaca] bg-[var(--danger-bg)] p-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#9f2c2c]">Configuration required</p>
-              <p className="mt-3 text-sm leading-7 text-[#7b2323]">{runtimeIssue}</p>
+            <div className="mt-6 rounded-lg border border-[var(--fill-danger-soft-border)] bg-[var(--danger-bg)] p-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--danger)]">Configuration required</p>
+              <p className="mt-3 text-sm leading-7 text-[var(--red-800)]">{runtimeIssue}</p>
             </div>
           ) : null}
 
           {showSeedHint ? (
-            <div className="mt-6 rounded-2xl border border-[var(--border)] bg-[var(--surface-alt)] p-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">Local seed admin</p>
-              <p className="mt-3 text-sm text-[var(--foreground)]">Email: {`admin@${LOCAL_SEED_EMAIL_DOMAIN}`}</p>
-              <p className="mt-1 text-sm text-[var(--foreground)]">Password: {LOCAL_SEED_PASSWORD}</p>
+            <div className="mt-6 rounded-lg border border-[var(--border)] bg-[var(--surface-alt)] p-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">Local seed accounts</p>
+              <div className="mt-3 space-y-2">
+                {LOCAL_SEED_LOGIN_ACCOUNTS.map((account) => (
+                  <div key={account.role} className="flex items-center justify-between gap-3 text-sm">
+                    <span className="font-medium text-[var(--foreground)]">{account.label}</span>
+                    <span className="font-mono text-xs text-[var(--muted)]">{account.email}</span>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-4 text-sm text-[var(--foreground)]">Password: {LOCAL_SEED_PASSWORD}</p>
               <p className="mt-3 text-sm leading-7 text-[var(--muted)]">
                 This is for local development only. If the account does not exist yet, run the Prisma seed command.
               </p>

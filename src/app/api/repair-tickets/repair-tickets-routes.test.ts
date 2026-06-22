@@ -42,7 +42,7 @@ function buildUser(overrides: Partial<User> = {}): User {
     phone: "+252610001111",
     email: "owner@example.invalid",
     passwordHash: "$2a$12$hash",
-    role: "STUDENT",
+    role: "TECHNICIAN",
     isActive: true,
     createdAt: now,
     updatedAt: now,
@@ -182,15 +182,7 @@ describe("repair ticket route handlers", () => {
     vi.clearAllMocks();
   });
 
-  it("creates a valid ticket for an owned device", async () => {
-    vi.stubEnv("JWT_SECRET", "test-secret-value-that-is-long-enough");
-    const token = await signSessionToken({ id: "user_123", role: "STUDENT" });
-    mockPrisma.user.findUnique.mockResolvedValue(buildUser());
-    mockPrisma.device.findUnique.mockResolvedValue({ id: "device_123", ownerId: "user_123" });
-    mockPrisma.repairTicket.findUnique.mockResolvedValue(null);
-    mockPrisma.repairTicket.create.mockResolvedValue(buildRepairTicketWithDevice());
-    mockPrisma.repairLog.create.mockResolvedValue(buildRepairLog());
-    mockPrisma.$transaction.mockImplementation(async (callback: (tx: typeof mockPrisma) => unknown) => callback(mockPrisma));
+  it("rejects authenticated ticket creation in favor of the public repair request flow", async () => {
     const { POST } = await import("./route");
 
     const response = await POST(
@@ -198,7 +190,6 @@ describe("repair ticket route handlers", () => {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          cookie: `farsamotech_session=${token}`,
         },
         body: JSON.stringify({
           deviceId: "device_123",
@@ -208,23 +199,13 @@ describe("repair ticket route handlers", () => {
     );
     const body = await response.json();
 
-    expect(response.status).toBe(201);
-    expect(body.ticket.ticketId).toMatch(/^TCK-\d{8}-[A-Z0-9]{6}$/);
-    expect(body.ticket.status).toBe("REGISTRATION_COMPLETED");
-    expect(mockPrisma.repairLog.create).toHaveBeenCalledTimes(1);
-    vi.unstubAllEnvs();
+    expect(response.status).toBe(403);
+    expect(body.error).toBe("Authenticated requester ticket creation has been removed. Use the public repair request flow.");
+    expect(mockPrisma.repairTicket.create).not.toHaveBeenCalled();
   });
 
-  it("saves a photo reference only after upload validation succeeds", async () => {
-    vi.stubEnv("JWT_SECRET", "test-secret-value-that-is-long-enough");
-    const token = await signSessionToken({ id: "user_123", role: "STUDENT" });
+  it("does not save photo references through retired authenticated ticket creation", async () => {
     const photoUrl = "repair-ticket-photos/user_123/550e8400-e29b-41d4-a716-446655440000-device-photo.png";
-    mockPrisma.user.findUnique.mockResolvedValue(buildUser());
-    mockPrisma.device.findUnique.mockResolvedValue({ id: "device_123", ownerId: "user_123" });
-    mockPrisma.repairTicket.findUnique.mockResolvedValue(null);
-    mockPrisma.repairTicket.create.mockResolvedValue(buildRepairTicketWithDevice({ photoUrl }));
-    mockPrisma.repairLog.create.mockResolvedValue(buildRepairLog());
-    mockPrisma.$transaction.mockImplementation(async (callback: (tx: typeof mockPrisma) => unknown) => callback(mockPrisma));
     const { POST } = await import("./route");
 
     const response = await POST(
@@ -232,7 +213,6 @@ describe("repair ticket route handlers", () => {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          cookie: `farsamotech_session=${token}`,
         },
         body: JSON.stringify({
           deviceId: "device_123",
@@ -243,49 +223,9 @@ describe("repair ticket route handlers", () => {
     );
     const body = await response.json();
 
-    expect(response.status).toBe(201);
-    expect(body.ticket.photoUrl).toBe(photoUrl);
-    expect(mockPrisma.repairTicket.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          photoUrl,
-        }),
-      }),
-    );
-    vi.unstubAllEnvs();
-  });
-
-  it("returns only owned tickets for students", async () => {
-    vi.stubEnv("JWT_SECRET", "test-secret-value-that-is-long-enough");
-    const token = await signSessionToken({ id: "user_123", role: "STUDENT" });
-    mockPrisma.user.findUnique.mockResolvedValue(buildUser());
-    mockPrisma.repairTicket.findMany.mockResolvedValue([
-      buildRepairTicketWithDevice({ id: "ticket_1", ticketId: "TCK-OWN-001" }),
-    ]);
-    mockPrisma.repairTicket.count.mockResolvedValue(1);
-    const { GET } = await import("./route");
-
-    const response = await GET(
-      buildRequest("/api/repair-tickets?page=1&pageSize=10", {
-        headers: {
-          cookie: `farsamotech_session=${token}`,
-        },
-      }),
-    );
-    const body = await response.json();
-
-    expect(response.status).toBe(200);
-    expect(mockPrisma.repairTicket.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({
-          device: {
-            ownerId: "user_123",
-          },
-        }),
-      }),
-    );
-    expect(body.tickets).toHaveLength(1);
-    vi.unstubAllEnvs();
+    expect(response.status).toBe(403);
+    expect(body.error).toBe("Authenticated requester ticket creation has been removed. Use the public repair request flow.");
+    expect(mockPrisma.repairTicket.create).not.toHaveBeenCalled();
   });
 
   it("returns only assigned tickets for technicians", async () => {
@@ -386,11 +326,7 @@ describe("repair ticket route handlers", () => {
     vi.unstubAllEnvs();
   });
 
-  it("rejects another user's device on creation", async () => {
-    vi.stubEnv("JWT_SECRET", "test-secret-value-that-is-long-enough");
-    const token = await signSessionToken({ id: "user_123", role: "STUDENT" });
-    mockPrisma.user.findUnique.mockResolvedValue(buildUser());
-    mockPrisma.device.findUnique.mockResolvedValue({ id: "device_123", ownerId: "other_user" });
+  it("rejects authenticated ticket creation before device ownership checks", async () => {
     const { POST } = await import("./route");
 
     const response = await POST(
@@ -398,7 +334,6 @@ describe("repair ticket route handlers", () => {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          cookie: `farsamotech_session=${token}`,
         },
         body: JSON.stringify({
           deviceId: "device_123",
@@ -409,8 +344,8 @@ describe("repair ticket route handlers", () => {
     const body = await response.json();
 
     expect(response.status).toBe(403);
-    expect(body.error).toBe("You can only create tickets for your own devices.");
-    vi.unstubAllEnvs();
+    expect(body.error).toBe("Authenticated requester ticket creation has been removed. Use the public repair request flow.");
+    expect(mockPrisma.device.findUnique).not.toHaveBeenCalled();
   });
 
   it("rejects invalid ticket filter input", async () => {
@@ -496,8 +431,8 @@ describe("repair ticket route handlers", () => {
 
   it("blocks non-admin users from assigning technicians", async () => {
     vi.stubEnv("JWT_SECRET", "test-secret-value-that-is-long-enough");
-    const token = await signSessionToken({ id: "user_123", role: "STUDENT" });
-    mockPrisma.user.findUnique.mockResolvedValue(buildUser({ id: "user_123", role: "STUDENT" }));
+    const token = await signSessionToken({ id: "tech_123", role: "TECHNICIAN" });
+    mockPrisma.user.findUnique.mockResolvedValue(buildUser({ id: "tech_123", role: "TECHNICIAN" }));
     const { PATCH } = await import("./[ticketId]/assign/route");
 
     const response = await PATCH(
@@ -525,7 +460,7 @@ describe("repair ticket route handlers", () => {
     const token = await signSessionToken({ id: "admin_123", role: "ADMIN" });
     mockPrisma.user.findUnique
       .mockResolvedValueOnce(buildUser({ id: "admin_123", role: "ADMIN" }))
-      .mockResolvedValueOnce({ id: "student_123", fullName: "Student User", role: "STUDENT" });
+      .mockResolvedValueOnce({ id: "lead_123", fullName: "Lead Technician User", role: "LEAD_TECHNICIAN" });
     mockPrisma.repairTicket.findUnique.mockResolvedValue({ id: "ticket_123", ticketId: "TCK-20260101-ABC123" });
     const { PATCH } = await import("./[ticketId]/assign/route");
 
@@ -537,7 +472,7 @@ describe("repair ticket route handlers", () => {
           cookie: `farsamotech_session=${token}`,
         },
         body: JSON.stringify({
-          technicianId: "student_123",
+          technicianId: "lead_123",
         }),
       }),
       { params: Promise.resolve({ ticketId: "ticket_123" }) },
@@ -737,63 +672,6 @@ describe("repair ticket route handlers", () => {
     vi.unstubAllEnvs();
   });
 
-  it("rejects students from updating ticket status", async () => {
-    vi.stubEnv("JWT_SECRET", "test-secret-value-that-is-long-enough");
-    const token = await signSessionToken({ id: "user_123", role: "STUDENT" });
-    mockPrisma.user.findUnique.mockResolvedValue(buildUser({ id: "user_123", role: "STUDENT" }));
-    mockPrisma.repairTicket.findUnique.mockResolvedValue({
-      id: "ticket_123",
-      ticketId: "TCK-20260101-ABC123",
-      status: "REGISTRATION_COMPLETED",
-      technicianId: "tech_123",
-      device: {
-        ownerId: "user_123",
-      },
-    });
-    const { PATCH } = await import("./[ticketId]/status/route");
-
-    const response = await PATCH(
-      buildRequest("/api/repair-tickets/ticket_123/status", {
-        method: "PATCH",
-        headers: {
-          "content-type": "application/json",
-          cookie: `farsamotech_session=${token}`,
-        },
-        body: JSON.stringify({
-          status: "DEVICE_RECEIVED",
-        }),
-      }),
-      { params: Promise.resolve({ ticketId: "ticket_123" }) },
-    );
-    const body = await response.json();
-
-    expect(response.status).toBe(403);
-    expect(body.error).toBe("Only the assigned technician or an admin can update ticket status.");
-    vi.unstubAllEnvs();
-  });
-
-  it("rejects unauthorized ticket detail access", async () => {
-    vi.stubEnv("JWT_SECRET", "test-secret-value-that-is-long-enough");
-    const token = await signSessionToken({ id: "user_123", role: "STUDENT" });
-    mockPrisma.user.findUnique.mockResolvedValue(buildUser());
-    mockPrisma.repairTicket.findUnique.mockResolvedValue(buildRepairTicketDetail({ id: "ticket_1", deviceId: "other_device" }));
-    const { GET } = await import("./[ticketId]/route");
-
-    const response = await GET(
-      buildRequest("/api/repair-tickets/ticket_1", {
-        headers: {
-          cookie: `farsamotech_session=${token}`,
-        },
-      }),
-      { params: Promise.resolve({ ticketId: "ticket_1" }) },
-    );
-    const body = await response.json();
-
-    expect(response.status).toBe(403);
-    expect(body.error).toBe("You do not have permission to access this repair ticket.");
-    vi.unstubAllEnvs();
-  });
-
   it("allows the assigned technician to add a repair log", async () => {
     vi.stubEnv("JWT_SECRET", "test-secret-value-that-is-long-enough");
     const token = await signSessionToken({ id: "tech_123", role: "TECHNICIAN" });
@@ -873,37 +751,6 @@ describe("repair ticket route handlers", () => {
         },
         body: JSON.stringify({
           repairNotes: "Attempted note on unassigned ticket.",
-        }),
-      }),
-      { params: Promise.resolve({ ticketId: "ticket_123" }) },
-    );
-    const body = await response.json();
-
-    expect(response.status).toBe(403);
-    expect(body.error).toBe("Only the assigned technician or an admin can add repair logs.");
-    vi.unstubAllEnvs();
-  });
-
-  it("blocks students from adding repair logs", async () => {
-    vi.stubEnv("JWT_SECRET", "test-secret-value-that-is-long-enough");
-    const token = await signSessionToken({ id: "user_123", role: "STUDENT" });
-    mockPrisma.user.findUnique.mockResolvedValue(buildUser({ id: "user_123", role: "STUDENT" }));
-    mockPrisma.repairTicket.findUnique.mockResolvedValue({
-      id: "ticket_123",
-      status: "DEVICE_RECEIVED",
-      technicianId: "tech_123",
-    });
-    const { POST } = await import("./[ticketId]/logs/route");
-
-    const response = await POST(
-      buildRequest("/api/repair-tickets/ticket_123/logs", {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          cookie: `farsamotech_session=${token}`,
-        },
-        body: JSON.stringify({
-          repairNotes: "Student note attempt.",
         }),
       }),
       { params: Promise.resolve({ ticketId: "ticket_123" }) },

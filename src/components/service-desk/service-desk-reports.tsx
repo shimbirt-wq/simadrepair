@@ -30,15 +30,25 @@ function formatLabel(value: string) {
     .join(" ");
 }
 
-function OverviewCard({ label, tone = "default", value }: { label: string; tone?: "default" | "warning"; value: number }) {
+const overviewToneClasses = {
+  default: "border-[var(--border)] bg-white",
+  warning: "border-[var(--fill-warning-soft-border)] bg-[var(--fill-warning-soft)]",
+  danger: "border-[var(--fill-danger-soft-border)] bg-[var(--fill-danger-soft)]",
+} as const;
+
+function OverviewCard({
+  label,
+  tone = "default",
+  value,
+}: {
+  label: string;
+  tone?: keyof typeof overviewToneClasses;
+  value: number;
+}) {
   return (
-    <article
-      className={`rounded-lg border p-4 ${
-        tone === "warning" ? "border-amber-200 bg-amber-50" : "border-[var(--border)] bg-white"
-      }`}
-    >
+    <article className={`rounded-lg border p-4 shadow-[var(--shadow-xs)] ${overviewToneClasses[tone]}`}>
       <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--muted)]">{label}</p>
-      <p className="mt-2 text-2xl font-black text-[var(--foreground)]">{formatNumber(value)}</p>
+      <p className="metric-value mt-2 text-2xl font-black text-[var(--foreground)]">{formatNumber(value)}</p>
     </article>
   );
 }
@@ -48,11 +58,11 @@ function CountTable({ emptyText, label, rows, title }: { emptyText: string; labe
     <section className="panel p-5">
       <h2 className="text-lg font-bold text-[var(--foreground)]">{title}</h2>
       <div className="mt-4 overflow-x-auto">
-        <table className="w-full text-left text-sm">
+        <table className="data-table text-left text-sm">
           <thead>
-            <tr className="border-b border-[var(--border)] text-xs font-semibold uppercase tracking-[0.12em] text-[var(--muted)]">
-              <th className="pb-3">{label}</th>
-              <th className="pb-3 text-right">Tickets</th>
+            <tr>
+              <th>{label}</th>
+              <th className="text-right">Tickets</th>
             </tr>
           </thead>
           <tbody>
@@ -82,13 +92,13 @@ function TechnicianWorkloadTable({ reports }: { reports: ServiceDeskReportBundle
     <section className="panel p-5">
       <h2 className="text-lg font-bold text-[var(--foreground)]">Technician workload</h2>
       <div className="mt-4 overflow-x-auto">
-        <table className="w-full min-w-[560px] text-left text-sm">
+        <table className="data-table min-w-[560px] text-left text-sm">
           <thead>
-            <tr className="border-b border-[var(--border)] text-xs font-semibold uppercase tracking-[0.12em] text-[var(--muted)]">
-              <th className="pb-3">Technician</th>
-              <th className="pb-3">Role</th>
-              <th className="pb-3 text-right">Assigned</th>
-              <th className="pb-3 text-right">Completed</th>
+            <tr>
+              <th>Technician</th>
+              <th>Role</th>
+              <th className="text-right">Assigned</th>
+              <th className="text-right">Completed</th>
             </tr>
           </thead>
           <tbody>
@@ -117,46 +127,46 @@ function TechnicianWorkloadTable({ reports }: { reports: ServiceDeskReportBundle
 
 function CustodyExceptionsTable({ reports }: { reports: ServiceDeskReportBundle }) {
   return (
-    <section className="rounded-lg border border-amber-200 bg-amber-50 p-5">
+    <section className="rounded-lg border border-[var(--fill-warning-soft-border)] bg-[var(--fill-warning-soft)] p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="eyebrow">Custody accountability</p>
           <h2 className="mt-2 text-lg font-bold text-[var(--foreground)]">Open custody exceptions</h2>
         </div>
-        <span className="rounded-full border border-amber-300 bg-white px-3 py-1 text-sm font-bold text-amber-800">
+        <span className="rounded-full border border-[var(--amber-200)] bg-white px-3 py-1 text-sm font-bold text-[var(--amber-800)]">
           {formatNumber(reports.custodyExceptions.length)}
         </span>
       </div>
 
       <div className="mt-4 overflow-x-auto">
-        <table className="w-full min-w-[760px] text-left text-sm">
+        <table className="data-table min-w-[760px] text-left text-sm">
           <thead>
-            <tr className="border-b border-amber-200 text-xs font-semibold uppercase tracking-[0.12em] text-amber-800">
-              <th className="pb-3">Ticket</th>
-              <th className="pb-3">Requester</th>
-              <th className="pb-3">Device</th>
-              <th className="pb-3">Custody</th>
-              <th className="pb-3">Storage</th>
-              <th className="pb-3">Received</th>
-              <th className="pb-3">Ready</th>
+            <tr>
+              <th>Ticket</th>
+              <th>Requester</th>
+              <th>Device</th>
+              <th>Custody</th>
+              <th>Storage</th>
+              <th>Received</th>
+              <th>Ready</th>
             </tr>
           </thead>
           <tbody>
             {reports.custodyExceptions.length === 0 ? (
               <tr>
-                <td colSpan={7} className="py-4 text-amber-900/70">
+                <td colSpan={7} className="py-4 text-[var(--amber-800)]">
                   No open custody exceptions.
                 </td>
               </tr>
             ) : (
               reports.custodyExceptions.map((row) => (
-                <tr key={row.custodyId} className="border-b border-amber-200 last:border-0">
-                  <th className="py-3 pr-4 font-black text-[var(--foreground)]">{row.trackingCode}</th>
+                <tr key={row.custodyId}>
+                  <th className="tracking-code py-3 pr-4 font-black text-[var(--foreground)]">{row.trackingCode}</th>
                   <td className="py-3 pr-4 text-[var(--muted)]">{row.requesterName ?? "Requester"}</td>
                   <td className="py-3 pr-4 text-[var(--muted)]">
                     {row.device.deviceType} - {row.device.brand} {row.device.model}
                   </td>
-                  <td className="py-3 pr-4 font-semibold text-amber-900">{formatLabel(row.custodyStatus)}</td>
+                  <td className="py-3 pr-4 font-semibold text-[var(--amber-800)]">{formatLabel(row.custodyStatus)}</td>
                   <td className="py-3 pr-4 font-semibold text-[var(--foreground)]">{row.storageLocation ?? "Not set"}</td>
                   <td className="py-3 pr-4 text-[var(--muted)]">{formatDate(row.receivedAt)}</td>
                   <td className="py-3 text-[var(--muted)]">{formatDate(row.readyForCollectionAt)}</td>
@@ -206,7 +216,7 @@ export function ServiceDeskReports() {
 
   if (!reports && error) {
     return (
-      <div className="panel border-red-200 bg-[var(--danger-bg)] p-6">
+      <div className="panel border-[var(--fill-danger-soft-border)] bg-[var(--danger-bg)] p-6">
         <p className="text-sm font-semibold text-[var(--danger)]">{error}</p>
         <button type="button" onClick={loadReports} className="btn-secondary mt-4">
           Retry
@@ -226,6 +236,9 @@ export function ServiceDeskReports() {
           <div>
             <p className="eyebrow">Management overview</p>
             <h2 className="mt-2 text-xl font-bold text-[var(--foreground)]">Service desk health</h2>
+            <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--muted-strong)]">
+              Monitor ticket volume, workload, issue patterns, and custody exceptions from the same operational report.
+            </p>
           </div>
           <button type="button" onClick={loadReports} disabled={isPending} className="btn-secondary">
             {isPending ? "Refreshing..." : "Refresh"}
@@ -234,7 +247,9 @@ export function ServiceDeskReports() {
       </section>
 
       {error ? (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm font-medium text-amber-900">{error}</div>
+        <div className="rounded-lg border border-[var(--fill-warning-soft-border)] bg-[var(--fill-warning-soft)] p-4 text-sm font-medium text-[var(--amber-800)]">
+          {error}
+        </div>
       ) : null}
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">

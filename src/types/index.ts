@@ -1,1 +1,1 @@
-export type AppRole = "STUDENT" | "LECTURER" | "TECHNICIAN" | "ADMIN";
+export type AppRole = "TECHNICIAN" | "LEAD_TECHNICIAN" | "ADMIN";

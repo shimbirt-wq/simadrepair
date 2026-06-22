@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { SimadRepairLogo } from "@/components/brand/simad-repair-logo";
 
 type LoginState = {
   error: string | null;
@@ -54,19 +55,14 @@ export function LoginForm({ nextPath }: LoginFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="panel p-8">
-      <div className="mb-8 flex items-center gap-3">
-        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent)] text-sm font-black text-white">
-          FT
-        </span>
-        <div>
-          <p className="text-base font-bold text-[var(--foreground)]">FarsamoTech</p>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">Repair Hub</p>
-        </div>
+      <div className="mb-8">
+        <SimadRepairLogo className="h-12 w-auto" />
       </div>
       <p className="eyebrow">Sign in</p>
-      <h1 className="mt-3 text-3xl font-semibold text-[var(--foreground)]">Access your workspace</h1>
+      <h1 className="mt-3 text-3xl font-semibold text-[var(--foreground)]">Staff workspace access</h1>
       <p className="mt-3 text-sm leading-7 text-[var(--muted)]">
-        Use your account to view your profile or, if you are an admin, open the user management area.
+        Sign in with an admin, lead technician, or technician account. Students and lecturers use the public repair
+        request and tracking flow.
       </p>
 
       <div className="mt-8 grid gap-5">
@@ -90,7 +86,7 @@ export function LoginForm({ nextPath }: LoginFormProps) {
         </label>
       </div>
 
-      {state.error ? <p className="mt-4 text-sm text-[#9f2c2c]">{state.error}</p> : null}
+      {state.error ? <p className="mt-4 text-sm font-medium text-[var(--danger)]">{state.error}</p> : null}
 
       <div className="mt-6 flex flex-wrap gap-3">
         <button
@@ -100,11 +96,11 @@ export function LoginForm({ nextPath }: LoginFormProps) {
         >
           {isPending ? "Signing in..." : "Sign in"}
         </button>
-        <Link
-          href="/auth/register"
-          className="btn-secondary"
-        >
-          Create account
+        <Link href="/request-repair" className="btn-secondary">
+          Request repair
+        </Link>
+        <Link href="/track" className="btn-secondary">
+          Track repair
         </Link>
       </div>
     </form>

@@ -1,8 +1,20 @@
 import bcrypt from "bcryptjs";
 import type { NotificationChannel, NotificationStatus, RepairStatus, UserRole } from "@prisma/client";
 
-export const LOCAL_SEED_PASSWORD = "LocalSeedPassword123!";
-export const LOCAL_SEED_EMAIL_DOMAIN = "example.invalid";
+export const LOCAL_SEED_PASSWORD = "TestPass123!";
+export const LOCAL_SEED_EMAIL_DOMAIN = "simadrepair.test";
+
+export const LOCAL_SEED_EMAILS = {
+  admin: `admin@${LOCAL_SEED_EMAIL_DOMAIN}`,
+  leadTechnician: `lead@${LOCAL_SEED_EMAIL_DOMAIN}`,
+  technician: `tech@${LOCAL_SEED_EMAIL_DOMAIN}`,
+} as const;
+
+export const LOCAL_SEED_LOGIN_ACCOUNTS = [
+  { label: "Admin", role: "ADMIN", email: LOCAL_SEED_EMAILS.admin },
+  { label: "Lead technician", role: "LEAD_TECHNICIAN", email: LOCAL_SEED_EMAILS.leadTechnician },
+  { label: "Technician", role: "TECHNICIAN", email: LOCAL_SEED_EMAILS.technician },
+] as const satisfies ReadonlyArray<{ label: string; role: UserRole; email: string }>;
 
 export type LocalSeedUser = {
   id: string;
@@ -84,7 +96,7 @@ export function buildLocalSeedData(passwordHash: string): LocalSeedData {
       faculty: "Operations",
       department: "IT Services",
       phone: "+252610000001",
-      email: `admin@${LOCAL_SEED_EMAIL_DOMAIN}`,
+      email: LOCAL_SEED_EMAILS.admin,
       passwordHash,
       role: "ADMIN",
       isActive: true,
@@ -96,7 +108,7 @@ export function buildLocalSeedData(passwordHash: string): LocalSeedData {
       faculty: "Operations",
       department: "Computer Maintenance",
       phone: "+252610000002",
-      email: `technician@${LOCAL_SEED_EMAIL_DOMAIN}`,
+      email: LOCAL_SEED_EMAILS.technician,
       passwordHash,
       role: "TECHNICIAN",
       isActive: true,
@@ -108,101 +120,18 @@ export function buildLocalSeedData(passwordHash: string): LocalSeedData {
       faculty: "Operations",
       department: "Computer Maintenance",
       phone: "+252610000005",
-      email: `lead-technician@${LOCAL_SEED_EMAIL_DOMAIN}`,
+      email: LOCAL_SEED_EMAILS.leadTechnician,
       passwordHash,
       role: "LEAD_TECHNICIAN",
       isActive: true,
     },
-    {
-      id: "seed_student_001",
-      fullName: "Local Student",
-      universityId: "SIMAD-TEST-STUDENT",
-      faculty: "Computing",
-      department: "Computer Science",
-      phone: "+252610000003",
-      email: `student@${LOCAL_SEED_EMAIL_DOMAIN}`,
-      passwordHash,
-      role: "STUDENT",
-      isActive: true,
-    },
-    {
-      id: "seed_lecturer_001",
-      fullName: "Local Lecturer",
-      universityId: "SIMAD-TEST-LECTURER",
-      faculty: "Computing",
-      department: "Information Technology",
-      phone: "+252610000004",
-      email: `lecturer@${LOCAL_SEED_EMAIL_DOMAIN}`,
-      passwordHash,
-      role: "LECTURER",
-      isActive: true,
-    },
   ];
 
-  const devices: LocalSeedDevice[] = [
-    {
-      id: "seed_device_student_laptop",
-      ownerId: "seed_student_001",
-      deviceType: "Laptop",
-      brand: "Lenovo",
-      model: "ThinkPad Test Unit",
-      serialNumber: "LOCAL-STUDENT-LAPTOP-001",
-    },
-    {
-      id: "seed_device_lecturer_desktop",
-      ownerId: "seed_lecturer_001",
-      deviceType: "Desktop",
-      brand: "Dell",
-      model: "OptiPlex Test Unit",
-      serialNumber: "LOCAL-LECTURER-DESKTOP-001",
-    },
-  ];
+  const devices: LocalSeedDevice[] = [];
 
-  const repairTickets: LocalSeedRepairTicket[] = [
-    {
-      id: "seed_ticket_student_battery",
-      ticketId: "TCK-LOCAL-0001",
-      deviceId: "seed_device_student_laptop",
-      technicianId: "seed_technician_001",
-      issueDescription: "Battery drains quickly during normal class work.",
-      status: "DIAGNOSIS_IN_PROGRESS",
-    },
-    {
-      id: "seed_ticket_lecturer_display",
-      ticketId: "TCK-LOCAL-0002",
-      deviceId: "seed_device_lecturer_desktop",
-      technicianId: null,
-      issueDescription: "Monitor display does not turn on after startup.",
-      status: "REGISTRATION_COMPLETED",
-    },
-  ];
+  const repairTickets: LocalSeedRepairTicket[] = [];
 
-  const repairLogs: LocalSeedRepairLog[] = [
-    {
-      id: "seed_log_student_registration",
-      ticketId: "seed_ticket_student_battery",
-      technicianId: null,
-      status: "REGISTRATION_COMPLETED",
-      diagnosis: null,
-      repairNotes: "Local seed ticket registered for testing.",
-    },
-    {
-      id: "seed_log_student_diagnosis",
-      ticketId: "seed_ticket_student_battery",
-      technicianId: "seed_technician_001",
-      status: "DIAGNOSIS_IN_PROGRESS",
-      diagnosis: "Initial battery health check is pending.",
-      repairNotes: "Technician assignment created from local seed data.",
-    },
-    {
-      id: "seed_log_lecturer_registration",
-      ticketId: "seed_ticket_lecturer_display",
-      technicianId: null,
-      status: "REGISTRATION_COMPLETED",
-      diagnosis: null,
-      repairNotes: "Local seed ticket awaiting technician assignment.",
-    },
-  ];
+  const repairLogs: LocalSeedRepairLog[] = [];
 
   const technicianActivity: LocalSeedTechnicianActivity[] = [
     {
@@ -214,26 +143,7 @@ export function buildLocalSeedData(passwordHash: string): LocalSeedData {
     },
   ];
 
-  const notifications: LocalSeedNotification[] = [
-    {
-      id: "seed_notification_student_status",
-      userId: "seed_student_001",
-      ticketId: "seed_ticket_student_battery",
-      channel: "DASHBOARD",
-      status: "PENDING",
-      title: "Diagnosis started",
-      message: "Your local seed repair ticket is now in diagnosis.",
-    },
-    {
-      id: "seed_notification_technician_assignment",
-      userId: "seed_technician_001",
-      ticketId: "seed_ticket_student_battery",
-      channel: "DASHBOARD",
-      status: "PENDING",
-      title: "Ticket assigned",
-      message: "A local seed repair ticket has been assigned to you.",
-    },
-  ];
+  const notifications: LocalSeedNotification[] = [];
 
   return {
     users,

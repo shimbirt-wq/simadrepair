@@ -430,9 +430,9 @@ describe("lead ticket route handlers", () => {
     mockPrisma.user.findUnique
       .mockResolvedValueOnce(buildUser())
       .mockResolvedValueOnce({
-        id: "student_123",
-        fullName: "Student User",
-        role: "STUDENT",
+        id: "lead_456",
+        fullName: "Lead Tech User",
+        role: "LEAD_TECHNICIAN",
         isActive: true,
       });
     mockPrisma.repairTicket.findFirst.mockResolvedValueOnce(buildTicketMutationRecord());

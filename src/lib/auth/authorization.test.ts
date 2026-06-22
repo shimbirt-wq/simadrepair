@@ -16,14 +16,14 @@ const now = new Date("2026-01-01T00:00:00.000Z");
 
 function buildPublicUser(overrides: Partial<PublicUser> = {}): PublicUser {
   return {
-    id: "user_student",
-    fullName: "Test Student",
+    id: "user_technician",
+    fullName: "Test Technician",
     universityId: "SIMAD-AUTHZ-001",
     faculty: "Computing",
     department: "Computer Science",
     phone: "+252610001111",
-    email: "student@example.invalid",
-    role: "STUDENT",
+    email: "tech@example.invalid",
+    role: "TECHNICIAN",
     isActive: true,
     createdAt: now,
     updatedAt: now,
@@ -104,7 +104,7 @@ describe("requireAuthenticatedUser", () => {
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.user.id).toBe(user.id);
-      expect(result.user.role).toBe("STUDENT");
+      expect(result.user.role).toBe("TECHNICIAN");
       expect(result.user).not.toHaveProperty("passwordHash");
     }
     expect(userFindUnique).toHaveBeenCalledWith({
@@ -118,7 +118,7 @@ describe("requireAuthenticatedUser", () => {
     vi.stubEnv("JWT_SECRET", "test-secret-value-that-is-long-enough");
     const { prisma, userFindUnique } = buildMockPrisma();
     userFindUnique.mockResolvedValue(null);
-    const token = await signSessionToken({ id: "missing_user", role: "STUDENT" });
+    const token = await signSessionToken({ id: "missing_user", role: "TECHNICIAN" });
 
     const result = await requireAuthenticatedUser(prisma, buildRequestWithSession(token));
 
@@ -138,6 +138,7 @@ describe("requireAuthenticatedUser", () => {
     expect(result).toEqual(AUTHORIZATION_ERRORS.unauthenticated);
     vi.unstubAllEnvs();
   });
+
 });
 
 describe("role guards", () => {
@@ -150,9 +151,9 @@ describe("role guards", () => {
   });
 
   it("rejects users without the required role", () => {
-    const student = buildPublicUser({ role: "STUDENT" });
+    const technician = buildPublicUser({ role: "TECHNICIAN" });
 
-    const result = requireRole(student, "ADMIN");
+    const result = requireRole(technician, "ADMIN");
 
     expect(result).toEqual(AUTHORIZATION_ERRORS.forbidden);
   });
@@ -181,7 +182,7 @@ describe("role guards", () => {
   it("does not trust client-selected roles because authenticated role comes from the database", async () => {
     vi.stubEnv("JWT_SECRET", "test-secret-value-that-is-long-enough");
     const { prisma, userFindUnique } = buildMockPrisma();
-    const databaseUser = buildPublicUser({ id: "user_student", role: "STUDENT" });
+    const databaseUser = buildPublicUser({ id: "user_technician_2", role: "TECHNICIAN" });
     userFindUnique.mockResolvedValue(databaseUser);
     const token = await signSessionToken({ id: databaseUser.id, role: "ADMIN" as UserRole });
 
@@ -193,48 +194,6 @@ describe("role guards", () => {
 });
 
 describe("requireTicketAccess", () => {
-  it("allows a student to access their own ticket", async () => {
-    const { prisma, repairTicketFindUnique } = buildMockPrisma();
-    const student = buildPublicUser({ id: "student_owner", role: "STUDENT" });
-    repairTicketFindUnique.mockResolvedValue({
-      id: "ticket_1",
-      technicianId: null,
-      device: { ownerId: "student_owner" },
-    });
-
-    const result = await requireTicketAccess(prisma, student, "ticket_1");
-
-    expect(result.ok).toBe(true);
-  });
-
-  it("rejects a student accessing another user's ticket", async () => {
-    const { prisma, repairTicketFindUnique } = buildMockPrisma();
-    const student = buildPublicUser({ id: "student_other", role: "STUDENT" });
-    repairTicketFindUnique.mockResolvedValue({
-      id: "ticket_1",
-      technicianId: null,
-      device: { ownerId: "student_owner" },
-    });
-
-    const result = await requireTicketAccess(prisma, student, "ticket_1");
-
-    expect(result).toEqual(AUTHORIZATION_ERRORS.forbidden);
-  });
-
-  it("allows a lecturer to access their own ticket", async () => {
-    const { prisma, repairTicketFindUnique } = buildMockPrisma();
-    const lecturer = buildPublicUser({ id: "lecturer_owner", role: "LECTURER" });
-    repairTicketFindUnique.mockResolvedValue({
-      id: "ticket_1",
-      technicianId: null,
-      device: { ownerId: "lecturer_owner" },
-    });
-
-    const result = await requireTicketAccess(prisma, lecturer, "ticket_1");
-
-    expect(result.ok).toBe(true);
-  });
-
   it("allows a technician to access an assigned ticket", async () => {
     const { prisma, repairTicketFindUnique } = buildMockPrisma();
     const technician = buildPublicUser({ id: "technician_assigned", role: "TECHNICIAN" });

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SimadRepairLogo } from "@/components/brand/simad-repair-logo";
 import { PublicTracking } from "@/components/service-desk/public-tracking";
 
 type TrackPageProps = {
@@ -24,16 +25,8 @@ export default async function TrackPage({ searchParams }: TrackPageProps) {
       <section className="border-b border-[var(--border)] bg-white">
         <div className="page-container">
           <nav className="flex flex-wrap items-center justify-between gap-4">
-            <Link href="/" className="flex items-center gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent)] text-sm font-black text-white">
-                FT
-              </span>
-              <span>
-                <span className="block text-base font-bold text-[var(--foreground)]">FarsamoTech</span>
-                <span className="block text-xs font-semibold uppercase tracking-[0.16em] text-[var(--muted)]">
-                  SIMAD Maintenance
-                </span>
-              </span>
+            <Link href="/" aria-label="SIMADRepair home">
+              <SimadRepairLogo className="h-12 w-auto" />
             </Link>
             <Link href="/request-repair" className="btn-secondary">
               Request repair

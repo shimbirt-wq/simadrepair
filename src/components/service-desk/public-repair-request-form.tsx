@@ -219,7 +219,7 @@ export function PublicRepairRequestForm() {
         <div className="mt-6 grid gap-4 rounded-lg border border-[var(--border)] bg-[var(--surface-alt)] p-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--muted)]">Tracking code</p>
-            <p className="mt-1 break-all text-2xl font-black text-[var(--foreground)]">{result.trackingCode}</p>
+            <p className="tracking-code mt-1 break-all text-2xl font-black text-[var(--foreground)]">{result.trackingCode}</p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
@@ -258,7 +258,7 @@ export function PublicRepairRequestForm() {
       </div>
 
       {errors.form ? (
-        <div className="mt-5 rounded-lg border border-red-200 bg-[var(--danger-bg)] p-4">
+        <div className="mt-5 rounded-lg border border-[var(--fill-danger-soft-border)] bg-[var(--danger-bg)] p-4">
           <ErrorMessage message={errors.form} />
         </div>
       ) : null}

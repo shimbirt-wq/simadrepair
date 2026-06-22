@@ -7,6 +7,7 @@ import { RepairLogForm } from "@/app/repair-tickets/repair-log-form";
 import { TechnicianAssignmentForm } from "@/app/repair-tickets/technician-assignment-form";
 import { StatusUpdateForm } from "@/app/repair-tickets/status-update-form";
 import { getCurrentServerUser } from "@/lib/auth/server-user";
+import { isInternalUserRole } from "@/lib/auth/roles";
 import { prisma } from "@/lib/db/prisma";
 import { buildTicketQrCodeUrl, buildTicketLookupUrl } from "@/lib/lookup/ticket-lookup-service";
 import { getRepairTicketDetail } from "@/lib/repair-tickets/repair-ticket-service";
@@ -25,6 +26,10 @@ export default async function RepairTicketDetailPage({ params }: RepairTicketDet
   if (!user) {
     const { ticketId } = await params;
     redirect(`/auth/login?next=/repair-tickets/${ticketId}`);
+  }
+
+  if (!isInternalUserRole(user.role)) {
+    redirect("/track");
   }
 
   const { ticketId } = await params;
@@ -77,8 +82,10 @@ export default async function RepairTicketDetailPage({ params }: RepairTicketDet
             </p>
           </article>
           <article className="panel p-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">Owner</p>
-            <p className="mt-3 text-base font-medium text-[var(--foreground)]">{ticket.device.owner.fullName}</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">Requester</p>
+            <p className="mt-3 text-base font-medium text-[var(--foreground)]">
+              {ticket.device.owner?.fullName ?? ticket.requester?.fullName ?? "Unknown requester"}
+            </p>
           </article>
           <article className="panel p-5">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">Assigned technician</p>

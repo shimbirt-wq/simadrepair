@@ -41,8 +41,8 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
       title="User management"
       user={currentUser}
       actions={
-        <Link href="/api/users" className="btn-secondary">
-          JSON endpoint
+        <Link href="/admin/users/new" className="btn-primary">
+          Create Staff Account
         </Link>
       }
     >

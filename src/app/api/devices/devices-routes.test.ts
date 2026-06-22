@@ -23,14 +23,14 @@ const now = new Date("2026-01-01T00:00:00.000Z");
 function buildUser(overrides: Partial<User> = {}): User {
   return {
     id: "user_123",
-    fullName: "Device Owner",
+    fullName: "Device Custodian",
     universityId: "SIMAD-DEVICE-001",
     faculty: "Computing",
     department: "Computer Science",
     phone: "+252610001111",
-    email: "owner@example.invalid",
+    email: "tech@example.invalid",
     passwordHash: "$2a$12$hash",
-    role: "STUDENT",
+    role: "TECHNICIAN",
     isActive: true,
     createdAt: now,
     updatedAt: now,
@@ -73,7 +73,7 @@ function buildRequest(path: string, init?: RequestInit) {
 describe("device route handlers", () => {
   it("creates a valid device for the authenticated user", async () => {
     vi.stubEnv("JWT_SECRET", "test-secret-value-that-is-long-enough");
-    const token = await signSessionToken({ id: "user_123", role: "STUDENT" });
+    const token = await signSessionToken({ id: "user_123", role: "TECHNICIAN" });
     mockPrisma.user.findUnique.mockResolvedValue(buildUser());
     mockPrisma.device.create.mockResolvedValue(buildDeviceWithOwner());
     const { POST } = await import("./route");
@@ -109,7 +109,7 @@ describe("device route handlers", () => {
 
   it("rejects missing required device fields", async () => {
     vi.stubEnv("JWT_SECRET", "test-secret-value-that-is-long-enough");
-    const token = await signSessionToken({ id: "user_123", role: "STUDENT" });
+    const token = await signSessionToken({ id: "user_123", role: "TECHNICIAN" });
     mockPrisma.user.findUnique.mockResolvedValue(buildUser());
     const { POST } = await import("./route");
 
@@ -134,7 +134,7 @@ describe("device route handlers", () => {
 
   it("prevents a non-admin user from creating a device for another owner", async () => {
     vi.stubEnv("JWT_SECRET", "test-secret-value-that-is-long-enough");
-    const token = await signSessionToken({ id: "user_123", role: "STUDENT" });
+    const token = await signSessionToken({ id: "user_123", role: "TECHNICIAN" });
     mockPrisma.user.findUnique.mockResolvedValue(buildUser());
     const { POST } = await import("./route");
 
@@ -162,7 +162,7 @@ describe("device route handlers", () => {
 
   it("prevents a user from reading another user's device", async () => {
     vi.stubEnv("JWT_SECRET", "test-secret-value-that-is-long-enough");
-    const token = await signSessionToken({ id: "user_123", role: "STUDENT" });
+    const token = await signSessionToken({ id: "user_123", role: "TECHNICIAN" });
     mockPrisma.user.findUnique.mockResolvedValue(buildUser());
     mockPrisma.device.findUnique.mockResolvedValue(buildDeviceWithOwner({ ownerId: "other_user" }));
     const { GET } = await import("./[deviceId]/route");

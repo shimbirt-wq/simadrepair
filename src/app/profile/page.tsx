@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { AppShell } from "@/app/app-shell";
 import { NotificationList } from "@/app/profile/notification-list";
 import { getCurrentServerUser } from "@/lib/auth/server-user";
+import { isInternalUserRole } from "@/lib/auth/roles";
 import { prisma } from "@/lib/db/prisma";
 import { listCurrentUserNotifications } from "@/lib/notifications/notification-service";
 import { notificationListQuerySchema } from "@/lib/validations/notifications";
@@ -57,6 +59,10 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
     );
   }
 
+  if (!isInternalUserRole(user.role)) {
+    redirect("/request-repair");
+  }
+
   const params = searchParams ? await searchParams : {};
   const notificationQuery = notificationListQuerySchema.parse({
     page: readSearchParam(params.page),
@@ -76,7 +82,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
             Open dashboard
           </Link>
           <Link href="/devices" className="btn-primary">
-            My devices
+            Devices
           </Link>
         </>
       }
@@ -95,11 +101,6 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
             ) : null}
           </div>
           <div className="flex flex-wrap gap-3">
-            {(user.role === "STUDENT" || user.role === "LECTURER") ? (
-              <Link href="/repair-tickets" className="btn-secondary">
-                Repair tickets
-              </Link>
-            ) : null}
             {user.role === "ADMIN" ? (
               <Link href="/admin/users" className="btn-secondary">
                 Open admin users

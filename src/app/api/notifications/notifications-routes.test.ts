@@ -30,7 +30,7 @@ function buildUser(overrides: Partial<User> = {}): User {
     phone: "+252610001111",
     email: "notify@example.invalid",
     passwordHash: "$2a$12$hash",
-    role: "STUDENT",
+    role: "TECHNICIAN",
     isActive: true,
     createdAt: now,
     updatedAt: now,
@@ -65,7 +65,7 @@ describe("notification route handlers", () => {
 
   it("returns only the current user's notifications with unread count", async () => {
     vi.stubEnv("JWT_SECRET", "test-secret-value-that-is-long-enough");
-    const token = await signSessionToken({ id: "user_123", role: "STUDENT" });
+    const token = await signSessionToken({ id: "user_123", role: "TECHNICIAN" });
     mockPrisma.user.findUnique.mockResolvedValue(buildUser());
     mockPrisma.notification.findMany.mockResolvedValue([
       buildNotification({ id: "notification_1" }),
@@ -98,7 +98,7 @@ describe("notification route handlers", () => {
 
   it("marks the current user's notification as read", async () => {
     vi.stubEnv("JWT_SECRET", "test-secret-value-that-is-long-enough");
-    const token = await signSessionToken({ id: "user_123", role: "STUDENT" });
+    const token = await signSessionToken({ id: "user_123", role: "TECHNICIAN" });
     mockPrisma.user.findUnique.mockResolvedValue(buildUser());
     mockPrisma.notification.findUnique.mockResolvedValue(buildNotification());
     mockPrisma.notification.update.mockResolvedValue(buildNotification({ status: "READ", readAt: now }));
@@ -130,7 +130,7 @@ describe("notification route handlers", () => {
 
   it("rejects marking another user's notification as read", async () => {
     vi.stubEnv("JWT_SECRET", "test-secret-value-that-is-long-enough");
-    const token = await signSessionToken({ id: "user_123", role: "STUDENT" });
+    const token = await signSessionToken({ id: "user_123", role: "TECHNICIAN" });
     mockPrisma.user.findUnique.mockResolvedValue(buildUser());
     mockPrisma.notification.findUnique.mockResolvedValue(buildNotification({ userId: "other_user" }));
     const { PATCH } = await import("./[notificationId]/read/route");

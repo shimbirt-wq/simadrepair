@@ -1,6 +1,7 @@
 import type { PrismaClient, UserRole } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { publicUserSelect, toPublicUser, type PublicUser } from "@/lib/auth/public-user";
+import { isInternalUserRole } from "@/lib/auth/roles";
 import { readSessionTokenFromRequest, verifySessionToken } from "@/lib/auth/session";
 
 export type AuthorizationErrorCode = "UNAUTHENTICATED" | "FORBIDDEN" | "NOT_FOUND";
@@ -88,6 +89,10 @@ export async function requireAuthenticatedUser(
     return AUTHORIZATION_ERRORS.unauthenticated;
   }
 
+  if (!isInternalUserRole(publicUser.role)) {
+    return AUTHORIZATION_ERRORS.forbidden;
+  }
+
   return {
     ok: true,
     user: publicUser,
@@ -154,14 +159,6 @@ export async function requireTicketAccess(
   };
 
   if (user.role === "ADMIN") {
-    return {
-      ok: true,
-      user,
-      data: accessData,
-    };
-  }
-
-  if ((user.role === "STUDENT" || user.role === "LECTURER") && ticket.device.ownerId === user.id) {
     return {
       ok: true,
       user,

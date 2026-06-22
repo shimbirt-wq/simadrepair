@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { authorizationErrorResponse, requireAuthenticatedUser } from "@/lib/auth/authorization";
+import { authorizationErrorResponse, requireAuthenticatedRole } from "@/lib/auth/authorization";
+import { INTERNAL_USER_ROLES } from "@/lib/auth/roles";
 import { prisma } from "@/lib/db/prisma";
 import { getRepairTicketDetail } from "@/lib/repair-tickets/repair-ticket-service";
 
@@ -10,7 +11,7 @@ type RouteContext = {
 };
 
 export async function GET(request: Request, context: RouteContext) {
-  const authResult = await requireAuthenticatedUser(prisma, request);
+  const authResult = await requireAuthenticatedRole(prisma, request, INTERNAL_USER_ROLES);
 
   if (!authResult.ok) {
     return authorizationErrorResponse(authResult);

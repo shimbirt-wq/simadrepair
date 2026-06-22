@@ -149,7 +149,7 @@ function StateMessage({
   return (
     <div
       className={`panel p-5 ${
-        tone === "danger" ? "border-red-200 bg-[var(--danger-bg)]" : "bg-white"
+        tone === "danger" ? "border-[var(--fill-danger-soft-border)] bg-[var(--danger-bg)]" : "bg-white"
       }`}
     >
       <h2 className="text-lg font-bold text-[var(--foreground)]">{title}</h2>
@@ -206,7 +206,7 @@ function TrackingResult({ trackingInfo }: { trackingInfo: PublicTrackingInfo }) 
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--muted)]">Tracking code</p>
-              <h2 className="mt-1 break-all text-2xl font-black text-[var(--foreground)]">
+              <h2 className="tracking-code mt-1 break-all text-2xl font-black text-[var(--foreground)]">
                 {trackingInfo.trackingCode}
               </h2>
             </div>

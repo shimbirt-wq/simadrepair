@@ -1,9 +1,9 @@
-import { authorizationErrorResponse, requireAuthenticatedUser } from "@/lib/auth/authorization";
+import { authorizationErrorResponse, requireAuthenticatedRole } from "@/lib/auth/authorization";
 import { prisma } from "@/lib/db/prisma";
 import { getRoleDashboard } from "@/lib/dashboard/dashboard-service";
 
 export async function GET(request: Request) {
-  const authResult = await requireAuthenticatedUser(prisma, request);
+  const authResult = await requireAuthenticatedRole(prisma, request, ["ADMIN", "LEAD_TECHNICIAN", "TECHNICIAN"]);
 
   if (!authResult.ok) {
     return authorizationErrorResponse(authResult);

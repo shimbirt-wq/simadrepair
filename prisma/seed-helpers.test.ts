@@ -4,6 +4,7 @@ import {
   buildLocalSeedData,
   hashLocalSeedPassword,
   LOCAL_SEED_EMAIL_DOMAIN,
+  LOCAL_SEED_LOGIN_ACCOUNTS,
   LOCAL_SEED_PASSWORD,
 } from "./seed-helpers";
 
@@ -22,8 +23,8 @@ describe("buildLocalSeedData", () => {
     const data = buildLocalSeedData("hashed-password");
     const roles = data.users.map((user) => user.role);
 
-    expect(roles).toEqual(expect.arrayContaining(["ADMIN", "LEAD_TECHNICIAN", "TECHNICIAN", "STUDENT", "LECTURER"]));
-    expect(data.users).toHaveLength(5);
+    expect(roles).toEqual(expect.arrayContaining(["ADMIN", "LEAD_TECHNICIAN", "TECHNICIAN"]));
+    expect(data.users).toHaveLength(3);
   });
 
   it("uses non-routable example emails and test university ids", () => {
@@ -33,6 +34,17 @@ describe("buildLocalSeedData", () => {
       expect(user.email.endsWith(`@${LOCAL_SEED_EMAIL_DOMAIN}`)).toBe(true);
       expect(user.universityId.startsWith("SIMAD-TEST-")).toBe(true);
     }
+  });
+
+  it("exports login accounts only for active internal seed users", () => {
+    const data = buildLocalSeedData("hashed-password");
+    const seededEmails = data.users
+      .filter((user) => user.isActive && ["ADMIN", "LEAD_TECHNICIAN", "TECHNICIAN"].includes(user.role))
+      .map((user) => user.email)
+      .sort();
+    const loginEmails = LOCAL_SEED_LOGIN_ACCOUNTS.map((account) => account.email).sort();
+
+    expect(loginEmails).toEqual(seededEmails);
   });
 
   it("links sample tickets to seeded devices and uses safe statuses", () => {

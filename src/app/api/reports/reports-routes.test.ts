@@ -51,8 +51,8 @@ describe("reports route handlers", () => {
 
   it("rejects non-admin report access", async () => {
     vi.stubEnv("JWT_SECRET", "test-secret-value-that-is-long-enough");
-    const token = await signSessionToken({ id: "student_123", role: "STUDENT" });
-    mockPrisma.user.findUnique.mockResolvedValue(buildUser({ id: "student_123", role: "STUDENT" }));
+    const token = await signSessionToken({ id: "tech_123", role: "TECHNICIAN" });
+    mockPrisma.user.findUnique.mockResolvedValue(buildUser({ id: "tech_123", role: "TECHNICIAN" }));
     const { GET } = await import("./overview/route");
 
     const response = await GET(buildRequest("/api/reports/overview", token));
