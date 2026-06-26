@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800;900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -724,3 +724,47 @@ a {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
+
+/* ─── Landing page ───────────────────────────────────────── */
+.landing-heading {
+  font-family: "Plus Jakarta Sans", "Hanken Grotesk", sans-serif;
+}
+
+@keyframes hero-float-a {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50%       { transform: translateY(-10px) rotate(1deg); }
+}
+
+@keyframes hero-float-b {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50%       { transform: translateY(-7px) rotate(-1deg); }
+}
+
+@keyframes hero-float-c {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-5px); }
+}
+
+@keyframes hero-pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.85); }
+}
+
+@keyframes hero-glow {
+  0%, 100% { opacity: 0.35; }
+  50%       { opacity: 0.55; }
+}
+
+@keyframes landing-reveal {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.landing-animate {
+  animation: landing-reveal 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.hero-float-a { animation: hero-float-a 5s ease-in-out infinite; }
+.hero-float-b { animation: hero-float-b 6.5s ease-in-out infinite; }
+.hero-float-c { animation: hero-float-c 4s ease-in-out infinite; }
+.hero-pulse   { animation: hero-pulse-dot 2s ease-in-out infinite; }
