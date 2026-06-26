@@ -1,4 +1,4 @@
-import type { User } from "@prisma/client";
+﻿import type { User } from "@prisma/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { signSessionToken } from "@/lib/auth/session";
 
@@ -53,7 +53,7 @@ describe("user route handlers", () => {
     const response = await GET(
       buildRequest("/api/users/me", {
         headers: {
-          cookie: `farsamotech_session=${token}`,
+          cookie: `simadrepair_session=${token}`,
         },
       }),
     );
@@ -74,7 +74,7 @@ describe("user route handlers", () => {
     const response = await GET(
       buildRequest("/api/users", {
         headers: {
-          cookie: `farsamotech_session=${token}`,
+          cookie: `simadrepair_session=${token}`,
         },
       }),
     );
@@ -99,7 +99,7 @@ describe("user route handlers", () => {
     const response = await GET(
       buildRequest("/api/users?page=2&pageSize=2&query=simad", {
         headers: {
-          cookie: `farsamotech_session=${token}`,
+          cookie: `simadrepair_session=${token}`,
         },
       }),
     );
@@ -130,7 +130,7 @@ describe("user route handlers", () => {
         method: "PATCH",
         headers: {
           "content-type": "application/json",
-          cookie: `farsamotech_session=${token}`,
+          cookie: `simadrepair_session=${token}`,
         },
         body: JSON.stringify({ role: "OWNER" }),
       }),
@@ -157,7 +157,7 @@ describe("user route handlers", () => {
         method: "PATCH",
         headers: {
           "content-type": "application/json",
-          cookie: `farsamotech_session=${token}`,
+          cookie: `simadrepair_session=${token}`,
         },
         body: JSON.stringify({ role: "TECHNICIAN" }),
       }),
@@ -184,7 +184,7 @@ describe("user route handlers", () => {
         method: "PATCH",
         headers: {
           "content-type": "application/json",
-          cookie: `farsamotech_session=${token}`,
+          cookie: `simadrepair_session=${token}`,
         },
         body: JSON.stringify({ role: "TECHNICIAN", isActive: false }),
       }),
@@ -217,7 +217,7 @@ describe("user route handlers", () => {
         method: "PATCH",
         headers: {
           "content-type": "application/json",
-          cookie: `farsamotech_session=${token}`,
+          cookie: `simadrepair_session=${token}`,
         },
         body: JSON.stringify({ role: "ADMIN", isActive: false }),
       }),
@@ -231,3 +231,4 @@ describe("user route handlers", () => {
     vi.unstubAllEnvs();
   });
 });
+

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+﻿import { describe, expect, it, vi } from "vitest";
 import { GET } from "./route";
 
 describe("health route", () => {
@@ -16,7 +16,7 @@ describe("health route", () => {
     expect(body).toEqual(
       expect.objectContaining({
         status: "ok",
-        service: "farsamotech-repair-hub",
+        service: "simadrepair",
         stack: "nextjs-prisma-supabase",
         environment: expect.objectContaining({
           ok: true,
@@ -28,3 +28,4 @@ describe("health route", () => {
     vi.unstubAllEnvs();
   });
 });
+

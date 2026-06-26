@@ -1,4 +1,4 @@
-import type { Device, User } from "@prisma/client";
+﻿import type { Device, User } from "@prisma/client";
 import { describe, expect, it, vi } from "vitest";
 import { signSessionToken } from "@/lib/auth/session";
 
@@ -83,7 +83,7 @@ describe("device route handlers", () => {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          cookie: `farsamotech_session=${token}`,
+          cookie: `simadrepair_session=${token}`,
         },
         body: JSON.stringify({
           deviceType: "Laptop",
@@ -118,7 +118,7 @@ describe("device route handlers", () => {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          cookie: `farsamotech_session=${token}`,
+          cookie: `simadrepair_session=${token}`,
         },
         body: JSON.stringify({
           deviceType: "Laptop",
@@ -143,7 +143,7 @@ describe("device route handlers", () => {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          cookie: `farsamotech_session=${token}`,
+          cookie: `simadrepair_session=${token}`,
         },
         body: JSON.stringify({
           ownerId: "other_user",
@@ -170,7 +170,7 @@ describe("device route handlers", () => {
     const response = await GET(
       buildRequest("/api/devices/device_123", {
         headers: {
-          cookie: `farsamotech_session=${token}`,
+          cookie: `simadrepair_session=${token}`,
         },
       }),
       { params: Promise.resolve({ deviceId: "device_123" }) },
@@ -196,7 +196,7 @@ describe("device route handlers", () => {
     const response = await GET(
       buildRequest("/api/devices?page=2&pageSize=2&query=laptop", {
         headers: {
-          cookie: `farsamotech_session=${token}`,
+          cookie: `simadrepair_session=${token}`,
         },
       }),
     );
@@ -214,3 +214,4 @@ describe("device route handlers", () => {
     vi.unstubAllEnvs();
   });
 });
+

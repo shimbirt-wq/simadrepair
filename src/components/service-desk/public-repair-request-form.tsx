@@ -2,11 +2,7 @@
 
 import Link from "next/link";
 import { useState, useTransition } from "react";
-import {
-  ISSUE_CATEGORY_LABELS,
-  ISSUE_CATEGORY_OPTIONS,
-  REQUESTER_TYPE_LABELS,
-} from "@/lib/service-desk/constants";
+import { REQUESTER_TYPE_LABELS } from "@/lib/service-desk/constants";
 
 type FieldName =
   | "fullName"
@@ -19,7 +15,6 @@ type FieldName =
   | "deviceType"
   | "brand"
   | "model"
-  | "issueCategory"
   | "issueDescription";
 
 type FormErrors = Partial<Record<FieldName | "form", string>>;
@@ -48,7 +43,6 @@ const defaultValues: Record<FieldName, string> = {
   deviceType: "",
   brand: "",
   model: "",
-  issueCategory: "",
   issueDescription: "",
 };
 
@@ -64,7 +58,6 @@ function getFormValues(formData: FormData): Record<FieldName, string> {
     deviceType: String(formData.get("deviceType") ?? "").trim(),
     brand: String(formData.get("brand") ?? "").trim(),
     model: String(formData.get("model") ?? "").trim(),
-    issueCategory: String(formData.get("issueCategory") ?? "").trim(),
     issueDescription: String(formData.get("issueDescription") ?? "").trim(),
   };
 }
@@ -110,10 +103,6 @@ function validateValues(values: Record<FieldName, string>): FormErrors {
 
   if (values.model.length < 2) {
     errors.model = "Enter the device model.";
-  }
-
-  if (!ISSUE_CATEGORY_OPTIONS.includes(values.issueCategory as (typeof ISSUE_CATEGORY_OPTIONS)[number])) {
-    errors.issueCategory = "Select the closest issue category.";
   }
 
   if (values.issueDescription.length < 10) {
@@ -356,7 +345,6 @@ export function PublicRepairRequestForm() {
           deviceType: values.deviceType,
           brand: values.brand,
           model: values.model,
-          issueCategory: values.issueCategory,
           issueDescription: values.issueDescription,
         }),
       });
@@ -546,22 +534,6 @@ export function PublicRepairRequestForm() {
         {/* ── Section 3: Issue details ── */}
         <p style={sectionLabelStyle}>Issue details</p>
         <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-          <label style={labelStyle}>
-            Issue category <span style={{ color: "#2563eb" }}>*</span>
-            <select
-              name="issueCategory"
-              defaultValue={defaultValues.issueCategory}
-              style={{ ...selectStyle, borderColor: errors.issueCategory ? "#fca5a5" : "#d1d5db" }}
-            >
-              <option value="">Select a category</option>
-              {ISSUE_CATEGORY_OPTIONS.map((category) => (
-                <option key={category} value={category}>
-                  {ISSUE_CATEGORY_LABELS[category]}
-                </option>
-              ))}
-            </select>
-            {errors.issueCategory && <p style={errorStyle}>{errors.issueCategory}</p>}
-          </label>
           <label style={labelStyle}>
             Describe the issue <span style={{ color: "#2563eb" }}>*</span>
             <textarea

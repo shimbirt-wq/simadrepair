@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+﻿import { describe, expect, it } from "vitest";
 import { loginSchema } from "./auth";
 
 describe("loginSchema", () => {
@@ -23,3 +23,4 @@ describe("loginSchema", () => {
     expect(result.success).toBe(false);
   });
 });
+

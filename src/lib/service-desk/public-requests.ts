@@ -1,7 +1,6 @@
 import { Prisma, type RepairStatus } from "@prisma/client";
 import { ZodError } from "zod";
 import { prisma } from "@/lib/db/prisma";
-import { createNotificationForTicketEvent } from "@/lib/service-desk/notifications";
 import { publicRepairRequestInputSchema, type PublicRepairRequestInput } from "@/lib/service-desk/validations";
 
 export type PublicRepairRequestResponse = {
@@ -196,20 +195,12 @@ async function createPublicRepairRequestRecord(data: PublicRepairRequestInput) {
           trackingCode,
           requesterId: requester.id,
           deviceId: device.id,
-          issueCategory: data.issueCategory,
           issueDescription: data.issueDescription,
-          severity: null,
-          repairMethod: null,
-          triagedById: null,
-          triagedAt: null,
           assignedAt: null,
           completedAt: null,
           readyForPickupAt: null,
           closedAt: null,
           cancelledAt: null,
-          triageNotes: null,
-          studentActionRequired: null,
-          partRequirement: null,
           pickupCodeHash: null,
           status: "REGISTRATION_COMPLETED",
         },
@@ -222,6 +213,14 @@ async function createPublicRepairRequestRecord(data: PublicRepairRequestInput) {
         },
       });
 
+      await tx.deviceCustody.create({
+        data: {
+          ticketId: ticket.id,
+          deviceId: device.id,
+          status: "NOT_RECEIVED",
+        },
+      });
+
       await tx.repairEvent.create({
         data: {
           ticketId: ticket.id,
@@ -231,10 +230,9 @@ async function createPublicRepairRequestRecord(data: PublicRepairRequestInput) {
           statusFrom: null,
           statusTo: "REGISTRATION_COMPLETED",
           custodyFrom: null,
-          custodyTo: null,
+          custodyTo: "NOT_RECEIVED",
           note: "Public repair request submitted",
           metadata: {
-            issueCategory: data.issueCategory,
             source: "public_repair_request",
           },
         },
@@ -277,11 +275,6 @@ export async function createPublicRepairRequest(input: unknown): Promise<PublicR
   }
 
   const result = await createPublicRepairRequestRecordWithRetry(parsedInput.data);
-
-  await createNotificationForTicketEvent({
-    ticketId: result.ticketId,
-    eventType: "TICKET_RECEIVED",
-  }).catch(() => null);
 
   return {
     trackingCode: result.trackingCode,

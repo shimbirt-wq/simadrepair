@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+﻿import { describe, expect, it } from "vitest";
 import { checkRateLimit, clearRateLimitBucketsForTests } from "./rate-limit";
 
 describe("rate limit helper", () => {
@@ -11,3 +11,4 @@ describe("rate limit helper", () => {
     expect(checkRateLimit("login:test", 2, 1000, 2100)).toEqual({ allowed: true, remaining: 1 });
   });
 });
+

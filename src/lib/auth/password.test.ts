@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+﻿import { describe, expect, it } from "vitest";
 import { hashPassword, verifyPassword } from "./password";
 
 describe("password helpers", () => {
@@ -17,3 +17,4 @@ describe("password helpers", () => {
     await expect(verifyPassword("WrongPassword123!", hash)).resolves.toBe(false);
   });
 });
+

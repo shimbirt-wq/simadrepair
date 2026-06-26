@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { authorizationErrorResponse, requireAuthenticatedRole } from "@/lib/auth/authorization";
 import { internalErrorResponse, validationErrorResponse } from "@/lib/api/responses";
 import { prisma } from "@/lib/db/prisma";
-import { assignTicketToTechnician, LeadTriageValidationError } from "@/lib/service-desk/lead-triage";
+import { assignTicketToTechnician, LeadWorkspaceValidationError } from "@/lib/service-desk/lead-workspace";
 
 const LEAD_ROUTE_ROLES = ["LEAD_TECHNICIAN", "ADMIN"] as const;
 
@@ -35,7 +35,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 
     return NextResponse.json({ ticket: result.data });
   } catch (error) {
-    if (error instanceof LeadTriageValidationError) {
+    if (error instanceof LeadWorkspaceValidationError) {
       return validationErrorResponse("Invalid lead assignment data.", error.validationError);
     }
 

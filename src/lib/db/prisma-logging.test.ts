@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+﻿import { describe, expect, it } from "vitest";
 import { getPrismaLogLevels } from "@/lib/db/prisma-logging";
 
 describe("getPrismaLogLevels", () => {
@@ -16,3 +16,4 @@ describe("getPrismaLogLevels", () => {
     expect(getPrismaLogLevels({ PRISMA_QUERY_LOG: "1" })).toEqual(["error", "warn"]);
   });
 });
+

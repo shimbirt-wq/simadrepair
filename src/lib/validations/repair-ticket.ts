@@ -25,32 +25,6 @@ export const updateRepairTicketStatusSchema = z.object({
   status: z.nativeEnum(RepairStatus),
 });
 
-export const createRepairTicketLogSchema = z
-  .object({
-    diagnosis: z
-      .string()
-      .trim()
-      .max(2000, "Diagnosis must be 2000 characters or less")
-      .optional()
-      .transform((value) => value || undefined),
-    repairNotes: z
-      .string()
-      .trim()
-      .max(2000, "Repair notes must be 2000 characters or less")
-      .optional()
-      .transform((value) => value || undefined),
-  })
-  .superRefine((value, context) => {
-    if (!value.diagnosis && !value.repairNotes) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["repairNotes"],
-        message: "Provide a diagnosis or repair note.",
-      });
-    }
-  });
-
 export type CreateRepairTicketInput = z.infer<typeof createRepairTicketSchema>;
 export type AssignRepairTicketInput = z.infer<typeof assignRepairTicketSchema>;
 export type UpdateRepairTicketStatusInput = z.infer<typeof updateRepairTicketStatusSchema>;
-export type CreateRepairTicketLogInput = z.infer<typeof createRepairTicketLogSchema>;

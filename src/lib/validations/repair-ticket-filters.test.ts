@@ -1,4 +1,4 @@
-import { RepairStatus } from "@prisma/client";
+﻿import { RepairStatus } from "@prisma/client";
 import { describe, expect, it } from "vitest";
 import { repairTicketListQuerySchema } from "./repair-ticket-filters";
 
@@ -51,3 +51,4 @@ describe("repairTicketListQuerySchema", () => {
     expect(result.success).toBe(false);
   });
 });
+

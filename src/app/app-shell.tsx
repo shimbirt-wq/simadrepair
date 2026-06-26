@@ -47,7 +47,7 @@ function getNavItems(user: PublicUser): { operations: NavItem[]; manage: NavItem
         { key: "dashboard", href: "/dashboard",                      label: "Dashboard",      icon: <LayoutDashboard {...iconProps} /> },
         { key: "tickets",   href: "/repair-tickets",                 label: "Ticket Queue",   icon: <Ticket {...iconProps} /> },
         { key: "devices",   href: "/devices",                        label: "Device Custody", icon: <Cpu {...iconProps} /> },
-        { key: "reports",   href: "/admin/service-desk/reports",     label: "Reports",        icon: <BarChart2 {...iconProps} /> },
+        { key: "reports",   href: "/reports",                        label: "Reports",        icon: <BarChart2 {...iconProps} /> },
       ],
       manage: [
         { key: "users", href: "/admin/users/new", label: "Add Technician", icon: <Users {...iconProps} /> },
@@ -76,7 +76,7 @@ function getNavItems(user: PublicUser): { operations: NavItem[]; manage: NavItem
     operations: [
       { key: "dashboard", href: "/dashboard",                  label: "Overview",          icon: <LayoutDashboard {...iconProps} /> },
       { key: "tickets",   href: "/repair-tickets",             label: "Requests",          icon: <Ticket {...iconProps} /> },
-      { key: "reports",   href: "/admin/service-desk/reports", label: "Reports",           icon: <BarChart2 {...iconProps} /> },
+      { key: "reports",   href: "/reports",                    label: "Reports",           icon: <BarChart2 {...iconProps} /> },
       { key: "devices",   href: "/admin/devices",              label: "Devices & Custody", icon: <Cpu {...iconProps} /> },
     ],
     manage: [

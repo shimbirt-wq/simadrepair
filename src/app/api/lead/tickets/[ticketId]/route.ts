@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { authorizationErrorResponse, requireAuthenticatedRole } from "@/lib/auth/authorization";
 import { internalErrorResponse } from "@/lib/api/responses";
 import { prisma } from "@/lib/db/prisma";
-import { getLeadTriageTicket } from "@/lib/service-desk/lead-triage";
+import { getLeadTicket } from "@/lib/service-desk/lead-workspace";
 
 const LEAD_ROUTE_ROLES = ["LEAD_TECHNICIAN", "ADMIN"] as const;
 
@@ -22,7 +22,7 @@ export async function GET(request: Request, context: RouteContext) {
   const { ticketId } = await context.params;
 
   try {
-    const result = await getLeadTriageTicket(ticketId);
+    const result = await getLeadTicket(ticketId);
 
     if (!result.ok) {
       return NextResponse.json({ error: result.message }, { status: result.status });

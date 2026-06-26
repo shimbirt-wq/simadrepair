@@ -6,20 +6,10 @@ import { REPAIR_STATUS_LABELS } from "@/lib/constants/repair-status";
 const ACTIVE_REPAIR_STATUSES: RepairStatus[] = [
   "REGISTRATION_COMPLETED",
   "DEVICE_RECEIVED",
-  "DIAGNOSIS_IN_PROGRESS",
   "REPAIR_IN_PROGRESS",
-  "QUALITY_INSPECTION",
   "READY_FOR_COLLECTION",
 ];
 
-const IN_REPAIR_STATUSES: RepairStatus[] = ["DIAGNOSIS_IN_PROGRESS", "REPAIR_IN_PROGRESS", "QUALITY_INSPECTION"];
-const TECHNICIAN_BOARD_STATUSES: RepairStatus[] = [
-  "DEVICE_RECEIVED",
-  "DIAGNOSIS_IN_PROGRESS",
-  "REPAIR_IN_PROGRESS",
-  "QUALITY_INSPECTION",
-];
-const ACTIVE_CUSTODY_STATUSES = ["RECEIVED", "IN_REPAIR_ROOM", "READY_FOR_COLLECTION"] as const;
 const READY_PICKUP_OVERDUE_DAYS = 7;
 const OPEN_TICKET_RISK_DAYS = 4;
 
@@ -36,10 +26,8 @@ export type DashboardTicketSummary = {
   statusLabel: string;
   requesterName: string;
   faculty: string;
+  requesterPhone: string | null;
   deviceName: string;
-  issueCategory: string;
-  severity: string | null;
-  repairMethod: string | null;
   technicianName: string | null;
   ageHours: number;
   ageLabel: string;
@@ -62,8 +50,9 @@ export type AdminDashboard = DashboardBase & {
   totalTickets: number;
   openTickets: number;
   closedTickets: number;
-  waitingForStudent: number;
+  waitingAssignment: number;
   readyForPickup: number;
+  devicesNotReceived: number;
   devicesInCustody: number;
   custodyExceptions: number;
   activeStaff: number;
@@ -88,10 +77,10 @@ export type LeadTechnicianDashboard = DashboardBase & {
 export type TechnicianDashboard = DashboardBase & {
   role: "TECHNICIAN";
   activeRepairs: number;
+  waitingToStart: number;
+  inRepair: number;
+  readyForPickup: number;
   overdue: number;
-  diagnosing: number;
-  repairing: number;
-  qualityCheck: number;
   statusColumns: Array<{
     status: RepairStatus;
     label: string;
@@ -106,15 +95,13 @@ const ticketSummarySelect = Prisma.validator<Prisma.RepairTicketSelect>()({
   ticketId: true,
   trackingCode: true,
   status: true,
-  issueCategory: true,
-  severity: true,
-  repairMethod: true,
   createdAt: true,
   assignedAt: true,
   requester: {
     select: {
       fullName: true,
       faculty: true,
+      phone: true,
     },
   },
   device: {
@@ -133,17 +120,6 @@ const ticketSummarySelect = Prisma.validator<Prisma.RepairTicketSelect>()({
 });
 
 type TicketSummaryRecord = Prisma.RepairTicketGetPayload<{ select: typeof ticketSummarySelect }>;
-
-function getUnreadNotifications(prisma: PrismaClient, userId: string) {
-  return prisma.notification.count({
-    where: {
-      userId,
-      status: {
-        not: "READ" as const,
-      },
-    },
-  });
-}
 
 function daysAgo(days: number) {
   return new Date(Date.now() - days * 24 * 60 * 60 * 1000);
@@ -164,17 +140,6 @@ function formatAgeLabel(ageHours: number) {
   return hours > 0 ? `${days}d ${hours}h` : `${days}d`;
 }
 
-function formatIssueCategory(value: string | null) {
-  if (!value) {
-    return "Unclassified";
-  }
-
-  return value
-    .split("_")
-    .map((part) => part.charAt(0) + part.slice(1).toLowerCase())
-    .join(" ");
-}
-
 function toTicketSummary(ticket: TicketSummaryRecord): DashboardTicketSummary {
   const ageHours = getAgeHours(ticket.createdAt);
 
@@ -186,10 +151,8 @@ function toTicketSummary(ticket: TicketSummaryRecord): DashboardTicketSummary {
     statusLabel: REPAIR_STATUS_LABELS[ticket.status],
     requesterName: ticket.requester?.fullName ?? "Requester",
     faculty: ticket.requester?.faculty ?? "Faculty not set",
+    requesterPhone: ticket.requester?.phone ?? null,
     deviceName: `${ticket.device.brand} ${ticket.device.model}`,
-    issueCategory: formatIssueCategory(ticket.issueCategory),
-    severity: ticket.severity,
-    repairMethod: ticket.repairMethod ? formatIssueCategory(ticket.repairMethod) : null,
     technicianName: ticket.technician?.fullName ?? null,
     ageHours,
     ageLabel: formatAgeLabel(ageHours),
@@ -284,90 +247,67 @@ async function buildTechnicianWorkload(prisma: PrismaClient): Promise<DashboardW
     .slice(0, 5);
 }
 
-async function buildAdminDashboard(prisma: PrismaClient, user: PublicUser): Promise<AdminDashboard> {
+async function buildAdminDashboard(prisma: PrismaClient): Promise<AdminDashboard> {
   const sixWeeksAgo = daysAgo(42);
   const overdueDate = daysAgo(READY_PICKUP_OVERDUE_DAYS);
   const riskCutoff = daysAgo(OPEN_TICKET_RISK_DAYS);
 
-  const [unreadNotifications, ticketCounts, custodyCounts, userCounts, weeklyClosedTicketRecords, statusBreakdown, attentionTickets] =
-    await Promise.all([
-      getUnreadNotifications(prisma, user.id),
-      prisma.$queryRaw<
-        Array<{
-          total: bigint;
-          open: bigint;
-          closed: bigint;
-          waiting_for_student: bigint;
-          ready_for_pickup: bigint;
-        }>
-      >`
-        SELECT
-          COUNT(*)                                                                                      AS total,
-          COUNT(*) FILTER (WHERE status = ANY(${ACTIVE_REPAIR_STATUSES}::"RepairStatus"[]))            AS open,
-          COUNT(*) FILTER (WHERE status = 'DEVICE_COLLECTED'::"RepairStatus")                          AS closed,
-          COUNT(*) FILTER (WHERE status = ANY(${ACTIVE_REPAIR_STATUSES}::"RepairStatus"[]) AND student_action_required IS NOT NULL) AS waiting_for_student,
-          COUNT(*) FILTER (WHERE status = 'READY_FOR_COLLECTION'::"RepairStatus")                      AS ready_for_pickup
-        FROM repair_tickets
-      `,
-      prisma.$queryRaw<
-        Array<{ in_custody: bigint; exceptions: bigint }>
-      >`
-        SELECT
-          COUNT(*) FILTER (WHERE status = ANY(${[...ACTIVE_CUSTODY_STATUSES]}::"CustodyStatus"[]) AND collected_at IS NULL)                                                                                           AS in_custody,
-          COUNT(*) FILTER (WHERE status = ANY(${[...ACTIVE_CUSTODY_STATUSES]}::"CustodyStatus"[]) AND collected_at IS NULL AND (storage_location IS NULL OR ready_for_collection_at <= ${overdueDate})) AS exceptions
-        FROM device_custody
-      `,
-      prisma.$queryRaw<
-        Array<{ active_staff: bigint; active_technicians: bigint }>
-      >`
-        SELECT
-          COUNT(*) FILTER (WHERE role IN ('ADMIN'::"UserRole",'LEAD_TECHNICIAN'::"UserRole",'TECHNICIAN'::"UserRole") AND is_active = true) AS active_staff,
-          COUNT(*) FILTER (WHERE role = 'TECHNICIAN'::"UserRole"                                                    AND is_active = true) AS active_technicians
-        FROM users
-      `,
-      prisma.repairTicket.findMany({
-        where: { status: "DEVICE_COLLECTED", updatedAt: { gte: sixWeeksAgo } },
-        select: { closedAt: true, completedAt: true, updatedAt: true },
-      }),
-      buildStatusCounts(prisma, ACTIVE_REPAIR_STATUSES),
-      prisma.repairTicket.findMany({
-        where: {
-          status: { in: ACTIVE_REPAIR_STATUSES },
-          OR: [
-            { createdAt: { lte: riskCutoff } },
-            { severity: { in: ["CRITICAL", "HIGH"] } },
-            { technicianId: null },
-            { studentActionRequired: { not: null } },
-          ],
-        },
-        select: ticketSummarySelect,
-        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-        take: 6,
-      }),
-    ]);
-
-  const t = ticketCounts[0];
-  const c = custodyCounts[0];
-  const u = userCounts[0];
-
-  const totalTickets = Number(t.total);
-  const openTickets = Number(t.open);
-  const closedTickets = Number(t.closed);
-  const waitingForStudent = Number(t.waiting_for_student);
-  const readyForPickup = Number(t.ready_for_pickup);
-  const devicesInCustody = Number(c.in_custody);
-  const custodyExceptions = Number(c.exceptions);
-  const activeStaff = Number(u.active_staff);
-  const activeTechnicians = Number(u.active_technicians);
-
-  return {
-    role: "ADMIN",
-    unreadNotifications,
+  const [
     totalTickets,
     openTickets,
     closedTickets,
-    waitingForStudent,
+    waitingAssignment,
     readyForPickup,
+    devicesNotReceived,
+    devicesInCustody,
+    custodyExceptions,
+    activeStaff,
+    activeTechnicians,
+    weeklyClosedTicketRecords,
+    statusBreakdown,
+    attentionTickets,
+  ] = await Promise.all([
+    prisma.repairTicket.count(),
+    prisma.repairTicket.count({ where: { status: { in: ACTIVE_REPAIR_STATUSES } } }),
+    prisma.repairTicket.count({ where: { status: "DEVICE_COLLECTED" } }),
+    prisma.repairTicket.count({ where: { status: { in: ACTIVE_REPAIR_STATUSES }, technicianId: null } }),
+    prisma.repairTicket.count({ where: { status: "READY_FOR_COLLECTION" } }),
+    prisma.deviceCustody.count({ where: { status: "NOT_RECEIVED" } }),
+    prisma.deviceCustody.count({ where: { status: { in: ["RECEIVED", "IN_REPAIR_ROOM", "READY_FOR_COLLECTION"] }, collectedAt: null } }),
+    prisma.deviceCustody.count({
+      where: {
+        status: { in: ["RECEIVED", "IN_REPAIR_ROOM", "READY_FOR_COLLECTION"] },
+        collectedAt: null,
+        OR: [{ storageLocation: null }, { readyForCollectionAt: { lte: overdueDate } }],
+      },
+    }),
+    prisma.user.count({ where: { role: { in: ["ADMIN", "LEAD_TECHNICIAN", "TECHNICIAN"] }, isActive: true } }),
+    prisma.user.count({ where: { role: "TECHNICIAN", isActive: true } }),
+    prisma.repairTicket.findMany({
+      where: { status: "DEVICE_COLLECTED", updatedAt: { gte: sixWeeksAgo } },
+      select: { closedAt: true, completedAt: true, updatedAt: true },
+    }),
+    buildStatusCounts(prisma, ACTIVE_REPAIR_STATUSES),
+    prisma.repairTicket.findMany({
+      where: {
+        status: { in: ACTIVE_REPAIR_STATUSES },
+        OR: [{ createdAt: { lte: riskCutoff } }, { technicianId: null }],
+      },
+      select: ticketSummarySelect,
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+      take: 6,
+    }),
+  ]);
+
+  return {
+    role: "ADMIN",
+    unreadNotifications: 0,
+    totalTickets,
+    openTickets,
+    closedTickets,
+    waitingAssignment,
+    readyForPickup,
+    devicesNotReceived,
     devicesInCustody,
     custodyExceptions,
     activeStaff,
@@ -378,57 +318,43 @@ async function buildAdminDashboard(prisma: PrismaClient, user: PublicUser): Prom
   };
 }
 
-async function buildLeadTechnicianDashboard(prisma: PrismaClient, user: PublicUser): Promise<LeadTechnicianDashboard> {
+async function buildLeadTechnicianDashboard(prisma: PrismaClient): Promise<LeadTechnicianDashboard> {
   const riskCutoff = daysAgo(OPEN_TICKET_RISK_DAYS);
 
-  const [unreadNotifications, ticketCounts, atRisk, workload] = await Promise.all([
-    getUnreadNotifications(prisma, user.id),
-    prisma.$queryRaw<
-      Array<{
-        new_requests: bigint;
-        waiting_assignment: bigint;
-        waiting_for_device: bigint;
-        in_repair: bigint;
-        ready_for_pickup: bigint;
-        overdue: bigint;
-      }>
-      >`
-      SELECT
-        COUNT(*) FILTER (WHERE status = 'REGISTRATION_COMPLETED'::"RepairStatus")                                                                        AS new_requests,
-        COUNT(*) FILTER (WHERE status = ANY(${ACTIVE_REPAIR_STATUSES}::"RepairStatus"[]) AND technician_id IS NULL)                                     AS waiting_assignment,
-        COUNT(*) FILTER (WHERE status = 'REGISTRATION_COMPLETED'::"RepairStatus" AND (id NOT IN (SELECT ticket_id FROM device_custody) OR id IN (SELECT ticket_id FROM device_custody WHERE status = 'NOT_RECEIVED'::"CustodyStatus"))) AS waiting_for_device,
-        COUNT(*) FILTER (WHERE status = ANY(${IN_REPAIR_STATUSES}::"RepairStatus"[]))                                                                    AS in_repair,
-        COUNT(*) FILTER (WHERE status = 'READY_FOR_COLLECTION'::"RepairStatus")                                                                          AS ready_for_pickup,
-        COUNT(*) FILTER (WHERE status = ANY(${ACTIVE_REPAIR_STATUSES}::"RepairStatus"[]) AND created_at <= ${riskCutoff})                               AS overdue
-      FROM repair_tickets
-    `,
-    prisma.repairTicket.findMany({
-      where: {
-        status: { in: ACTIVE_REPAIR_STATUSES },
-        OR: [
-          { createdAt: { lte: riskCutoff } },
-          { severity: { in: ["CRITICAL", "HIGH"] } },
-          { studentActionRequired: { not: null } },
-        ],
-      },
-      select: ticketSummarySelect,
-      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-      take: 5,
-    }),
-    buildTechnicianWorkload(prisma),
-  ]);
-
-  const tc = ticketCounts[0];
+  const [newRequests, waitingAssignment, waitingForDevice, inRepair, readyForPickup, overdue, atRisk, workload] =
+    await Promise.all([
+      prisma.repairTicket.count({ where: { status: "REGISTRATION_COMPLETED" } }),
+      prisma.repairTicket.count({ where: { status: { in: ACTIVE_REPAIR_STATUSES }, technicianId: null } }),
+      prisma.repairTicket.count({
+        where: {
+          status: { in: ["REGISTRATION_COMPLETED", "DEVICE_RECEIVED"] },
+          custody: { is: { status: "NOT_RECEIVED" } },
+        },
+      }),
+      prisma.repairTicket.count({ where: { status: "REPAIR_IN_PROGRESS" } }),
+      prisma.repairTicket.count({ where: { status: "READY_FOR_COLLECTION" } }),
+      prisma.repairTicket.count({ where: { status: { in: ACTIVE_REPAIR_STATUSES }, createdAt: { lte: riskCutoff } } }),
+      prisma.repairTicket.findMany({
+        where: {
+          status: { in: ACTIVE_REPAIR_STATUSES },
+          OR: [{ createdAt: { lte: riskCutoff } }, { technicianId: null }],
+        },
+        select: ticketSummarySelect,
+        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+        take: 5,
+      }),
+      buildTechnicianWorkload(prisma),
+    ]);
 
   return {
     role: "LEAD_TECHNICIAN",
-    unreadNotifications,
-    newRequests: Number(tc.new_requests),
-    waitingAssignment: Number(tc.waiting_assignment),
-    waitingForDevice: Number(tc.waiting_for_device),
-    inRepair: Number(tc.in_repair),
-    readyForPickup: Number(tc.ready_for_pickup),
-    overdue: Number(tc.overdue),
+    unreadNotifications: 0,
+    newRequests,
+    waitingAssignment,
+    waitingForDevice,
+    inRepair,
+    readyForPickup,
+    overdue,
     atRiskTickets: atRisk.map(toTicketSummary),
     workloadByTechnician: workload,
   };
@@ -446,17 +372,16 @@ async function buildTechnicianDashboard(prisma: PrismaClient, user: PublicUser):
     orderBy: [{ assignedAt: "asc" }, { createdAt: "asc" }, { id: "asc" }],
   });
   const ticketSummaries = tickets.map(toTicketSummary);
-  const unreadNotifications = await getUnreadNotifications(prisma, user.id);
 
   return {
     role: "TECHNICIAN",
-    unreadNotifications,
+    unreadNotifications: 0,
     activeRepairs: ticketSummaries.length,
     overdue: ticketSummaries.filter((ticket) => ticket.ageHours >= OPEN_TICKET_RISK_DAYS * 24).length,
-    diagnosing: ticketSummaries.filter((ticket) => ticket.status === "DIAGNOSIS_IN_PROGRESS").length,
-    repairing: ticketSummaries.filter((ticket) => ticket.status === "REPAIR_IN_PROGRESS").length,
-    qualityCheck: ticketSummaries.filter((ticket) => ticket.status === "QUALITY_INSPECTION").length,
-    statusColumns: TECHNICIAN_BOARD_STATUSES.map((status) => ({
+    waitingToStart: ticketSummaries.filter((ticket) => ticket.status === "DEVICE_RECEIVED").length,
+    inRepair: ticketSummaries.filter((ticket) => ticket.status === "REPAIR_IN_PROGRESS").length,
+    readyForPickup: ticketSummaries.filter((ticket) => ticket.status === "READY_FOR_COLLECTION").length,
+    statusColumns: (["DEVICE_RECEIVED", "REPAIR_IN_PROGRESS", "READY_FOR_COLLECTION"] satisfies RepairStatus[]).map((status) => ({
       status,
       label: REPAIR_STATUS_LABELS[status],
       tickets: ticketSummaries.filter((ticket) => ticket.status === status),
@@ -466,11 +391,11 @@ async function buildTechnicianDashboard(prisma: PrismaClient, user: PublicUser):
 
 export async function getRoleDashboard(prisma: PrismaClient, user: PublicUser): Promise<RoleDashboard> {
   if (user.role === "ADMIN") {
-    return buildAdminDashboard(prisma, user);
+    return buildAdminDashboard(prisma);
   }
 
   if (user.role === "LEAD_TECHNICIAN") {
-    return buildLeadTechnicianDashboard(prisma, user);
+    return buildLeadTechnicianDashboard(prisma);
   }
 
   if (user.role === "TECHNICIAN") {

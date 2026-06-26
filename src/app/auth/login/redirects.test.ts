@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+﻿import { describe, expect, it } from "vitest";
 import { getDefaultPathForRole, getPostLoginRedirectPath, getSafeNextPath } from "@/app/auth/login/redirects";
 
 describe("login redirects", () => {
@@ -29,3 +29,4 @@ describe("login redirects", () => {
     expect(getPostLoginRedirectPath(getSafeNextPath("https://example.com/profile"), "LEAD_TECHNICIAN")).toBe("/lead");
   });
 });
+

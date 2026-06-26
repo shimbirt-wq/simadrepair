@@ -1,4 +1,4 @@
-import type { PrismaClient } from "@prisma/client";
+﻿import type { PrismaClient } from "@prisma/client";
 import { describe, expect, it, vi } from "vitest";
 import { getReportsOverview } from "./report-service";
 
@@ -87,3 +87,4 @@ describe("report service", () => {
     );
   });
 });
+

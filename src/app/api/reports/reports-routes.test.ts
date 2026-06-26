@@ -1,4 +1,4 @@
-import type { User } from "@prisma/client";
+﻿import type { User } from "@prisma/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { signSessionToken } from "@/lib/auth/session";
 
@@ -39,7 +39,7 @@ function buildUser(overrides: Partial<User> = {}): User {
 function buildRequest(path: string, token: string) {
   return new Request(`http://localhost${path}`, {
     headers: {
-      cookie: `farsamotech_session=${token}`,
+      cookie: `simadrepair_session=${token}`,
     },
   });
 }
@@ -92,3 +92,4 @@ describe("reports route handlers", () => {
     vi.unstubAllEnvs();
   });
 });
+

@@ -1,4 +1,4 @@
-import type { CustodyStatus, RepairEventType, RepairMethod, RepairStatus, Severity } from "@prisma/client";
+import type { CustodyStatus, RepairEventType, RepairStatus } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 
@@ -10,11 +10,9 @@ const publicTrackingCodeSchema = z
 
 const PUBLIC_REPAIR_EVENT_TYPES = new Set<RepairEventType>([
   "TICKET_CREATED",
-  "TRIAGE_UPDATED",
   "STATUS_CHANGED",
+  "CUSTODY_CHANGED",
   "TECHNICIAN_ASSIGNED",
-  "STUDENT_ACTION_REQUESTED",
-  "PART_REQUIREMENT_ADDED",
   "READY_FOR_PICKUP",
   "PICKUP_CONFIRMED",
   "TICKET_CLOSED",
@@ -33,8 +31,6 @@ export type PublicRepairTimelineEvent = {
 export type PublicTrackingInfo = {
   trackingCode: string;
   status: RepairStatus;
-  severity: Severity | null;
-  repairMethod: RepairMethod | null;
   submittedAt: Date;
   assignedAt: Date | null;
   readyForPickupAt: Date | null;
@@ -42,8 +38,19 @@ export type PublicTrackingInfo = {
   device: {
     deviceType: string;
     brand: string;
+    model: string;
   };
-  issueCategory: string | null;
+  technician: {
+    fullName: string;
+    phone: string | null;
+  } | null;
+  custody: {
+    status: CustodyStatus;
+    storageLocation: string | null;
+    receivedAt: Date | null;
+    readyForCollectionAt: Date | null;
+    collectedAt: Date | null;
+  } | null;
   timeline: PublicRepairTimelineEvent[];
 };
 
@@ -105,12 +112,9 @@ export async function getPublicTrackingInfo(trackingCode: string): Promise<Publi
       trackingCode: true,
       ticketId: true,
       status: true,
-      severity: true,
-      repairMethod: true,
       createdAt: true,
       assignedAt: true,
       readyForPickupAt: true,
-      issueCategory: true,
       requester: {
         select: {
           fullName: true,
@@ -120,6 +124,22 @@ export async function getPublicTrackingInfo(trackingCode: string): Promise<Publi
         select: {
           deviceType: true,
           brand: true,
+          model: true,
+        },
+      },
+      technician: {
+        select: {
+          fullName: true,
+          phone: true,
+        },
+      },
+      custody: {
+        select: {
+          status: true,
+          storageLocation: true,
+          receivedAt: true,
+          readyForCollectionAt: true,
+          collectedAt: true,
         },
       },
       events: {
@@ -143,8 +163,6 @@ export async function getPublicTrackingInfo(trackingCode: string): Promise<Publi
   return {
     trackingCode: ticket.trackingCode ?? ticket.ticketId,
     status: ticket.status,
-    severity: ticket.severity,
-    repairMethod: ticket.repairMethod,
     submittedAt: ticket.createdAt,
     assignedAt: ticket.assignedAt,
     readyForPickupAt: ticket.readyForPickupAt,
@@ -152,8 +170,23 @@ export async function getPublicTrackingInfo(trackingCode: string): Promise<Publi
     device: {
       deviceType: ticket.device.deviceType,
       brand: ticket.device.brand,
+      model: ticket.device.model,
     },
-    issueCategory: ticket.issueCategory,
+    technician: ticket.technician
+      ? {
+          fullName: ticket.technician.fullName,
+          phone: ticket.technician.phone,
+        }
+      : null,
+    custody: ticket.custody
+      ? {
+          status: ticket.custody.status,
+          storageLocation: ticket.custody.storageLocation,
+          receivedAt: ticket.custody.receivedAt,
+          readyForCollectionAt: ticket.custody.readyForCollectionAt,
+          collectedAt: ticket.custody.collectedAt,
+        }
+      : null,
     timeline: ticket.events.filter(isPublicRepairEvent).map(toPublicTimelineEvent),
   };
 }

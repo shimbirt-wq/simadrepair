@@ -1,4 +1,4 @@
-import type { User } from "@prisma/client";
+﻿import type { User } from "@prisma/client";
 import { describe, expect, it, vi } from "vitest";
 import { signSessionToken } from "@/lib/auth/session";
 import { hashPassword } from "@/lib/auth/password";
@@ -65,8 +65,8 @@ describe("auth route handlers", () => {
   });
 
   it("rejects invalid login credentials with a generic error", async () => {
-    vi.stubEnv("DATABASE_URL", "postgresql://localhost:5432/farsamotech");
-    vi.stubEnv("DIRECT_URL", "postgresql://localhost:5432/farsamotech");
+    vi.stubEnv("DATABASE_URL", "postgresql://localhost:5432/simadrepair");
+    vi.stubEnv("DIRECT_URL", "postgresql://localhost:5432/simadrepair");
     vi.stubEnv("JWT_SECRET", "test-secret-value-that-is-long-enough");
     mockPrisma.user.findUnique.mockResolvedValue(null);
     const { POST } = await import("./login/route");
@@ -85,8 +85,8 @@ describe("auth route handlers", () => {
   });
 
   it("logs in with valid credentials and sets an http-only session cookie", async () => {
-    vi.stubEnv("DATABASE_URL", "postgresql://localhost:5432/farsamotech");
-    vi.stubEnv("DIRECT_URL", "postgresql://localhost:5432/farsamotech");
+    vi.stubEnv("DATABASE_URL", "postgresql://localhost:5432/simadrepair");
+    vi.stubEnv("DIRECT_URL", "postgresql://localhost:5432/simadrepair");
     vi.stubEnv("JWT_SECRET", "test-secret-value-that-is-long-enough");
     const passwordHash = await hashPassword("StrongPassword123!");
     mockPrisma.user.findUnique.mockResolvedValue(buildUser({ passwordHash }));
@@ -103,7 +103,7 @@ describe("auth route handlers", () => {
     expect(response.status).toBe(200);
     expect(body.user.email).toBe("tech@example.invalid");
     expect(body.user.passwordHash).toBeUndefined();
-    expect(response.headers.get("set-cookie")).toContain("farsamotech_session=");
+    expect(response.headers.get("set-cookie")).toContain("simadrepair_session=");
     expect(response.headers.get("set-cookie")).toContain("HttpOnly");
     vi.unstubAllEnvs();
   });
@@ -117,7 +117,7 @@ describe("auth route handlers", () => {
     const response = await GET(
       new Request("http://localhost/api/auth/me", {
         headers: {
-          cookie: `farsamotech_session=${token}`,
+          cookie: `simadrepair_session=${token}`,
         },
       }),
     );
@@ -145,7 +145,8 @@ describe("auth route handlers", () => {
     const response = POST();
 
     expect(response.status).toBe(200);
-    expect(response.headers.get("set-cookie")).toContain("farsamotech_session=");
+    expect(response.headers.get("set-cookie")).toContain("simadrepair_session=");
     expect(response.headers.get("set-cookie")).toContain("Max-Age=0");
   });
 });
+

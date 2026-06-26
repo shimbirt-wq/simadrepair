@@ -52,48 +52,6 @@ async function main() {
     });
   }
 
-  for (const log of seedData.repairLogs) {
-    await prisma.repairLog.upsert({
-      where: { id: log.id },
-      update: {
-        ticketId: log.ticketId,
-        technicianId: log.technicianId,
-        status: log.status,
-        diagnosis: log.diagnosis,
-        repairNotes: log.repairNotes,
-      },
-      create: log,
-    });
-  }
-
-  for (const activity of seedData.technicianActivity) {
-    await prisma.technicianActivity.upsert({
-      where: { id: activity.id },
-      update: {
-        technicianId: activity.technicianId,
-        checkIn: activity.checkIn,
-        checkOut: activity.checkOut,
-        repairsCompleted: activity.repairsCompleted,
-      },
-      create: activity,
-    });
-  }
-
-  for (const notification of seedData.notifications) {
-    await prisma.notification.upsert({
-      where: { id: notification.id },
-      update: {
-        userId: notification.userId,
-        ticketId: notification.ticketId,
-        channel: notification.channel,
-        status: notification.status,
-        title: notification.title,
-        message: notification.message,
-      },
-      create: notification,
-    });
-  }
-
   console.log("Local seed data inserted.");
   console.log(`Local seed password for all sample users: ${LOCAL_SEED_PASSWORD}`);
   console.log("Local seed login accounts:");

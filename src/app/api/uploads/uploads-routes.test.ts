@@ -1,4 +1,4 @@
-import type { User } from "@prisma/client";
+﻿import type { User } from "@prisma/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { signSessionToken } from "@/lib/auth/session";
 
@@ -39,7 +39,7 @@ async function buildMultipartRequest(token: string, file: File) {
   return new Request("http://localhost/api/uploads/repair-ticket-photo", {
     method: "POST",
     headers: {
-      cookie: `farsamotech_session=${token}`,
+      cookie: `simadrepair_session=${token}`,
     },
     body: formData,
   });
@@ -110,3 +110,4 @@ describe("upload route handlers", () => {
     expect(response.status).toBe(401);
   });
 });
+

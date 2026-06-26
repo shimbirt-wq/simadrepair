@@ -1,4 +1,4 @@
-import type { PrismaClient, UserRole } from "@prisma/client";
+﻿import type { PrismaClient, UserRole } from "@prisma/client";
 import { describe, expect, it, vi } from "vitest";
 import {
   AUTHORIZATION_ERRORS,
@@ -260,3 +260,4 @@ describe("requireTicketAccess", () => {
     expect(result).toEqual(AUTHORIZATION_ERRORS.notFound);
   });
 });
+

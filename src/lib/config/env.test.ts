@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+﻿import { describe, expect, it } from "vitest";
 import { getEnvironmentStatus, validateEnvironment } from "./env";
 
 describe("environment validation", () => {
@@ -45,3 +45,4 @@ describe("environment validation", () => {
     }
   });
 });
+

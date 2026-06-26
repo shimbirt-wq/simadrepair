@@ -2,31 +2,24 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState, useTransition } from "react";
+import type { CustodyStatus, RepairEventType, RepairStatus } from "@prisma/client";
 import { REPAIR_STATUS_LABELS } from "@/lib/constants/repair-status";
-import {
-  CUSTODY_STATUS_LABELS,
-  ISSUE_CATEGORY_LABELS,
-  ISSUE_CATEGORY_OPTIONS,
-  REPAIR_METHOD_LABELS,
-  SEVERITY_LABELS,
-} from "@/lib/service-desk/constants";
+import { CUSTODY_STATUS_LABELS } from "@/lib/service-desk/constants";
 
 type TrackingState = "idle" | "loading" | "success" | "invalid" | "not-found" | "error";
 
 type PublicTimelineEvent = {
-  eventType: string;
+  eventType: RepairEventType;
   occurredAt: string;
   statusFrom: string | null;
   statusTo: string | null;
-  custodyFrom: string | null;
-  custodyTo: string | null;
+  custodyFrom: CustodyStatus | null;
+  custodyTo: CustodyStatus | null;
 };
 
 type PublicTrackingInfo = {
   trackingCode: string;
-  status: string;
-  severity: string | null;
-  repairMethod: string | null;
+  status: RepairStatus;
   submittedAt: string;
   assignedAt: string | null;
   readyForPickupAt: string | null;
@@ -34,8 +27,19 @@ type PublicTrackingInfo = {
   device: {
     deviceType: string;
     brand: string;
+    model: string;
   };
-  issueCategory: string | null;
+  technician: {
+    fullName: string;
+    phone: string | null;
+  } | null;
+  custody: {
+    status: CustodyStatus;
+    storageLocation: string | null;
+    receivedAt: string | null;
+    readyForCollectionAt: string | null;
+    collectedAt: string | null;
+  } | null;
   timeline: PublicTimelineEvent[];
 };
 
@@ -43,20 +47,128 @@ type PublicTrackingApiError = {
   error?: string;
 };
 
+type DisplayStatus =
+  | "SUBMITTED"
+  | "NOT_RECEIVED"
+  | "RECEIVED"
+  | "ASSIGNED"
+  | "IN_REPAIR"
+  | "READY_FOR_PICKUP"
+  | "COLLECTED";
+
 const trackingCodePattern = /^SIM-\d{4}-\d+$/;
 
-const eventTypeLabels: Record<string, string> = {
+const eventTypeLabels: Record<RepairEventType, string> = {
   TICKET_CREATED: "Request submitted",
-  TRIAGE_UPDATED: "Triage updated",
   STATUS_CHANGED: "Status updated",
   CUSTODY_CHANGED: "Device custody updated",
   TECHNICIAN_ASSIGNED: "Technician assigned",
-  STUDENT_ACTION_REQUESTED: "Action requested",
-  PART_REQUIREMENT_ADDED: "Part requirement added",
   READY_FOR_PICKUP: "Ready for pickup",
   PICKUP_CONFIRMED: "Pickup confirmed",
   TICKET_CLOSED: "Ticket closed",
   TICKET_CANCELLED: "Ticket cancelled",
+};
+
+const repairStatusClassName: Record<RepairStatus, string> = {
+  REGISTRATION_COMPLETED: "status-registration",
+  DEVICE_RECEIVED: "status-received",
+  REPAIR_IN_PROGRESS: "status-repair",
+  READY_FOR_COLLECTION: "status-ready",
+  DEVICE_COLLECTED: "status-collected",
+};
+
+function getDisplayStatus(info: PublicTrackingInfo): DisplayStatus {
+  if (info.status === "DEVICE_COLLECTED") return "COLLECTED";
+  if (info.status === "READY_FOR_COLLECTION") return "READY_FOR_PICKUP";
+  if (info.status === "REPAIR_IN_PROGRESS") return "IN_REPAIR";
+  if (info.status === "DEVICE_RECEIVED" && info.technician) return "ASSIGNED";
+  if (info.status === "DEVICE_RECEIVED") return "RECEIVED";
+  if (info.custody && info.custody.status === "NOT_RECEIVED") return "NOT_RECEIVED";
+  return "SUBMITTED";
+}
+
+type StatusConfig = {
+  label: string;
+  message: (info: PublicTrackingInfo) => string;
+  iconPath: string;
+  bg: string;
+  iconColor: string;
+  badgeClass: string;
+};
+
+const statusConfigs: Record<DisplayStatus, StatusConfig> = {
+  SUBMITTED: {
+    label: "Submitted",
+    message: () =>
+      "Your repair request has been registered. Please bring your device to the IT service desk so it can be checked in.",
+    iconPath:
+      "M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414A1 1 0 0 1 19 9.414V19a2 2 0 0 1-2 2Z",
+    bg: "bg-slate-50 border-slate-200",
+    iconColor: "text-slate-500",
+    badgeClass: "status-registration",
+  },
+  NOT_RECEIVED: {
+    label: "Not received",
+    message: () =>
+      "Your device has not been checked in yet. Please bring it to the IT service desk so we can register its arrival.",
+    iconPath:
+      "M20.25 7.5l-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5m8.25 3v6.75m0 0-3-3m3 3 3-3M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z",
+    bg: "bg-amber-50 border-amber-200",
+    iconColor: "text-amber-600",
+    badgeClass: "status-registration",
+  },
+  RECEIVED: {
+    label: "Received",
+    message: () =>
+      "Your device has been received by the IT service desk. It is waiting to be assigned to a technician.",
+    iconPath:
+      "M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z",
+    bg: "bg-blue-50 border-blue-200",
+    iconColor: "text-blue-600",
+    badgeClass: "status-received",
+  },
+  ASSIGNED: {
+    label: "Assigned",
+    message: (info) =>
+      `Your device has been assigned to ${info.technician?.fullName ?? "a technician"}. Repair work will begin soon.`,
+    iconPath:
+      "M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z",
+    bg: "bg-indigo-50 border-indigo-200",
+    iconColor: "text-indigo-600",
+    badgeClass: "status-received",
+  },
+  IN_REPAIR: {
+    label: "In repair",
+    message: (info) =>
+      `${info.technician?.fullName ?? "A technician"} is currently working on your device. You will be notified when it is ready.`,
+    iconPath:
+      "M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 1 1-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 0 0 4.486-6.336l-3.276 3.277a3.004 3.004 0 0 1-2.25-2.25l3.276-3.276a4.5 4.5 0 0 0-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437 1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008Z",
+    bg: "bg-purple-50 border-purple-200",
+    iconColor: "text-purple-600",
+    badgeClass: "status-repair",
+  },
+  READY_FOR_PICKUP: {
+    label: "Ready for pickup",
+    message: (info) => {
+      const location = info.custody?.storageLocation ?? "the IT service desk";
+      return `Your device is ready! Please come to ${location} to collect it. You can contact your technician on WhatsApp to arrange pickup.`;
+    },
+    iconPath:
+      "M15.59 14.37a6 6 0 0 1-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 0 0 6.16-12.12A14.98 14.98 0 0 0 9.631 8.41m5.96 5.96a14.926 14.926 0 0 1-5.841 2.58m-.119-8.54a6 6 0 0 0-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 0 0-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 0 1-2.448-2.448 14.9 14.9 0 0 1 .06-.312m-2.24 2.39a4.493 4.493 0 0 0-1.757 4.306 4.493 4.493 0 0 0 4.306-1.758M16.5 9a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z",
+    bg: "bg-emerald-50 border-emerald-200",
+    iconColor: "text-emerald-600",
+    badgeClass: "status-ready",
+  },
+  COLLECTED: {
+    label: "Collected",
+    message: () =>
+      "Your device has been collected. Thank you for using SIMADRepair IT Service Desk. We hope your device is working well!",
+    iconPath:
+      "M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z",
+    bg: "bg-slate-50 border-slate-200",
+    iconColor: "text-slate-500",
+    badgeClass: "status-collected",
+  },
 };
 
 function normalizeTrackingCode(value: string) {
@@ -64,158 +176,150 @@ function normalizeTrackingCode(value: string) {
 }
 
 function formatDate(value: string | null) {
-  if (!value) {
-    return null;
-  }
-
+  if (!value) return null;
   return new Intl.DateTimeFormat("en", {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
 }
 
-function formatStatus(value: string | null) {
-  if (!value) {
-    return null;
-  }
-
-  return REPAIR_STATUS_LABELS[value as keyof typeof REPAIR_STATUS_LABELS] ?? value.replaceAll("_", " ");
+function buildWhatsAppUrl(info: PublicTrackingInfo) {
+  const phone = info.technician?.phone?.replace(/[^\d]/g, "");
+  if (!phone) return null;
+  const message = `Hello, I am following up on my repair request ${info.trackingCode}.`;
+  return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
 }
 
-function formatSeverity(value: string | null) {
-  if (!value) {
-    return null;
-  }
-
-  return SEVERITY_LABELS[value as keyof typeof SEVERITY_LABELS] ?? value.replaceAll("_", " ");
+function buildPickupWhatsAppUrl(info: PublicTrackingInfo) {
+  const phone = info.technician?.phone?.replace(/[^\d]/g, "");
+  if (!phone) return null;
+  const location = info.custody?.storageLocation ?? "the IT service desk";
+  const message = `Hello ${info.technician?.fullName ?? ""}, I am coming to pick up my device (${info.trackingCode}) from ${location}.`;
+  return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
 }
 
-function formatRepairMethod(value: string | null) {
-  if (!value) {
-    return null;
-  }
+function StatusHero({ trackingInfo }: { trackingInfo: PublicTrackingInfo }) {
+  const displayStatus = getDisplayStatus(trackingInfo);
+  const config = statusConfigs[displayStatus];
+  const message = config.message(trackingInfo);
+  const pickupUrl = displayStatus === "READY_FOR_PICKUP" ? buildPickupWhatsAppUrl(trackingInfo) : null;
+  const contactUrl = displayStatus === "ASSIGNED" || displayStatus === "IN_REPAIR" ? buildWhatsAppUrl(trackingInfo) : null;
 
-  return REPAIR_METHOD_LABELS[value as keyof typeof REPAIR_METHOD_LABELS] ?? value.replaceAll("_", " ");
-}
-
-function formatCustodyStatus(value: string | null) {
-  if (!value) {
-    return null;
-  }
-
-  return CUSTODY_STATUS_LABELS[value as keyof typeof CUSTODY_STATUS_LABELS] ?? value.replaceAll("_", " ");
-}
-
-function formatIssueCategory(value: string | null) {
-  if (!value || !ISSUE_CATEGORY_OPTIONS.includes(value as (typeof ISSUE_CATEGORY_OPTIONS)[number])) {
-    return value ? value.replaceAll("_", " ") : "Not classified";
-  }
-
-  return ISSUE_CATEGORY_LABELS[value as (typeof ISSUE_CATEGORY_OPTIONS)[number]];
-}
-
-function getStatusClass(status: string) {
-  const statusClasses: Record<string, string> = {
-    REGISTRATION_COMPLETED: "status-registration",
-    DEVICE_RECEIVED: "status-received",
-    DIAGNOSIS_IN_PROGRESS: "status-diagnosis",
-    REPAIR_IN_PROGRESS: "status-repair",
-    QUALITY_INSPECTION: "status-quality",
-    READY_FOR_COLLECTION: "status-ready",
-    DEVICE_COLLECTED: "status-collected",
-  };
-
-  return statusClasses[status] ?? "status-registration";
-}
-
-function InfoCard({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div
-      style={{
-        padding: "16px",
-        backgroundColor: "#ffffff",
-        border: "1px solid var(--border)",
-        borderRadius: "10px",
-      }}
-    >
-      <p
-        style={{
-          fontSize: "11px",
-          fontWeight: 600,
-          letterSpacing: "0.10em",
-          textTransform: "uppercase",
-          color: "var(--slate-400)",
-          marginBottom: "6px",
-        }}
-      >
-        {label}
-      </p>
-      <div
-        style={{
-          fontSize: "14px",
-          fontWeight: 600,
-          color: "#0f172a",
-        }}
-      >
-        {value}
+    <div className={`rounded-xl border p-6 ${config.bg}`}>
+      <div className="flex items-start gap-4">
+        <div className={`flex-shrink-0 rounded-lg p-2.5 ${config.iconColor} bg-white/70 shadow-sm`}>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d={config.iconPath} />
+          </svg>
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-wrap items-center gap-2 mb-2">
+            <span className={`status-badge ${config.badgeClass}`}>{config.label}</span>
+            <span className="text-xs font-mono text-[var(--muted)] font-semibold">{trackingInfo.trackingCode}</span>
+          </div>
+          <p className="text-sm leading-relaxed text-[var(--muted-strong)]">{message}</p>
+
+          {pickupUrl ? (
+            <a
+              href={pickupUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-4 inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+                <path d="M12 0C5.373 0 0 5.373 0 12c0 2.136.564 4.14 1.546 5.872L0 24l6.293-1.519A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.806 9.806 0 0 1-4.983-1.361l-.357-.213-3.738.901.938-3.641-.234-.373A9.772 9.772 0 0 1 2.182 12C2.182 6.57 6.57 2.182 12 2.182S21.818 6.57 21.818 12 17.43 21.818 12 21.818z"/>
+              </svg>
+              Message technician for pickup
+            </a>
+          ) : null}
+
+          {contactUrl ? (
+            <a
+              href={contactUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-4 inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-white px-4 py-2 text-sm font-semibold text-[var(--foreground)] shadow-sm transition hover:bg-[var(--surface-alt)]"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="text-emerald-600" aria-hidden="true">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+                <path d="M12 0C5.373 0 0 5.373 0 12c0 2.136.564 4.14 1.546 5.872L0 24l6.293-1.519A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.806 9.806 0 0 1-4.983-1.361l-.357-.213-3.738.901.938-3.641-.234-.373A9.772 9.772 0 0 1 2.182 12C2.182 6.57 6.57 2.182 12 2.182S21.818 6.57 21.818 12 17.43 21.818 12 21.818z"/>
+              </svg>
+              Contact technician on WhatsApp
+            </a>
+          ) : null}
+        </div>
       </div>
     </div>
   );
 }
 
-function InlineMessage({
-  title,
-  body,
-  tone = "neutral",
-}: {
-  title: string;
-  body: string;
-  tone?: "neutral" | "danger";
-}) {
-  const isDanger = tone === "danger";
+function DetailGrid({ trackingInfo }: { trackingInfo: PublicTrackingInfo }) {
+  const submittedAt = formatDate(trackingInfo.submittedAt);
+  const readyAt = formatDate(trackingInfo.readyForPickupAt);
+  const location = trackingInfo.custody?.storageLocation ?? "IT service desk";
 
   return (
-    <div
-      style={{
-        padding: "16px 20px",
-        borderRadius: "10px",
-        border: `1px solid ${isDanger ? "#fecaca" : "#e2e2dc"}`,
-        backgroundColor: isDanger ? "#fef2f2" : "#ffffff",
-        display: "flex",
-        gap: "12px",
-        alignItems: "flex-start",
-      }}
-    >
-      <div
-        style={{
-          width: "8px",
-          height: "8px",
-          borderRadius: "50%",
-          marginTop: "5px",
-          flexShrink: 0,
-          backgroundColor: isDanger ? "#dc2626" : "#94a3b8",
-        }}
-      />
-      <div>
-        <p
-          style={{
-            fontSize: "14px",
-            fontWeight: 600,
-            color: isDanger ? "#991b1b" : "#0f172a",
-            marginBottom: "4px",
-          }}
-        >
-          {title}
-        </p>
-        <p
-          style={{
-            fontSize: "13px",
-            color: isDanger ? "#b91c1c" : "var(--slate-500)",
-            lineHeight: 1.6,
-          }}
-        >
-          {body}
-        </p>
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="rounded-lg border border-[var(--border)] bg-white p-4">
+        <p className="eyebrow">Device</p>
+        <p className="mt-2 text-sm font-semibold text-[var(--foreground)]">{trackingInfo.device.brand} {trackingInfo.device.model}</p>
+        <p className="mt-0.5 text-xs text-[var(--muted)] capitalize">{trackingInfo.device.deviceType.toLowerCase()}</p>
+      </div>
+      <div className="rounded-lg border border-[var(--border)] bg-white p-4">
+        <p className="eyebrow">Requested by</p>
+        <p className="mt-2 text-sm font-semibold text-[var(--foreground)]">{trackingInfo.requesterName}</p>
+        <p className="mt-0.5 text-xs text-[var(--muted)]">Submitted {submittedAt ?? "recently"}</p>
+      </div>
+      <div className="rounded-lg border border-[var(--border)] bg-white p-4">
+        <p className="eyebrow">Pickup location</p>
+        <p className="mt-2 text-sm font-semibold text-[var(--foreground)]">{location}</p>
+        {readyAt ? <p className="mt-0.5 text-xs text-[var(--muted)]">Ready since {readyAt}</p> : <p className="mt-0.5 text-xs text-[var(--muted)]">Not ready yet</p>}
+      </div>
+    </div>
+  );
+}
+
+function TechnicianCard({ trackingInfo }: { trackingInfo: PublicTrackingInfo }) {
+  if (!trackingInfo.technician) return null;
+  const displayStatus = getDisplayStatus(trackingInfo);
+  if (displayStatus === "SUBMITTED" || displayStatus === "NOT_RECEIVED" || displayStatus === "RECEIVED") return null;
+
+  const { technician } = trackingInfo;
+  const whatsAppUrl = buildWhatsAppUrl(trackingInfo);
+
+  return (
+    <div className="rounded-xl border border-[var(--border)] bg-white p-5">
+      <p className="eyebrow">Your assigned technician</p>
+      <div className="mt-4 flex items-center gap-4">
+        <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 text-[var(--blue-700)]">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" />
+          </svg>
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-base font-semibold text-[var(--foreground)]">{technician.fullName}</p>
+          {technician.phone ? (
+            <p className="mt-0.5 text-sm text-[var(--muted)]">{technician.phone}</p>
+          ) : (
+            <p className="mt-0.5 text-sm text-[var(--muted)]">Phone not available</p>
+          )}
+        </div>
+        {whatsAppUrl ? (
+          <a
+            href={whatsAppUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="flex-shrink-0 inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface-alt)] px-3 py-2 text-sm font-semibold text-[var(--foreground)] transition hover:bg-white"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="text-emerald-600" aria-hidden="true">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+              <path d="M12 0C5.373 0 0 5.373 0 12c0 2.136.564 4.14 1.546 5.872L0 24l6.293-1.519A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.806 9.806 0 0 1-4.983-1.361l-.357-.213-3.738.901.938-3.641-.234-.373A9.772 9.772 0 0 1 2.182 12C2.182 6.57 6.57 2.182 12 2.182S21.818 6.57 21.818 12 17.43 21.818 12 21.818z"/>
+            </svg>
+            WhatsApp
+          </a>
+        ) : null}
       </div>
     </div>
   );
@@ -223,134 +327,33 @@ function InlineMessage({
 
 function PublicTimeline({ events }: { events: PublicTimelineEvent[] }) {
   if (events.length === 0) {
-    return (
-      <p
-        style={{
-          padding: "16px",
-          border: "1px solid var(--border)",
-          borderRadius: "10px",
-          fontSize: "13px",
-          color: "var(--slate-400)",
-          backgroundColor: "#ffffff",
-        }}
-      >
-        No public timeline updates are available yet.
-      </p>
-    );
+    return <p className="text-sm text-[var(--muted)]">No timeline updates yet.</p>;
   }
 
   return (
-    <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: "0" }}>
+    <ol className="grid gap-0">
       {events.map((event, index) => {
-        const statusTo = formatStatus(event.statusTo);
-        const custodyTo = formatCustodyStatus(event.custodyTo);
         const isLast = index === events.length - 1;
-
-        const dateStr = formatDate(event.occurredAt);
-        const dateObj = event.occurredAt ? new Date(event.occurredAt) : null;
-        const timeStr = dateObj
-          ? dateObj.toLocaleTimeString("en", { hour: "2-digit", minute: "2-digit" })
-          : null;
-        const dayStr = dateObj
-          ? dateObj.toLocaleDateString("en", { month: "short", day: "numeric" })
-          : null;
+        const statusTo = event.statusTo ? (REPAIR_STATUS_LABELS[event.statusTo as RepairStatus] ?? event.statusTo.replaceAll("_", " ")) : null;
+        const custodyTo = event.custodyTo ? (CUSTODY_STATUS_LABELS[event.custodyTo] ?? event.custodyTo.replaceAll("_", " ")) : null;
 
         return (
-          <li
-            key={`${event.eventType}-${event.occurredAt}`}
-            style={{
-              display: "flex",
-              gap: "16px",
-              position: "relative",
-            }}
-          >
-            {/* Timeline line + dot */}
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                flexShrink: 0,
-                width: "20px",
-              }}
-            >
-              <div
-                style={{
-                  width: "10px",
-                  height: "10px",
-                  borderRadius: "50%",
-                  backgroundColor: "#2563eb",
-                  border: "2px solid #ffffff",
-                  boxShadow: "0 0 0 2px #bfdbfe",
-                  flexShrink: 0,
-                  marginTop: "16px",
-                  zIndex: 1,
-                  position: "relative",
-                }}
-              />
-              {!isLast && (
-                <div
-                  style={{
-                    width: "1px",
-                    flex: 1,
-                    backgroundColor: "#e2e2dc",
-                    minHeight: "24px",
-                  }}
-                />
-              )}
+          <li key={`${event.eventType}-${event.occurredAt}`} className="grid grid-cols-[20px_1fr] gap-4">
+            <div className="flex flex-col items-center">
+              <span className="mt-4 h-2.5 w-2.5 rounded-full border-2 border-white bg-[var(--blue-600)] shadow-[0_0_0_2px_#bfdbfe]" />
+              {!isLast ? <span className="min-h-6 w-px flex-1 bg-[var(--border)]" /> : null}
             </div>
-
-            {/* Event content */}
-            <div
-              style={{
-                flex: 1,
-                paddingBottom: isLast ? "0" : "24px",
-                paddingTop: "12px",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  alignItems: "flex-start",
-                  justifyContent: "space-between",
-                  gap: "8px",
-                  marginBottom: "4px",
-                }}
-              >
-                <p
-                  style={{
-                    fontSize: "14px",
-                    fontWeight: 600,
-                    color: "#0f172a",
-                  }}
-                >
-                  {eventTypeLabels[event.eventType] ?? event.eventType.replaceAll("_", " ")}
-                </p>
-                {statusTo ? <span className={`status-badge ${getStatusClass(event.statusTo ?? "")}`}>{statusTo}</span> : null}
+            <div className={isLast ? "pt-3" : "pb-6 pt-3"}>
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <p className="text-sm font-semibold text-[var(--foreground)]">{eventTypeLabels[event.eventType] ?? event.eventType.replaceAll("_", " ")}</p>
+                {event.statusTo ? (
+                  <span className={`status-badge ${repairStatusClassName[event.statusTo as RepairStatus] ?? "status-registration"}`}>{statusTo}</span>
+                ) : null}
               </div>
-              {dateStr && (
-                <p
-                  style={{
-                    fontSize: "12px",
-                    color: "var(--slate-400)",
-                    fontWeight: 500,
-                  }}
-                >
-                  {dayStr} &middot; {timeStr}
-                </p>
-              )}
-              {custodyTo ? (
-                <p
-                  style={{
-                    marginTop: "6px",
-                    fontSize: "13px",
-                    color: "var(--slate-500)",
-                  }}
-                >
-                  Device custody: {custodyTo}
-                </p>
-              ) : null}
+              <p className="mt-1 text-xs font-medium text-[var(--muted)]">
+                {new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" }).format(new Date(event.occurredAt))}
+              </p>
+              {custodyTo ? <p className="mt-2 text-sm text-[var(--muted-strong)]">Device custody: {custodyTo}</p> : null}
             </div>
           </li>
         );
@@ -360,122 +363,28 @@ function PublicTimeline({ events }: { events: PublicTimelineEvent[] }) {
 }
 
 function TrackingResult({ trackingInfo }: { trackingInfo: PublicTrackingInfo }) {
-  const submittedAt = formatDate(trackingInfo.submittedAt);
-  const assignedAt = formatDate(trackingInfo.assignedAt);
-  const readyForPickupAt = formatDate(trackingInfo.readyForPickupAt);
-
   return (
-    <section style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-      {/* Status hero */}
-      <div
-        style={{
-          backgroundColor: "#ffffff",
-          border: "1px solid var(--border)",
-          borderRadius: "12px",
-          overflow: "hidden",
-        }}
-      >
-        {/* Header bar */}
-        <div
-          style={{
-            padding: "24px",
-            borderBottom: "1px solid #e2e2dc",
-            display: "flex",
-            flexWrap: "wrap",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: "16px",
-          }}
-        >
-          <div>
-            <p
-              style={{
-                fontSize: "11px",
-                fontWeight: 600,
-                letterSpacing: "0.10em",
-                textTransform: "uppercase",
-                color: "var(--slate-400)",
-                marginBottom: "6px",
-              }}
-            >
-              Tracking code
-            </p>
-            <h2
-              className="tracking-code"
-              style={{
-                fontSize: "22px",
-                fontWeight: 700,
-                color: "#0f172a",
-                wordBreak: "break-all",
-              }}
-            >
-              {trackingInfo.trackingCode}
-            </h2>
-          </div>
-          <span className={`status-badge ${getStatusClass(trackingInfo.status)}`} style={{ fontSize: "13px" }}>
-            {formatStatus(trackingInfo.status)}
-          </span>
+    <section className="grid gap-4">
+      <StatusHero trackingInfo={trackingInfo} />
+      <DetailGrid trackingInfo={trackingInfo} />
+      <TechnicianCard trackingInfo={trackingInfo} />
+      <div className="rounded-xl border border-[var(--border)] bg-white p-5">
+        <p className="eyebrow">Repair timeline</p>
+        <div className="mt-4">
+          <PublicTimeline events={trackingInfo.timeline} />
         </div>
-
-        {/* Info grid */}
-        <div
-          style={{
-            padding: "20px",
-            display: "grid",
-            gap: "12px",
-          }}
-          className="sm:grid-cols-3"
-        >
-          <InfoCard label="Requester" value={trackingInfo.requesterName} />
-          <InfoCard label="Device" value={`${trackingInfo.device.brand} ${trackingInfo.device.deviceType}`} />
-          <InfoCard label="Issue category" value={formatIssueCategory(trackingInfo.issueCategory)} />
-        </div>
-
-        {/* Secondary info */}
-        <div
-          style={{
-            padding: "0 20px 20px",
-            display: "grid",
-            gap: "12px",
-          }}
-          className="sm:grid-cols-3"
-        >
-          <InfoCard label="Submitted" value={submittedAt ?? "Not available"} />
-          <InfoCard label="Assigned" value={assignedAt ?? "Not assigned yet"} />
-          <InfoCard label="Ready for pickup" value={readyForPickupAt ?? "Not ready yet"} />
-          {trackingInfo.severity ? <InfoCard label="Severity" value={formatSeverity(trackingInfo.severity)} /> : null}
-          {trackingInfo.repairMethod ? (
-            <InfoCard label="Repair method" value={formatRepairMethod(trackingInfo.repairMethod)} />
-          ) : null}
-        </div>
-      </div>
-
-      {/* Timeline */}
-      <div
-        style={{
-          backgroundColor: "#ffffff",
-          border: "1px solid var(--border)",
-          borderRadius: "12px",
-          padding: "24px",
-        }}
-      >
-        <div style={{ marginBottom: "24px" }}>
-          <p className="eyebrow">PUBLIC TIMELINE</p>
-          <h2
-            style={{
-              marginTop: "6px",
-              fontSize: "18px",
-              fontWeight: 700,
-              letterSpacing: "-0.02em",
-              color: "#0f172a",
-            }}
-          >
-            Repair progress
-          </h2>
-        </div>
-        <PublicTimeline events={trackingInfo.timeline} />
       </div>
     </section>
+  );
+}
+
+function InlineMessage({ body, title, tone = "neutral" }: { body: string; title: string; tone?: "neutral" | "danger" }) {
+  const isDanger = tone === "danger";
+  return (
+    <div className={`rounded-lg border p-4 ${isDanger ? "border-red-200 bg-red-50" : "border-[var(--border)] bg-white"}`}>
+      <p className={`text-sm font-semibold ${isDanger ? "text-red-800" : "text-[var(--foreground)]"}`}>{title}</p>
+      <p className={`mt-1 text-sm leading-6 ${isDanger ? "text-red-700" : "text-[var(--muted)]"}`}>{body}</p>
+    </div>
   );
 }
 
@@ -502,9 +411,7 @@ export function PublicTracking({ initialCode = "" }: { initialCode?: string }) {
     setState("loading");
 
     startTransition(async () => {
-      const response = await fetch(`/api/public/tracking/${encodeURIComponent(normalizedCode)}`, {
-        method: "GET",
-      });
+      const response = await fetch(`/api/public/tracking/${encodeURIComponent(normalizedCode)}`, { method: "GET" });
       const body = (await response.json().catch(() => null)) as (PublicTrackingInfo & PublicTrackingApiError) | null;
 
       if (response.status === 400) {
@@ -512,23 +419,25 @@ export function PublicTracking({ initialCode = "" }: { initialCode?: string }) {
         setMessage(body?.error ?? "Invalid tracking code format.");
         return;
       }
-
       if (response.status === 404) {
         setState("not-found");
         setMessage(body?.error ?? "Tracking code not found.");
         return;
       }
-
-      if (!response.ok || !body?.trackingCode) {
+      if (!response.ok || !body) {
         setState("error");
-        setMessage(body?.error ?? "Unable to load tracking information right now.");
+        setMessage(body?.error ?? "Unable to load repair status.");
         return;
       }
 
       setTrackingInfo(body);
       setState("success");
-      setMessage(null);
     });
+  }
+
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    fetchTrackingInfo(trackingCode);
   }
 
   useEffect(() => {
@@ -537,110 +446,38 @@ export function PublicTracking({ initialCode = "" }: { initialCode?: string }) {
     }
   }, [normalizedInitialCode]);
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    fetchTrackingInfo(String(formData.get("trackingCode") ?? ""));
-  }
-
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-      {/* Search form */}
-      <form
-        onSubmit={handleSubmit}
-        style={{
-          backgroundColor: "#ffffff",
-          border: "1px solid var(--border)",
-          borderRadius: "12px",
-          padding: "24px",
-          boxShadow: "0 2px 8px rgba(15,23,42,0.06)",
-        }}
-      >
-        <label
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "8px",
-            fontSize: "14px",
-            fontWeight: 600,
-            color: "#0f172a",
-          }}
-        >
-          Tracking code
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: "10px",
-              alignItems: "center",
-            }}
-          >
-            <input
-              name="trackingCode"
-              value={trackingCode}
-              onChange={(event) => setTrackingCode(event.target.value.toUpperCase())}
-              className="field-control"
-              style={{ flex: "1 1 200px", minWidth: 0 }}
-              placeholder="SIM-2026-1000001"
-              autoComplete="off"
-            />
-            <button
-              type="submit"
-              disabled={isPending || state === "loading"}
-              className="btn-primary"
-              style={{ whiteSpace: "nowrap", fontSize: "14px" }}
-            >
-              {isPending || state === "loading" ? "Checking..." : "Check status"}
-            </button>
-          </div>
-        </label>
-        <p
-          style={{
-            marginTop: "10px",
-            fontSize: "13px",
-            color: "var(--slate-400)",
-            lineHeight: 1.6,
-          }}
-        >
-          Enter the tracking code you received after submitting your SIMAD computer maintenance request.
-        </p>
-      </form>
+    <div className="grid gap-5">
+      <div className="rounded-xl border border-[var(--border)] bg-white p-5">
+        <p className="mb-1 text-sm font-semibold text-[var(--foreground)]">Enter your tracking code</p>
+        <p className="mb-4 text-sm text-[var(--muted)]">You received this code after submitting your repair request. It looks like SIM-2026-1000001.</p>
+        <form onSubmit={handleSubmit} className="flex gap-3">
+          <input
+            className="field-control flex-1 tracking-code"
+            value={trackingCode}
+            onChange={(event) => setTrackingCode(event.target.value.toUpperCase())}
+            placeholder="SIM-2026-100001"
+            aria-label="Tracking code"
+          />
+          <button className="btn-primary flex-shrink-0" disabled={isPending}>
+            {isPending ? "Checking…" : "Check status"}
+          </button>
+        </form>
+      </div>
 
-      {/* State messages */}
-      {state === "idle" ? (
-        <InlineMessage title="Enter your tracking code" body="Your repair progress will appear here after lookup." />
-      ) : null}
-      {state === "loading" ? (
-        <InlineMessage title="Checking repair status" body="Loading the latest public repair progress for this code." />
-      ) : null}
-      {state === "invalid" ? (
-        <InlineMessage title="Invalid tracking code" body={message ?? "Check the code format and try again."} tone="danger" />
-      ) : null}
-      {state === "not-found" ? (
-        <InlineMessage title="Tracking code not found" body={message ?? "No repair request was found for that code."} />
-      ) : null}
-      {state === "error" ? (
-        <InlineMessage title="Unable to load tracking" body={message ?? "Try again in a moment."} tone="danger" />
-      ) : null}
+      {state === "idle" ? null : null}
+      {state === "invalid" ? <InlineMessage tone="danger" title="Invalid tracking code" body={message ?? "Check the tracking code and try again."} /> : null}
+      {state === "not-found" ? <InlineMessage tone="danger" title="Not found" body="No repair request matches this tracking code. Double-check the code and try again." /> : null}
+      {state === "error" ? <InlineMessage tone="danger" title="Unable to load status" body={message ?? "Try again in a moment."} /> : null}
+      {(state === "loading" || isPending) && state !== "success" ? <InlineMessage title="Loading…" body="Checking your repair status." /> : null}
       {state === "success" && trackingInfo ? <TrackingResult trackingInfo={trackingInfo} /> : null}
 
-      {/* Footer links */}
-      <div
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          alignItems: "center",
-          gap: "12px",
-          paddingTop: "4px",
-        }}
-      >
-        <Link href="/request-repair" className="btn-secondary">
-          Submit a repair request
+      <p className="text-center text-sm text-[var(--muted)]">
+        Need a repair?{" "}
+        <Link href="/request-repair" className="font-semibold text-[var(--blue-700)]">
+          Submit a new request
         </Link>
-        <Link href="/" className="btn-ghost">
-          Back to home
-        </Link>
-      </div>
+      </p>
     </div>
   );
 }

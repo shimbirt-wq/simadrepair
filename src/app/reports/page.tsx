@@ -24,7 +24,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     redirect("/auth/login?next=/reports");
   }
 
-  if (user.role !== "ADMIN") {
+  if (user.role !== "ADMIN" && user.role !== "LEAD_TECHNICIAN") {
     redirect("/");
   }
 

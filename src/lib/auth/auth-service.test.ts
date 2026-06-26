@@ -1,4 +1,4 @@
-import type { PrismaClient, User } from "@prisma/client";
+﻿import type { PrismaClient, User } from "@prisma/client";
 import { describe, expect, it, vi } from "vitest";
 import { loginUser } from "./auth-service";
 import { hashPassword } from "./password";
@@ -104,3 +104,4 @@ describe("loginUser", () => {
     vi.unstubAllEnvs();
   });
 });
+

@@ -7,7 +7,7 @@ export function GET() {
   return NextResponse.json(
     {
       status: "ok",
-      service: "farsamotech-repair-hub",
+      service: "simadrepair",
       stack: "nextjs-prisma-supabase",
       timestamp: new Date().toISOString(),
       environment,

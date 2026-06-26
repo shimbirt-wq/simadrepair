@@ -1,8 +1,18 @@
-import type { RepairStatus } from "@prisma/client";
+﻿import type { RepairStatus } from "@prisma/client";
 import { describe, expect, it } from "vitest";
 import { canTransitionRepairStatus, getNextRepairStatus, REPAIR_STATUS_FLOW, REPAIR_STATUS_LABELS } from "./repair-status";
 
 describe("repair status constants", () => {
+  it("defines the simplified MVP repair flow", () => {
+    expect(REPAIR_STATUS_FLOW).toEqual([
+      "REGISTRATION_COMPLETED",
+      "DEVICE_RECEIVED",
+      "REPAIR_IN_PROGRESS",
+      "READY_FOR_COLLECTION",
+      "DEVICE_COLLECTED",
+    ]);
+  });
+
   it("defines a label for every repair status in the flow", () => {
     for (const status of REPAIR_STATUS_FLOW) {
       expect(REPAIR_STATUS_LABELS[status]).toEqual(expect.any(String));
@@ -18,39 +28,24 @@ describe("canTransitionRepairStatus", () => {
     }
   });
 
-  it("rejects skipped transitions", () => {
-    expect(canTransitionRepairStatus("REGISTRATION_COMPLETED", "DIAGNOSIS_IN_PROGRESS")).toBe(false);
-    expect(canTransitionRepairStatus("DEVICE_RECEIVED", "REPAIR_IN_PROGRESS")).toBe(false);
-  });
-
-  it("rejects backward transitions", () => {
+  it("rejects skipped, backward, same, and unknown transitions", () => {
+    expect(canTransitionRepairStatus("REGISTRATION_COMPLETED", "REPAIR_IN_PROGRESS")).toBe(false);
     expect(canTransitionRepairStatus("DEVICE_RECEIVED", "REGISTRATION_COMPLETED")).toBe(false);
-    expect(canTransitionRepairStatus("READY_FOR_COLLECTION", "QUALITY_INSPECTION")).toBe(false);
-  });
-
-  it("rejects staying on the same status", () => {
     expect(canTransitionRepairStatus("REPAIR_IN_PROGRESS", "REPAIR_IN_PROGRESS")).toBe(false);
-  });
-
-  it("rejects unknown status values defensively", () => {
-    const unknownStatus = "UNKNOWN_STATUS" as RepairStatus;
-
-    expect(canTransitionRepairStatus(unknownStatus, "DEVICE_RECEIVED")).toBe(false);
-    expect(canTransitionRepairStatus("REGISTRATION_COMPLETED", unknownStatus)).toBe(false);
+    expect(canTransitionRepairStatus("UNKNOWN_STATUS" as RepairStatus, "DEVICE_RECEIVED")).toBe(false);
   });
 });
 
 describe("getNextRepairStatus", () => {
   it("returns the next status in the controlled flow", () => {
     expect(getNextRepairStatus("REGISTRATION_COMPLETED")).toBe("DEVICE_RECEIVED");
-    expect(getNextRepairStatus("DEVICE_RECEIVED")).toBe("DIAGNOSIS_IN_PROGRESS");
+    expect(getNextRepairStatus("DEVICE_RECEIVED")).toBe("REPAIR_IN_PROGRESS");
+    expect(getNextRepairStatus("REPAIR_IN_PROGRESS")).toBe("READY_FOR_COLLECTION");
   });
 
-  it("returns null for the final status", () => {
+  it("returns null for final or unknown statuses", () => {
     expect(getNextRepairStatus("DEVICE_COLLECTED")).toBeNull();
-  });
-
-  it("returns null for unknown status values defensively", () => {
     expect(getNextRepairStatus("UNKNOWN_STATUS" as RepairStatus)).toBeNull();
   });
 });
+

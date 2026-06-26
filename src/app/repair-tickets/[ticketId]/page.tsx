@@ -3,7 +3,6 @@ import Image from "next/image";
 import { AppShell } from "@/app/app-shell";
 import { notFound, redirect } from "next/navigation";
 import { getNextRepairStatus, REPAIR_STATUS_LABELS } from "@/lib/constants/repair-status";
-import { RepairLogForm } from "@/app/repair-tickets/repair-log-form";
 import { TechnicianAssignmentForm } from "@/app/repair-tickets/technician-assignment-form";
 import { StatusUpdateForm } from "@/app/repair-tickets/status-update-form";
 import { getCurrentServerUser } from "@/lib/auth/server-user";
@@ -49,7 +48,6 @@ export default async function RepairTicketDetailPage({ params }: RepairTicketDet
   const { ticket } = result;
   const nextStatus = getNextRepairStatus(ticket.status);
   const canUpdateStatus = user.role === "ADMIN" || (user.role === "TECHNICIAN" && ticket.technicianId === user.id);
-  const canAddRepairLog = canUpdateStatus;
   const lookupUrl = buildTicketLookupUrl(ticket.ticketId);
   const qrCodeUrl = buildTicketQrCodeUrl(ticket.ticketId);
 
@@ -129,26 +127,19 @@ export default async function RepairTicketDetailPage({ params }: RepairTicketDet
           </div>
         ) : null}
 
-        {canAddRepairLog ? (
-          <div className="mt-8">
-            <RepairLogForm ticketId={ticket.id} />
-          </div>
-        ) : null}
-
         <div className="mt-8">
           <h2 className="text-xl font-semibold text-[var(--foreground)]">Timeline</h2>
           <div className="mt-4 grid gap-4">
-            {ticket.logs.map((log) => (
-              <article key={log.id} className="panel p-5">
+            {ticket.events.map((event) => (
+              <article key={event.id} className="panel p-5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
-                  <StatusBadge status={log.status} />
-                  <p className="text-sm text-[var(--muted)]">{new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(log.createdAt)}</p>
+                  <StatusBadge status={event.status} />
+                  <p className="text-sm text-[var(--muted)]">{new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(event.createdAt)}</p>
                 </div>
-                {log.technician ? (
-                  <p className="mt-2 text-sm text-[var(--muted)]">Technician: {log.technician.fullName}</p>
+                {event.actor ? (
+                  <p className="mt-2 text-sm text-[var(--muted)]">Updated by: {event.actor.fullName}</p>
                 ) : null}
-                <p className="mt-3 text-sm leading-7 text-[var(--muted)]">{log.repairNotes ?? "No repair note recorded."}</p>
-                {log.diagnosis ? <p className="mt-2 text-sm leading-7 text-[var(--muted)]">Diagnosis: {log.diagnosis}</p> : null}
+                <p className="mt-3 text-sm leading-7 text-[var(--muted)]">{event.note ?? event.eventType.replaceAll("_", " ").toLowerCase()}</p>
               </article>
             ))}
           </div>

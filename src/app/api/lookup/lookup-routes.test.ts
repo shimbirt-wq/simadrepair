@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+﻿import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockPrisma = vi.hoisted(() => ({
   repairTicket: {
@@ -59,7 +59,7 @@ describe("lookup route handlers", () => {
     expect(body.ticket).toEqual(
       expect.objectContaining({
         ticketId: "TCK-20260101-ABC123",
-        statusLabel: "Device Received",
+        statusLabel: "Received",
         deviceType: "Laptop",
       }),
     );
@@ -70,3 +70,4 @@ describe("lookup route handlers", () => {
     expect(body.ticket.technician).toBeUndefined();
   });
 });
+

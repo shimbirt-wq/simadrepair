@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import type { NotificationChannel, NotificationStatus, RepairStatus, UserRole } from "@prisma/client";
+import type { RepairStatus, UserRole } from "@prisma/client";
 
 export const LOCAL_SEED_PASSWORD = "TestPass123!";
 export const LOCAL_SEED_EMAIL_DOMAIN = "simadrepair.test";
@@ -47,40 +47,10 @@ export type LocalSeedRepairTicket = {
   status: RepairStatus;
 };
 
-export type LocalSeedRepairLog = {
-  id: string;
-  ticketId: string;
-  technicianId: string | null;
-  status: RepairStatus;
-  diagnosis: string | null;
-  repairNotes: string | null;
-};
-
-export type LocalSeedTechnicianActivity = {
-  id: string;
-  technicianId: string;
-  checkIn: Date;
-  checkOut: Date | null;
-  repairsCompleted: number;
-};
-
-export type LocalSeedNotification = {
-  id: string;
-  userId: string;
-  ticketId: string | null;
-  channel: NotificationChannel;
-  status: NotificationStatus;
-  title: string;
-  message: string;
-};
-
 export type LocalSeedData = {
   users: LocalSeedUser[];
   devices: LocalSeedDevice[];
   repairTickets: LocalSeedRepairTicket[];
-  repairLogs: LocalSeedRepairLog[];
-  technicianActivity: LocalSeedTechnicianActivity[];
-  notifications: LocalSeedNotification[];
 };
 
 export async function hashLocalSeedPassword(password = LOCAL_SEED_PASSWORD): Promise<string> {
@@ -131,26 +101,9 @@ export function buildLocalSeedData(passwordHash: string): LocalSeedData {
 
   const repairTickets: LocalSeedRepairTicket[] = [];
 
-  const repairLogs: LocalSeedRepairLog[] = [];
-
-  const technicianActivity: LocalSeedTechnicianActivity[] = [
-    {
-      id: "seed_activity_technician_today",
-      technicianId: "seed_technician_001",
-      checkIn: new Date("2026-01-01T08:00:00.000Z"),
-      checkOut: new Date("2026-01-01T16:00:00.000Z"),
-      repairsCompleted: 1,
-    },
-  ];
-
-  const notifications: LocalSeedNotification[] = [];
-
   return {
     users,
     devices,
     repairTickets,
-    repairLogs,
-    technicianActivity,
-    notifications,
   };
 }

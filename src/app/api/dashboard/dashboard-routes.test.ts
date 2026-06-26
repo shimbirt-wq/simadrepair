@@ -1,4 +1,4 @@
-import type { User } from "@prisma/client";
+﻿import type { User } from "@prisma/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { signSessionToken } from "@/lib/auth/session";
 
@@ -46,7 +46,7 @@ async function buildSessionCookie(user: Pick<User, "id" | "role">) {
   vi.stubEnv("JWT_SECRET", "test-secret-value-that-is-long-enough");
   const token = await signSessionToken({ id: user.id, role: user.role });
 
-  return `farsamotech_session=${token}`;
+  return `simadrepair_session=${token}`;
 }
 
 describe("dashboard route handlers", () => {
@@ -135,3 +135,4 @@ describe("dashboard route handlers", () => {
     expect(body.error).toBe("Authentication required.");
   });
 });
+
