@@ -43,7 +43,7 @@ type PublicTrackingApiError = {
   error?: string;
 };
 
-const trackingCodePattern = /^SIM-\d{4}-\d{6}$/;
+const trackingCodePattern = /^SIM-\d{4}-\d+$/;
 
 const eventTypeLabels: Record<string, string> = {
   TICKET_CREATED: "Request submitted",
@@ -128,32 +128,95 @@ function getStatusClass(status: string) {
   return statusClasses[status] ?? "status-registration";
 }
 
-function DetailItem({ label, value }: { label: string; value: React.ReactNode }) {
+function InfoCard({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="rounded-lg border border-[var(--border)] bg-white p-4">
-      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--muted)]">{label}</p>
-      <div className="mt-2 text-sm font-bold text-[var(--foreground)]">{value}</div>
+    <div
+      style={{
+        padding: "16px",
+        backgroundColor: "#ffffff",
+        border: "1px solid var(--border)",
+        borderRadius: "10px",
+      }}
+    >
+      <p
+        style={{
+          fontSize: "11px",
+          fontWeight: 600,
+          letterSpacing: "0.10em",
+          textTransform: "uppercase",
+          color: "var(--slate-400)",
+          marginBottom: "6px",
+        }}
+      >
+        {label}
+      </p>
+      <div
+        style={{
+          fontSize: "14px",
+          fontWeight: 600,
+          color: "#0f172a",
+        }}
+      >
+        {value}
+      </div>
     </div>
   );
 }
 
-function StateMessage({
-  body,
+function InlineMessage({
   title,
+  body,
   tone = "neutral",
 }: {
-  body: string;
   title: string;
+  body: string;
   tone?: "neutral" | "danger";
 }) {
+  const isDanger = tone === "danger";
+
   return (
     <div
-      className={`panel p-5 ${
-        tone === "danger" ? "border-[var(--fill-danger-soft-border)] bg-[var(--danger-bg)]" : "bg-white"
-      }`}
+      style={{
+        padding: "16px 20px",
+        borderRadius: "10px",
+        border: `1px solid ${isDanger ? "#fecaca" : "#e2e2dc"}`,
+        backgroundColor: isDanger ? "#fef2f2" : "#ffffff",
+        display: "flex",
+        gap: "12px",
+        alignItems: "flex-start",
+      }}
     >
-      <h2 className="text-lg font-bold text-[var(--foreground)]">{title}</h2>
-      <p className="mt-2 text-sm leading-7 text-[var(--muted-strong)]">{body}</p>
+      <div
+        style={{
+          width: "8px",
+          height: "8px",
+          borderRadius: "50%",
+          marginTop: "5px",
+          flexShrink: 0,
+          backgroundColor: isDanger ? "#dc2626" : "#94a3b8",
+        }}
+      />
+      <div>
+        <p
+          style={{
+            fontSize: "14px",
+            fontWeight: 600,
+            color: isDanger ? "#991b1b" : "#0f172a",
+            marginBottom: "4px",
+          }}
+        >
+          {title}
+        </p>
+        <p
+          style={{
+            fontSize: "13px",
+            color: isDanger ? "#b91c1c" : "var(--slate-500)",
+            lineHeight: 1.6,
+          }}
+        >
+          {body}
+        </p>
+      </div>
     </div>
   );
 }
@@ -161,32 +224,134 @@ function StateMessage({
 function PublicTimeline({ events }: { events: PublicTimelineEvent[] }) {
   if (events.length === 0) {
     return (
-      <p className="rounded-lg border border-[var(--border)] bg-white p-4 text-sm text-[var(--muted)]">
+      <p
+        style={{
+          padding: "16px",
+          border: "1px solid var(--border)",
+          borderRadius: "10px",
+          fontSize: "13px",
+          color: "var(--slate-400)",
+          backgroundColor: "#ffffff",
+        }}
+      >
         No public timeline updates are available yet.
       </p>
     );
   }
 
   return (
-    <ol className="grid gap-3">
-      {events.map((event) => {
+    <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: "0" }}>
+      {events.map((event, index) => {
         const statusTo = formatStatus(event.statusTo);
         const custodyTo = formatCustodyStatus(event.custodyTo);
+        const isLast = index === events.length - 1;
+
+        const dateStr = formatDate(event.occurredAt);
+        const dateObj = event.occurredAt ? new Date(event.occurredAt) : null;
+        const timeStr = dateObj
+          ? dateObj.toLocaleTimeString("en", { hour: "2-digit", minute: "2-digit" })
+          : null;
+        const dayStr = dateObj
+          ? dateObj.toLocaleDateString("en", { month: "short", day: "numeric" })
+          : null;
 
         return (
-          <li key={`${event.eventType}-${event.occurredAt}`} className="rounded-lg border border-[var(--border)] bg-white p-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <p className="text-sm font-bold text-[var(--foreground)]">
+          <li
+            key={`${event.eventType}-${event.occurredAt}`}
+            style={{
+              display: "flex",
+              gap: "16px",
+              position: "relative",
+            }}
+          >
+            {/* Timeline line + dot */}
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                flexShrink: 0,
+                width: "20px",
+              }}
+            >
+              <div
+                style={{
+                  width: "10px",
+                  height: "10px",
+                  borderRadius: "50%",
+                  backgroundColor: "#2563eb",
+                  border: "2px solid #ffffff",
+                  boxShadow: "0 0 0 2px #bfdbfe",
+                  flexShrink: 0,
+                  marginTop: "16px",
+                  zIndex: 1,
+                  position: "relative",
+                }}
+              />
+              {!isLast && (
+                <div
+                  style={{
+                    width: "1px",
+                    flex: 1,
+                    backgroundColor: "#e2e2dc",
+                    minHeight: "24px",
+                  }}
+                />
+              )}
+            </div>
+
+            {/* Event content */}
+            <div
+              style={{
+                flex: 1,
+                paddingBottom: isLast ? "0" : "24px",
+                paddingTop: "12px",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  alignItems: "flex-start",
+                  justifyContent: "space-between",
+                  gap: "8px",
+                  marginBottom: "4px",
+                }}
+              >
+                <p
+                  style={{
+                    fontSize: "14px",
+                    fontWeight: 600,
+                    color: "#0f172a",
+                  }}
+                >
                   {eventTypeLabels[event.eventType] ?? event.eventType.replaceAll("_", " ")}
                 </p>
-                <p className="mt-1 text-sm text-[var(--muted)]">{formatDate(event.occurredAt)}</p>
+                {statusTo ? <span className={`status-badge ${getStatusClass(event.statusTo ?? "")}`}>{statusTo}</span> : null}
               </div>
-              {statusTo ? <span className="status-badge status-registration">{statusTo}</span> : null}
+              {dateStr && (
+                <p
+                  style={{
+                    fontSize: "12px",
+                    color: "var(--slate-400)",
+                    fontWeight: 500,
+                  }}
+                >
+                  {dayStr} &middot; {timeStr}
+                </p>
+              )}
+              {custodyTo ? (
+                <p
+                  style={{
+                    marginTop: "6px",
+                    fontSize: "13px",
+                    color: "var(--slate-500)",
+                  }}
+                >
+                  Device custody: {custodyTo}
+                </p>
+              ) : null}
             </div>
-            {custodyTo ? (
-              <p className="mt-3 text-sm leading-7 text-[var(--muted-strong)]">Device custody: {custodyTo}</p>
-            ) : null}
           </li>
         );
       })}
@@ -200,43 +365,116 @@ function TrackingResult({ trackingInfo }: { trackingInfo: PublicTrackingInfo }) 
   const readyForPickupAt = formatDate(trackingInfo.readyForPickupAt);
 
   return (
-    <section className="grid gap-6">
-      <div className="panel overflow-hidden">
-        <div className="border-b border-[var(--border)] bg-[var(--surface-alt)] px-5 py-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--muted)]">Tracking code</p>
-              <h2 className="tracking-code mt-1 break-all text-2xl font-black text-[var(--foreground)]">
-                {trackingInfo.trackingCode}
-              </h2>
-            </div>
-            <span className={`status-badge ${getStatusClass(trackingInfo.status)}`}>
-              {formatStatus(trackingInfo.status)}
-            </span>
+    <section style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+      {/* Status hero */}
+      <div
+        style={{
+          backgroundColor: "#ffffff",
+          border: "1px solid var(--border)",
+          borderRadius: "12px",
+          overflow: "hidden",
+        }}
+      >
+        {/* Header bar */}
+        <div
+          style={{
+            padding: "24px",
+            borderBottom: "1px solid #e2e2dc",
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "16px",
+          }}
+        >
+          <div>
+            <p
+              style={{
+                fontSize: "11px",
+                fontWeight: 600,
+                letterSpacing: "0.10em",
+                textTransform: "uppercase",
+                color: "var(--slate-400)",
+                marginBottom: "6px",
+              }}
+            >
+              Tracking code
+            </p>
+            <h2
+              className="tracking-code"
+              style={{
+                fontSize: "22px",
+                fontWeight: 700,
+                color: "#0f172a",
+                wordBreak: "break-all",
+              }}
+            >
+              {trackingInfo.trackingCode}
+            </h2>
           </div>
+          <span className={`status-badge ${getStatusClass(trackingInfo.status)}`} style={{ fontSize: "13px" }}>
+            {formatStatus(trackingInfo.status)}
+          </span>
         </div>
 
-        <div className="grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3">
-          <DetailItem label="Requester" value={trackingInfo.requesterName} />
-          <DetailItem label="Device" value={`${trackingInfo.device.brand} ${trackingInfo.device.deviceType}`} />
-          <DetailItem label="Issue category" value={formatIssueCategory(trackingInfo.issueCategory)} />
-          <DetailItem label="Submitted" value={submittedAt ?? "Not available"} />
-          <DetailItem label="Assigned" value={assignedAt ?? "Not assigned yet"} />
-          <DetailItem label="Ready for pickup" value={readyForPickupAt ?? "Not ready yet"} />
-          {trackingInfo.severity ? <DetailItem label="Severity" value={formatSeverity(trackingInfo.severity)} /> : null}
+        {/* Info grid */}
+        <div
+          style={{
+            padding: "20px",
+            display: "grid",
+            gap: "12px",
+          }}
+          className="sm:grid-cols-3"
+        >
+          <InfoCard label="Requester" value={trackingInfo.requesterName} />
+          <InfoCard label="Device" value={`${trackingInfo.device.brand} ${trackingInfo.device.deviceType}`} />
+          <InfoCard label="Issue category" value={formatIssueCategory(trackingInfo.issueCategory)} />
+        </div>
+
+        {/* Secondary info */}
+        <div
+          style={{
+            padding: "0 20px 20px",
+            display: "grid",
+            gap: "12px",
+          }}
+          className="sm:grid-cols-3"
+        >
+          <InfoCard label="Submitted" value={submittedAt ?? "Not available"} />
+          <InfoCard label="Assigned" value={assignedAt ?? "Not assigned yet"} />
+          <InfoCard label="Ready for pickup" value={readyForPickupAt ?? "Not ready yet"} />
+          {trackingInfo.severity ? <InfoCard label="Severity" value={formatSeverity(trackingInfo.severity)} /> : null}
           {trackingInfo.repairMethod ? (
-            <DetailItem label="Repair method" value={formatRepairMethod(trackingInfo.repairMethod)} />
+            <InfoCard label="Repair method" value={formatRepairMethod(trackingInfo.repairMethod)} />
           ) : null}
         </div>
       </div>
 
-      <section className="panel p-5">
-        <div className="mb-4">
-          <p className="eyebrow">Public timeline</p>
-          <h2 className="mt-2 text-xl font-bold text-[var(--foreground)]">Repair progress</h2>
+      {/* Timeline */}
+      <div
+        style={{
+          backgroundColor: "#ffffff",
+          border: "1px solid var(--border)",
+          borderRadius: "12px",
+          padding: "24px",
+        }}
+      >
+        <div style={{ marginBottom: "24px" }}>
+          <p className="eyebrow">PUBLIC TIMELINE</p>
+          <h2
+            style={{
+              marginTop: "6px",
+              fontSize: "18px",
+              fontWeight: 700,
+              letterSpacing: "-0.02em",
+              color: "#0f172a",
+            }}
+          >
+            Repair progress
+          </h2>
         </div>
         <PublicTimeline events={trackingInfo.timeline} />
-      </section>
+      </div>
     </section>
   );
 }
@@ -257,7 +495,7 @@ export function PublicTracking({ initialCode = "" }: { initialCode?: string }) {
 
     if (!trackingCodePattern.test(normalizedCode)) {
       setState("invalid");
-      setMessage("Use a tracking code in this format: SIM-2026-000001.");
+      setMessage("Use a tracking code in this format: SIM-2026-1000001.");
       return;
     }
 
@@ -306,47 +544,96 @@ export function PublicTracking({ initialCode = "" }: { initialCode?: string }) {
   }
 
   return (
-    <div className="grid gap-6">
-      <form onSubmit={handleSubmit} className="panel p-5">
-        <label className="flex flex-col gap-2 text-sm font-medium text-[var(--foreground)]">
+    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+      {/* Search form */}
+      <form
+        onSubmit={handleSubmit}
+        style={{
+          backgroundColor: "#ffffff",
+          border: "1px solid var(--border)",
+          borderRadius: "12px",
+          padding: "24px",
+          boxShadow: "0 2px 8px rgba(15,23,42,0.06)",
+        }}
+      >
+        <label
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "8px",
+            fontSize: "14px",
+            fontWeight: 600,
+            color: "#0f172a",
+          }}
+        >
           Tracking code
-          <div className="flex flex-col gap-3 sm:flex-row">
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "10px",
+              alignItems: "center",
+            }}
+          >
             <input
               name="trackingCode"
               value={trackingCode}
               onChange={(event) => setTrackingCode(event.target.value.toUpperCase())}
-              className="field-control min-w-0 flex-1"
-              placeholder="SIM-2026-000001"
+              className="field-control"
+              style={{ flex: "1 1 200px", minWidth: 0 }}
+              placeholder="SIM-2026-1000001"
               autoComplete="off"
             />
-            <button type="submit" disabled={isPending || state === "loading"} className="btn-primary disabled:cursor-not-allowed disabled:opacity-60">
+            <button
+              type="submit"
+              disabled={isPending || state === "loading"}
+              className="btn-primary"
+              style={{ whiteSpace: "nowrap", fontSize: "14px" }}
+            >
               {isPending || state === "loading" ? "Checking..." : "Check status"}
             </button>
           </div>
         </label>
-        <p className="mt-3 text-sm leading-7 text-[var(--muted)]">
+        <p
+          style={{
+            marginTop: "10px",
+            fontSize: "13px",
+            color: "var(--slate-400)",
+            lineHeight: 1.6,
+          }}
+        >
           Enter the tracking code you received after submitting your SIMAD computer maintenance request.
         </p>
       </form>
 
+      {/* State messages */}
       {state === "idle" ? (
-        <StateMessage title="Enter your tracking code" body="Your repair progress will appear here after lookup." />
+        <InlineMessage title="Enter your tracking code" body="Your repair progress will appear here after lookup." />
       ) : null}
       {state === "loading" ? (
-        <StateMessage title="Checking repair status" body="Loading the latest public repair progress for this code." />
+        <InlineMessage title="Checking repair status" body="Loading the latest public repair progress for this code." />
       ) : null}
       {state === "invalid" ? (
-        <StateMessage title="Invalid tracking code" body={message ?? "Check the code format and try again."} tone="danger" />
+        <InlineMessage title="Invalid tracking code" body={message ?? "Check the code format and try again."} tone="danger" />
       ) : null}
       {state === "not-found" ? (
-        <StateMessage title="Tracking code not found" body={message ?? "No repair request was found for that code."} />
+        <InlineMessage title="Tracking code not found" body={message ?? "No repair request was found for that code."} />
       ) : null}
       {state === "error" ? (
-        <StateMessage title="Unable to load tracking" body={message ?? "Try again in a moment."} tone="danger" />
+        <InlineMessage title="Unable to load tracking" body={message ?? "Try again in a moment."} tone="danger" />
       ) : null}
       {state === "success" && trackingInfo ? <TrackingResult trackingInfo={trackingInfo} /> : null}
 
-      <div className="flex flex-wrap items-center gap-3">
+      {/* Footer links */}
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          alignItems: "center",
+          gap: "12px",
+          paddingTop: "4px",
+        }}
+      >
         <Link href="/request-repair" className="btn-secondary">
           Submit a repair request
         </Link>

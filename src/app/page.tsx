@@ -4,15 +4,17 @@ import { LandingHowItWorksSection } from "@/components/landing/how-it-works-sect
 import { LandingHero } from "@/components/landing/hero";
 import { LandingNavbar } from "@/components/landing/navbar";
 import { LandingStatsStripSection } from "@/components/landing/stats-strip-section";
+import { LandingTeamSection } from "@/components/landing/team-section";
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen bg-white transition-colors duration-300 dark:bg-[#020617]">
+    <main className="min-h-screen bg-white">
       <LandingNavbar />
       <LandingHero />
-      <LandingFeaturesSection />
       <LandingHowItWorksSection />
+      <LandingFeaturesSection />
       <LandingStatsStripSection />
+      <LandingTeamSection />
       <LandingFooter />
     </main>
   );

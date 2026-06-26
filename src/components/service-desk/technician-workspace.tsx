@@ -45,6 +45,23 @@ type DetailResponse = {
   ticket?: TechnicianTicketDetailData;
 };
 
+type FocusFilter = "all" | "diagnosis" | "repair" | "quality" | "priority";
+
+const TECHNICIAN_STATUS_OPTIONS = [
+  "DEVICE_RECEIVED",
+  "DIAGNOSIS_IN_PROGRESS",
+  "REPAIR_IN_PROGRESS",
+  "QUALITY_INSPECTION",
+] as const;
+
+const FOCUS_FILTERS: Array<{ label: string; value: FocusFilter }> = [
+  { label: "All work", value: "all" },
+  { label: "Needs diagnosis", value: "diagnosis" },
+  { label: "In repair", value: "repair" },
+  { label: "Quality check", value: "quality" },
+  { label: "High priority", value: "priority" },
+];
+
 function formatDate(value: string | null) {
   if (!value) {
     return "Not set";
@@ -72,81 +89,84 @@ function formatRepairMethod(value: string | null) {
   return REPAIR_METHOD_LABELS[value as keyof typeof REPAIR_METHOD_LABELS] ?? value.replaceAll("_", " ");
 }
 
-function getSeverityBorderClass(severity: string | null) {
-  const severityClasses: Record<string, string> = {
-    CRITICAL: "border-l-[var(--red-700)]",
-    HIGH: "border-l-[var(--amber-700)]",
-    MEDIUM: "border-l-[var(--blue-700)]",
-    LOW: "border-l-[var(--slate-400)]",
-  };
+function getPriorityClass(severity: string | null) {
+  if (severity === "CRITICAL" || severity === "HIGH") {
+    return "status-overdue";
+  }
 
-  return severity ? severityClasses[severity] ?? "border-l-[var(--slate-300)]" : "border-l-[var(--slate-300)]";
+  if (severity === "MEDIUM") {
+    return "status-quality";
+  }
+
+  return "status-received";
 }
 
-function QueueStat({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="rounded-lg border border-[var(--border)] bg-white p-4">
-      <p className="eyebrow">{label}</p>
-      <p className="metric-value mt-2 text-2xl font-bold text-[var(--foreground)]">{value}</p>
-    </div>
-  );
+function queueSearchText(ticket: QueueTicket) {
+  return [
+    ticket.ticketId,
+    ticket.trackingCode,
+    ticket.status,
+    ticket.severity,
+    ticket.repairMethod,
+    ticket.issueCategory,
+    ticket.requester.fullName,
+    ticket.requester.universityId,
+    ticket.requester.faculty,
+    ticket.requester.department,
+    ticket.device.deviceType,
+    ticket.device.brand,
+    ticket.device.model,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
 }
 
-function QueueCard({
-  isSelected,
-  onSelect,
-  ticket,
+function matchesFocus(ticket: QueueTicket, focus: FocusFilter) {
+  if (focus === "all") {
+    return true;
+  }
+
+  if (focus === "diagnosis") {
+    return ticket.status === "DEVICE_RECEIVED" || ticket.status === "DIAGNOSIS_IN_PROGRESS";
+  }
+
+  if (focus === "repair") {
+    return ticket.status === "REPAIR_IN_PROGRESS";
+  }
+
+  if (focus === "quality") {
+    return ticket.status === "QUALITY_INSPECTION";
+  }
+
+  return ticket.severity === "CRITICAL" || ticket.severity === "HIGH";
+}
+
+function QueueStat({
+  detail,
+  label,
+  tone = "default",
+  value,
 }: {
-  isSelected: boolean;
-  onSelect: () => void;
-  ticket: QueueTicket;
+  detail: string;
+  label: string;
+  tone?: "default" | "accent" | "success" | "warning" | "danger";
+  value: number;
 }) {
-  const severityBorderClass = getSeverityBorderClass(ticket.severity);
+  const toneClass = {
+    default: "border-l-[var(--slate-300)]",
+    accent: "border-l-[var(--blue-600)]",
+    success: "border-l-[var(--green-700)]",
+    warning: "border-l-[var(--amber-600)]",
+    danger: "border-l-[var(--red-600)]",
+  }[tone];
 
   return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className={`panel w-full border-l-4 p-4 text-left transition ${severityBorderClass} ${
-        isSelected ? "border-[var(--accent)] bg-[var(--surface-selected)] shadow-[var(--shadow-sm)]" : "hover:border-[var(--border-strong)]"
-      }`}
-    >
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="tracking-code break-all text-sm font-black text-[var(--foreground)]">{ticket.trackingCode ?? ticket.ticketId}</p>
-          <p className="mt-1 text-sm text-[var(--muted)]">
-            {ticket.requester.fullName ?? "Requester"} - {ticket.requester.faculty ?? "Faculty not set"}
-          </p>
-        </div>
-        <span className={`status-badge ${getStatusClass(ticket.status)}`}>{formatStatus(ticket.status)}</span>
-      </div>
-
-      <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--muted)]">Device</p>
-          <p className="mt-1 font-semibold text-[var(--foreground)]">
-            {ticket.device.deviceType} - {ticket.device.brand}
-          </p>
-        </div>
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--muted)]">Issue</p>
-          <p className="mt-1 font-semibold text-[var(--foreground)]">{formatIssueCategory(ticket.issueCategory)}</p>
-        </div>
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--muted)]">Severity</p>
-          <p className="mt-1 font-semibold text-[var(--foreground)]">{formatSeverity(ticket.severity)}</p>
-        </div>
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--muted)]">Method</p>
-          <p className="mt-1 font-semibold text-[var(--foreground)]">{formatRepairMethod(ticket.repairMethod)}</p>
-        </div>
-      </div>
-
-      <div className="mt-4 grid gap-2 border-t border-[var(--border)] pt-3 text-sm text-[var(--muted)] sm:grid-cols-2">
-        <span className="tnum">Assigned: {formatDate(ticket.assignedAt)}</span>
-        <span className="tnum">Created: {formatDate(ticket.createdAt)}</span>
-      </div>
-    </button>
+    <article className={`rounded-lg border border-[var(--border)] border-l-[3px] bg-white p-4 ${toneClass}`}>
+      <p className="eyebrow">{label}</p>
+      <p className="metric-value mt-2 text-2xl font-bold leading-none text-[var(--foreground)]">{value}</p>
+      <p className="mt-2 text-xs font-medium text-[var(--muted)]">{detail}</p>
+    </article>
   );
 }
 
@@ -156,6 +176,9 @@ export function TechnicianWorkspace() {
   const [selectedTicket, setSelectedTicket] = useState<TechnicianTicketDetailData | null>(null);
   const [queueError, setQueueError] = useState<string | null>(null);
   const [detailError, setDetailError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [focusFilter, setFocusFilter] = useState<FocusFilter>("all");
   const [isQueuePending, startQueueTransition] = useTransition();
   const [isDetailPending, startDetailTransition] = useTransition();
 
@@ -163,14 +186,27 @@ export function TechnicianWorkspace() {
     () => tickets.find((ticket) => ticket.id === selectedTicketId) ?? null,
     [selectedTicketId, tickets],
   );
+
   const queueStats = useMemo(
     () => ({
       total: tickets.length,
-      diagnosing: tickets.filter((ticket) => ticket.status === "DIAGNOSIS_IN_PROGRESS").length,
+      diagnosing: tickets.filter((ticket) => ticket.status === "DEVICE_RECEIVED" || ticket.status === "DIAGNOSIS_IN_PROGRESS").length,
       repairing: tickets.filter((ticket) => ticket.status === "REPAIR_IN_PROGRESS").length,
+      quality: tickets.filter((ticket) => ticket.status === "QUALITY_INSPECTION").length,
     }),
     [tickets],
   );
+
+  const filteredTickets = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+
+    return tickets.filter((ticket) => {
+      const matchesSearch = query.length === 0 || queueSearchText(ticket).includes(query);
+      const matchesStatus = statusFilter === "all" || ticket.status === statusFilter;
+
+      return matchesSearch && matchesStatus && matchesFocus(ticket, focusFilter);
+    });
+  }, [focusFilter, searchQuery, statusFilter, tickets]);
 
   function loadQueue(nextSelectedTicketId?: string | null) {
     setQueueError(null);
@@ -185,7 +221,12 @@ export function TechnicianWorkspace() {
       }
 
       setTickets(body.tickets);
-      setSelectedTicketId((current) => nextSelectedTicketId ?? current ?? body.tickets?.[0]?.id ?? null);
+      setSelectedTicketId((current) => {
+        const preferred = nextSelectedTicketId ?? current;
+        const preferredStillExists = preferred ? body.tickets?.some((ticket) => ticket.id === preferred) : false;
+
+        return preferredStillExists ? preferred : body.tickets?.[0]?.id ?? null;
+      });
     });
   }
 
@@ -212,6 +253,12 @@ export function TechnicianWorkspace() {
     loadQueue(ticket.id);
   }
 
+  function resetFilters() {
+    setSearchQuery("");
+    setStatusFilter("all");
+    setFocusFilter("all");
+  }
+
   useEffect(() => {
     loadQueue();
   }, []);
@@ -225,63 +272,129 @@ export function TechnicianWorkspace() {
   }, [selectedTicketId]);
 
   return (
-    <div className="grid gap-6">
-      <section className="panel p-5">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="eyebrow">Technician workspace</p>
-            <h2 className="mt-2 text-xl font-semibold text-[var(--foreground)]">Assigned repair queue</h2>
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--muted-strong)]">
-              Work from assigned tickets only. Open a repair to record diagnosis notes, move the repair status, request
-              requester action, or submit completed work for verification.
-            </p>
-          </div>
-          <button type="button" onClick={() => loadQueue(selectedTicketId)} className="btn-secondary">
-            Refresh
-          </button>
-        </div>
-
-        <div className="mt-5 grid gap-3 sm:grid-cols-3">
-          <QueueStat label="Assigned" value={queueStats.total} />
-          <QueueStat label="Diagnosing" value={queueStats.diagnosing} />
-          <QueueStat label="Repairing" value={queueStats.repairing} />
-        </div>
+    <div className="grid gap-5">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <QueueStat label="Assigned" value={queueStats.total} detail="Active work in your queue" tone="accent" />
+        <QueueStat label="Diagnosis" value={queueStats.diagnosing} detail="Device received or diagnosis" />
+        <QueueStat label="In repair" value={queueStats.repairing} detail="Active bench work" />
+        <QueueStat label="Quality check" value={queueStats.quality} detail="Ready for verification" tone="warning" />
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-[0.82fr_1.38fr]">
-        <section className="grid content-start gap-4">
-          <div className="panel p-5">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <p className="eyebrow">Assigned queue</p>
-                <h2 className="mt-2 text-xl font-bold text-[var(--foreground)]">Repair work</h2>
-              </div>
+      <div className="grid gap-5 xl:grid-cols-[minmax(520px,0.95fr)_minmax(0,1.25fr)]">
+        <section className="panel overflow-hidden">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] bg-white px-5 py-4">
+            <div>
+              <p className="eyebrow">Assigned queue</p>
+              <h2 className="mt-1 text-base font-semibold text-[var(--foreground)]">Repair work</h2>
             </div>
-            <p className="mt-3 text-sm leading-7 text-[var(--muted-strong)]">
-              Select a ticket to open device, requester, repair action, custody, and event details.
-            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="status-badge status-received">{filteredTickets.length} shown</span>
+              <button type="button" onClick={() => loadQueue(selectedTicketId)} className="btn-secondary" disabled={isQueuePending}>
+                {isQueuePending ? "Refreshing..." : "Refresh"}
+              </button>
+            </div>
+          </div>
+
+          <div className="grid gap-3 border-b border-[var(--border)] bg-[var(--surface-alt)] p-4">
+            <div className="grid gap-3 xl:grid-cols-[minmax(220px,1fr)_170px_170px_auto]">
+              <input
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search ticket, requester, device..."
+                className="w-full rounded-md border border-[var(--border-strong)] bg-white px-3 py-2 text-sm text-[var(--foreground)] outline-none transition focus:border-[var(--blue-500)] focus:ring-2 focus:ring-[var(--blue-100)]"
+              />
+              <select
+                value={statusFilter}
+                onChange={(event) => setStatusFilter(event.target.value)}
+                className="w-full rounded-md border border-[var(--border-strong)] bg-white px-3 py-2 text-sm text-[var(--foreground)] outline-none transition focus:border-[var(--blue-500)] focus:ring-2 focus:ring-[var(--blue-100)]"
+              >
+                <option value="all">All statuses</option>
+                {TECHNICIAN_STATUS_OPTIONS.map((status) => (
+                  <option key={status} value={status}>
+                    {REPAIR_STATUS_LABELS[status]}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={focusFilter}
+                onChange={(event) => setFocusFilter(event.target.value as FocusFilter)}
+                className="w-full rounded-md border border-[var(--border-strong)] bg-white px-3 py-2 text-sm text-[var(--foreground)] outline-none transition focus:border-[var(--blue-500)] focus:ring-2 focus:ring-[var(--blue-100)]"
+              >
+                {FOCUS_FILTERS.map((filter) => (
+                  <option key={filter.value} value={filter.value}>
+                    {filter.label}
+                  </option>
+                ))}
+              </select>
+              <button type="button" onClick={resetFilters} className="btn-ghost">
+                Reset
+              </button>
+            </div>
           </div>
 
           {queueError ? (
-            <div className="panel border-[var(--fill-danger-soft-border)] bg-[var(--danger-bg)] p-4 text-sm font-medium text-[var(--danger)]">
+            <div className="border-b border-[var(--fill-danger-soft-border)] bg-[var(--danger-bg)] px-5 py-3 text-sm font-medium text-[var(--danger)]">
               {queueError}
             </div>
           ) : null}
 
-          <div className="grid gap-3">
-            {tickets.length > 0 ? (
-              tickets.map((ticket) => (
-                <QueueCard
-                  key={ticket.id}
-                  ticket={ticket}
-                  isSelected={ticket.id === selectedTicketId}
-                  onSelect={() => setSelectedTicketId(ticket.id)}
-                />
-              ))
+          <div className="max-h-[620px] overflow-auto">
+            {filteredTickets.length > 0 ? (
+              <table className="data-table min-w-[760px] text-left text-sm">
+                <thead>
+                  <tr>
+                    <th>Ticket</th>
+                    <th>Requester</th>
+                    <th>Device / issue</th>
+                    <th>Status</th>
+                    <th>Priority</th>
+                    <th className="text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredTickets.map((ticket) => (
+                    <tr key={ticket.id} className={ticket.id === selectedTicketId ? "bg-[var(--surface-selected)]" : undefined}>
+                      <td>
+                        <p className="tracking-code break-all font-bold text-[var(--foreground)]">
+                          {ticket.trackingCode ?? ticket.ticketId}
+                        </p>
+                        <p className="mt-1 text-xs text-[var(--muted)]">Assigned {formatDate(ticket.assignedAt)}</p>
+                      </td>
+                      <td>
+                        <p className="font-semibold text-[var(--foreground)]">{ticket.requester.fullName ?? "Requester"}</p>
+                        <p className="mt-1 text-xs text-[var(--muted)]">
+                          {ticket.requester.faculty ?? "Faculty not set"} - {ticket.requester.universityId ?? "No ID"}
+                        </p>
+                      </td>
+                      <td>
+                        <p className="font-semibold text-[var(--foreground)]">
+                          {ticket.device.brand} {ticket.device.model}
+                        </p>
+                        <p className="mt-1 text-xs text-[var(--muted)]">{formatIssueCategory(ticket.issueCategory)}</p>
+                      </td>
+                      <td>
+                        <span className={`status-badge ${getStatusClass(ticket.status)}`}>{formatStatus(ticket.status)}</span>
+                      </td>
+                      <td>
+                        <span className={`status-badge ${getPriorityClass(ticket.severity)}`}>{formatSeverity(ticket.severity)}</span>
+                        <p className="mt-1 text-xs text-[var(--muted)]">{formatRepairMethod(ticket.repairMethod)}</p>
+                      </td>
+                      <td className="text-right">
+                        <button type="button" onClick={() => setSelectedTicketId(ticket.id)} className="btn-ghost">
+                          {ticket.id === selectedTicketId ? "Open" : "Review"}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             ) : (
-              <div className="panel p-5">
-                <p className="text-sm text-[var(--muted)]">
-                  {isQueuePending ? "Loading assigned repairs..." : "No assigned repair tickets are currently in your queue."}
+              <div className="m-5 rounded-lg border border-dashed border-[var(--border-strong)] bg-white p-5">
+                <p className="text-sm font-semibold text-[var(--foreground)]">
+                  {isQueuePending ? "Loading assigned repairs..." : "No tickets match this view."}
+                </p>
+                <p className="mt-2 text-sm text-[var(--muted)]">
+                  Clear filters or search by another tracking code, requester, device, status, or priority.
                 </p>
               </div>
             )}
@@ -290,7 +403,7 @@ export function TechnicianWorkspace() {
 
         <section className="min-w-0">
           {detailError ? (
-            <div className="panel border-[var(--fill-danger-soft-border)] bg-[var(--danger-bg)] p-5 text-sm font-medium text-[var(--danger)]">
+            <div className="panel mb-4 border-[var(--fill-danger-soft-border)] bg-[var(--danger-bg)] p-5 text-sm font-medium text-[var(--danger)]">
               {detailError}
             </div>
           ) : null}
@@ -303,7 +416,7 @@ export function TechnicianWorkspace() {
               <h2 className="mt-3 text-2xl font-bold text-[var(--foreground)]">
                 {selectedQueueTicket || isDetailPending ? "Loading ticket detail" : "Select a repair"}
               </h2>
-              <p className="mt-3 text-sm leading-7 text-[var(--muted)]">
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted)]">
                 Choose an assigned queue item to inspect requester contact, device details, repair events, and technician actions.
               </p>
               {selectedQueueTicket ? (

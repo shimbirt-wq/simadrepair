@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AppShell } from "@/app/app-shell";
 import { redirect } from "next/navigation";
+import { ROLE_LABELS } from "@/lib/auth/roles";
 import { getCurrentServerUser } from "@/lib/auth/server-user";
 import { prisma } from "@/lib/db/prisma";
 import { listUsers } from "@/lib/users/user-service";
@@ -42,7 +43,7 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
       user={currentUser}
       actions={
         <Link href="/admin/users/new" className="btn-primary">
-          Create Staff Account
+          Add staff
         </Link>
       }
     >
@@ -84,7 +85,7 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
                     <p className="mt-1 text-sm text-[var(--muted)]">{user.email}</p>
                   </td>
                   <td className="px-4 py-4">
-                    <span className="status-badge status-received">{user.role}</span>
+                    <span className="status-badge status-received">{ROLE_LABELS[user.role]}</span>
                   </td>
                   <td className="px-4 py-4">
                     <span className={`status-badge ${user.isActive ? "status-ready" : "status-registration"}`}>

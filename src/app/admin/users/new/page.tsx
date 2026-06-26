@@ -18,7 +18,7 @@ export default async function CreateStaffAccountPage() {
     <AppShell
       active="users"
       eyebrow="Staff management"
-      title="Create Staff Account"
+      title={currentUser.role === "LEAD_TECHNICIAN" ? "Add Technician" : "Create Staff Account"}
       user={currentUser}
     >
       <CreateStaffForm actorRole={currentUser.role} />

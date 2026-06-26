@@ -4,50 +4,165 @@ import { PublicRepairRequestForm } from "@/components/service-desk/public-repair
 
 export default function RequestRepairPage() {
   return (
-    <main className="app-shell">
-      <section className="border-b border-[var(--border)] bg-white">
-        <div className="page-container">
-          <nav className="flex flex-wrap items-center justify-between gap-4">
-            <Link href="/" aria-label="SIMADRepair home">
-              <SimadRepairLogo className="h-12 w-auto" />
+    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", backgroundColor: "#f1f5f9" }}>
+
+      {/* ── Sticky dark navbar ── */}
+      <header
+        style={{
+          position: "sticky",
+          top: 0,
+          zIndex: 50,
+          backgroundColor: "#0f172a",
+          height: "56px",
+          display: "flex",
+          alignItems: "center",
+          padding: "0 24px",
+          flexShrink: 0,
+        }}
+      >
+        <div
+          style={{
+            width: "100%",
+            maxWidth: "1100px",
+            margin: "0 auto",
+            display: "flex",
+            alignItems: "center",
+            gap: "16px",
+          }}
+        >
+          {/* Logo */}
+          <Link href="/" style={{ display: "flex", alignItems: "center", gap: "10px", textDecoration: "none", flexShrink: 0 }}>
+            <SimadRepairLogo className="h-7 w-auto" variant="light" />
+            <span
+              style={{
+                fontSize: "10px",
+                fontWeight: 500,
+                letterSpacing: "0.10em",
+                color: "rgba(255,255,255,0.30)",
+                textTransform: "uppercase",
+                whiteSpace: "nowrap",
+              }}
+              className="hidden sm:inline"
+            >
+              SIMAD UNIVERSITY · IT SERVICE DESK
+            </span>
+          </Link>
+
+          {/* Nav links */}
+          <nav
+            style={{ display: "flex", alignItems: "center", gap: "4px", marginLeft: "auto" }}
+            className="hidden sm:flex"
+          >
+            <Link
+              href="/request-repair"
+              style={{
+                fontSize: "13px",
+                fontWeight: 500,
+                color: "#ffffff",
+                textDecoration: "none",
+                padding: "5px 12px",
+                borderRadius: "6px",
+                backgroundColor: "rgba(255,255,255,0.10)",
+              }}
+            >
+              Request Repair
             </Link>
-            <Link href="/auth/login" className="btn-secondary">
-              Staff login
+            <Link
+              href="/track"
+              style={{
+                fontSize: "13px",
+                fontWeight: 500,
+                color: "rgba(255,255,255,0.60)",
+                textDecoration: "none",
+                padding: "5px 12px",
+                borderRadius: "6px",
+              }}
+            >
+              Track Repair
             </Link>
           </nav>
-        </div>
-      </section>
 
-      <section className="page-container grid gap-8 py-8 lg:grid-cols-[0.82fr_1.18fr] lg:py-12">
-        <div className="lg:pt-8">
-          <p className="eyebrow">SIMAD computer maintenance</p>
-          <h1 className="mt-4 max-w-2xl text-4xl font-bold tracking-normal text-[var(--foreground)] sm:text-5xl">
-            Request help for your computer without creating an account.
+          {/* Staff sign-in */}
+          <Link
+            href="/auth/login"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              fontSize: "13px",
+              fontWeight: 500,
+              color: "rgba(255,255,255,0.75)",
+              textDecoration: "none",
+              padding: "5px 12px",
+              borderRadius: "6px",
+              border: "1px solid rgba(255,255,255,0.18)",
+              whiteSpace: "nowrap",
+              marginLeft: "8px",
+            }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+              <polyline points="10 17 15 12 10 7" />
+              <line x1="15" y1="12" x2="3" y2="12" />
+            </svg>
+            Staff Sign-In
+          </Link>
+        </div>
+      </header>
+
+      {/* ── Page body ── */}
+      <main
+        style={{
+          flex: 1,
+          padding: "40px 24px 72px",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+        }}
+      >
+        <div style={{ width: "100%", maxWidth: "680px" }}>
+
+          {/* Back link */}
+          <Link
+            href="/"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              fontSize: "13px",
+              color: "#64748b",
+              textDecoration: "none",
+              marginBottom: "24px",
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M19 12H5M12 5l-7 7 7 7" />
+            </svg>
+            Back to portal
+          </Link>
+
+          {/* Page heading */}
+          <h1
+            style={{
+              fontSize: "28px",
+              fontWeight: 800,
+              letterSpacing: "-0.03em",
+              color: "#0f172a",
+              lineHeight: 1.2,
+              marginBottom: "6px",
+            }}
+          >
+            Request a repair
           </h1>
-          <p className="mt-5 max-w-xl text-base leading-8 text-[var(--muted-strong)]">
-            Students and lecturers can submit laptop or desktop repair issues here. After submitting, keep your
-            tracking code so you can check the repair status later.
+          <p style={{ fontSize: "14px", color: "#64748b", marginBottom: "28px", lineHeight: 1.6 }}>
+            Fields marked <span style={{ color: "#2563eb", fontWeight: 600 }}>*</span> are required.
+            You&apos;ll receive a tracking code on submission.
           </p>
 
-          <div className="mt-8 grid gap-3 rounded-lg border border-[var(--border)] bg-white p-5">
-            <div>
-              <p className="text-sm font-bold text-[var(--foreground)]">Before you submit</p>
-              <p className="mt-2 text-sm leading-7 text-[var(--muted)]">
-                Include your SIMAD ID, reachable phone number, device details, and a clear description of the issue.
-              </p>
-            </div>
-            <div className="border-t border-[var(--border)] pt-4">
-              <p className="text-sm font-bold text-[var(--foreground)]">What happens next</p>
-              <p className="mt-2 text-sm leading-7 text-[var(--muted)]">
-                The maintenance team reviews the request and decides the next repair step. Do not leave your device
-                until staff confirm it should be received.
-              </p>
-            </div>
-          </div>
+          {/* Form */}
+          <PublicRepairRequestForm />
         </div>
-
-        <PublicRepairRequestForm />
-      </section>
-    </main>
+      </main>
+    </div>
   );
 }

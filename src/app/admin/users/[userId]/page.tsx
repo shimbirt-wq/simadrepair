@@ -38,14 +38,9 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
       title={user.fullName}
       user={currentUser}
       actions={
-        <>
-          <Link href="/admin/users" className="btn-secondary">
-            Back to list
-          </Link>
-          <Link href={`/api/users/${user.id}`} className="btn-primary">
-            Open JSON
-          </Link>
-        </>
+        <Link href="/admin/users" className="btn-secondary">
+          Back to list
+        </Link>
       }
     >
       <section className="panel p-6">

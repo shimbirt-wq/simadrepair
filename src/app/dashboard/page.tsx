@@ -17,11 +17,19 @@ import { prisma } from "@/lib/db/prisma";
 type MetricTone = "default" | "accent" | "success" | "warning" | "danger";
 
 const metricToneClasses: Record<MetricTone, string> = {
-  default: "border-[var(--border)] bg-white",
-  accent: "border-[var(--fill-accent-soft-border)] bg-[var(--fill-accent-soft)]",
-  success: "border-[var(--fill-success-soft-border)] bg-[var(--fill-success-soft)]",
-  warning: "border-[var(--fill-warning-soft-border)] bg-[var(--fill-warning-soft)]",
-  danger: "border-[var(--fill-danger-soft-border)] bg-[var(--fill-danger-soft)]",
+  default: "border-[var(--border)] bg-white border-l-[3px] border-l-[var(--slate-300)]",
+  accent:  "border-[var(--border)] bg-white border-l-[3px] border-l-[var(--blue-600)]",
+  success: "border-[var(--border)] bg-white border-l-[3px] border-l-[var(--green-700)]",
+  warning: "border-[var(--border)] bg-white border-l-[3px] border-l-[var(--amber-600)]",
+  danger:  "border-[var(--border)] bg-white border-l-[3px] border-l-[var(--red-600)]",
+};
+
+const metricToneDotClasses: Record<MetricTone, string> = {
+  default: "bg-[var(--slate-300)]",
+  accent:  "bg-[var(--blue-600)]",
+  success: "bg-[var(--green-700)]",
+  warning: "bg-[var(--amber-600)]",
+  danger:  "bg-[var(--red-600)]",
 };
 
 function formatNumber(value: number) {
@@ -40,10 +48,10 @@ function MetricTile({
   value: number | string;
 }) {
   return (
-    <article className={`rounded-lg border p-4 shadow-[var(--shadow-xs)] ${metricToneClasses[tone]}`}>
+    <article className={`rounded-lg border p-4 ${metricToneClasses[tone]}`}>
       <div className="flex items-start justify-between gap-3">
         <p className="eyebrow">{label}</p>
-        <span className="h-2 w-2 rounded-full bg-current text-[var(--accent)]" />
+        <span className={`h-2 w-2 rounded-full ${metricToneDotClasses[tone]}`} />
       </div>
       <p className="metric-value mt-3 text-3xl font-bold leading-none text-[var(--foreground)]">
         {typeof value === "number" ? formatNumber(value) : value}
@@ -91,7 +99,7 @@ function StatusList({ rows }: { rows: DashboardStatusCount[] }) {
               <span className="metric-value font-semibold text-[var(--foreground)]">{formatNumber(row.count)}</span>
             </div>
             <div className="mt-2 h-2 overflow-hidden rounded-full bg-[var(--slate-100)]">
-              <div className="h-full rounded-full bg-[var(--blue-700)]" style={{ width: `${Math.round((row.count / max) * 100)}%` }} />
+              <div className="h-full rounded-full bg-[var(--blue-600)]" style={{ width: `${Math.round((row.count / max) * 100)}%` }} />
             </div>
           </div>
         </div>
@@ -110,11 +118,47 @@ function WeeklyClosedChart({ rows }: { rows: AdminDashboard["weeklyClosedRepairs
           <p className="metric-value text-center text-xs font-semibold text-[var(--slate-700)]">{formatNumber(row.count)}</p>
           <div className="mx-auto flex h-24 w-8 items-end overflow-hidden rounded-t-md bg-[var(--slate-100)]">
             <div
-              className="w-full rounded-t-md bg-[var(--blue-700)]"
-              style={{ height: `${Math.max(8, Math.round((row.count / max) * 96))}px` }}
+              className="w-full rounded-t-md bg-[var(--blue-600)]"
+              style={{ height: row.count === 0 ? 0 : `${Math.max(8, Math.round((row.count / max) * 96))}px` }}
             />
           </div>
           <p className="text-center text-xs font-medium text-[var(--muted)]">{row.label}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function AttentionSummary({
+  dashboard,
+}: {
+  dashboard: AdminDashboard;
+}) {
+  const items = [
+    { label: "Needs review", value: dashboard.attentionTickets.length, tone: dashboard.attentionTickets.length > 0 ? "danger" : "default" },
+    { label: "Untriaged", value: dashboard.statusBreakdown.find((row) => row.status === "REGISTRATION_COMPLETED")?.count ?? 0, tone: "accent" },
+    { label: "Waiting student", value: dashboard.waitingForStudent, tone: dashboard.waitingForStudent > 0 ? "warning" : "default" },
+    { label: "Custody exceptions", value: dashboard.custodyExceptions, tone: dashboard.custodyExceptions > 0 ? "danger" : "default" },
+  ] as const;
+
+  return (
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      {items.map((item) => (
+        <div key={item.label} className="rounded-md border border-[var(--border)] bg-[var(--surface-alt)] px-4 py-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">{item.label}</p>
+          <p
+            className={`metric-value mt-1 text-xl font-bold ${
+              item.tone === "danger"
+                ? "text-[var(--danger)]"
+                : item.tone === "warning"
+                  ? "text-[var(--warning)]"
+                  : item.tone === "accent"
+                    ? "text-[var(--blue-700)]"
+                    : "text-[var(--foreground)]"
+            }`}
+          >
+            {formatNumber(item.value)}
+          </p>
         </div>
       ))}
     </div>
@@ -141,6 +185,55 @@ function TrackingLink({ ticket }: { ticket: DashboardTicketSummary }) {
     <Link href={`/repair-tickets/${ticket.id}`} className="tracking-code font-bold text-[var(--blue-700)]">
       {ticket.trackingCode}
     </Link>
+  );
+}
+
+function AdminAttentionTable({ dashboard }: { dashboard: AdminDashboard }) {
+  if (dashboard.attentionTickets.length === 0) {
+    return (
+      <div className="rounded-lg border border-dashed border-[var(--border-strong)] bg-white p-5">
+        <p className="text-sm font-semibold text-[var(--foreground)]">No tickets need admin review.</p>
+        <p className="mt-2 text-sm text-[var(--muted)]">
+          Unassigned, aging, high-severity, and student-blocked requests will appear here first.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="data-table min-w-[760px] text-left text-sm">
+        <thead>
+          <tr>
+            <th>Tracking</th>
+            <th>Requester</th>
+            <th>Status</th>
+            <th>Owner</th>
+            <th className="text-right">Age</th>
+          </tr>
+        </thead>
+        <tbody>
+          {dashboard.attentionTickets.map((ticket) => (
+            <tr key={ticket.id}>
+              <td>
+                <TrackingLink ticket={ticket} />
+                <p className="mt-1 text-xs text-[var(--muted)]">{ticket.deviceName}</p>
+              </td>
+              <td>
+                <p className="font-semibold text-[var(--foreground)]">{ticket.requesterName}</p>
+                <p className="mt-1 text-xs text-[var(--muted)]">{ticket.faculty}</p>
+              </td>
+              <td>
+                <span className="status-badge status-registration">{ticket.statusLabel}</span>
+                {ticket.severity ? <span className="ml-2"><SeverityBadge severity={ticket.severity} /></span> : null}
+              </td>
+              <td className="text-[var(--muted-strong)]">{ticket.technicianName ?? "Unassigned"}</td>
+              <td className="metric-value text-right font-semibold text-[var(--danger)]">{ticket.ageLabel}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
@@ -205,7 +298,7 @@ function WorkloadPanel({ rows }: { rows: DashboardWorkload[] }) {
           </div>
           <div className="mt-2 h-2 overflow-hidden rounded-full bg-[var(--slate-100)]">
             <div
-              className="h-full rounded-full bg-[var(--blue-700)]"
+              className="h-full rounded-full bg-[var(--blue-600)]"
               style={{ width: `${Math.max(8, Math.round((row.activeTickets / max) * 100))}%` }}
             />
           </div>
@@ -215,22 +308,120 @@ function WorkloadPanel({ rows }: { rows: DashboardWorkload[] }) {
   );
 }
 
-function TicketCard({ ticket }: { ticket: DashboardTicketSummary }) {
+function RepairStatusBadge({ label, status }: { label: string; status: DashboardTicketSummary["status"] }) {
+  const className =
+    status === "READY_FOR_COLLECTION"
+      ? "status-ready"
+      : status === "QUALITY_INSPECTION"
+        ? "status-quality"
+        : status === "REPAIR_IN_PROGRESS"
+          ? "status-repair"
+          : status === "DEVICE_RECEIVED" || status === "DIAGNOSIS_IN_PROGRESS"
+            ? "status-diagnosis"
+            : "status-registration";
+
+  return <span className={`status-badge ${className}`}>{label}</span>;
+}
+
+function TechnicianQueueTable({ tickets }: { tickets: DashboardTicketSummary[] }) {
+  if (tickets.length === 0) {
+    return (
+      <div className="rounded-lg border border-dashed border-[var(--border-strong)] bg-white p-5">
+        <p className="text-sm font-semibold text-[var(--foreground)]">No assigned repair tickets.</p>
+        <p className="mt-2 text-sm text-[var(--muted)]">New assigned work will appear here when the lead routes it to you.</p>
+      </div>
+    );
+  }
+
   return (
-    <article className="rounded-lg border border-l-4 border-[var(--border)] border-l-[var(--blue-700)] bg-white p-4 shadow-[var(--shadow-xs)]">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <TrackingLink ticket={ticket} />
-          <p className="mt-2 text-sm font-semibold text-[var(--foreground)]">{ticket.requesterName}</p>
-          <p className="mt-1 text-xs text-[var(--muted)]">{ticket.deviceName}</p>
+    <div className="max-h-[360px] overflow-auto">
+      <table className="data-table min-w-[760px] text-left text-sm">
+        <thead>
+          <tr>
+            <th>Ticket</th>
+            <th>Requester</th>
+            <th>Device / issue</th>
+            <th>Status</th>
+            <th>Priority</th>
+            <th className="text-right">Age</th>
+          </tr>
+        </thead>
+        <tbody>
+          {tickets.map((ticket) => (
+            <tr key={ticket.id}>
+              <td>
+                <TrackingLink ticket={ticket} />
+                <p className="mt-1 text-xs text-[var(--muted)]">{ticket.ticketId}</p>
+              </td>
+              <td>
+                <p className="font-semibold text-[var(--foreground)]">{ticket.requesterName}</p>
+                <p className="mt-1 text-xs text-[var(--muted)]">{ticket.faculty}</p>
+              </td>
+              <td>
+                <p className="font-semibold text-[var(--foreground)]">{ticket.deviceName}</p>
+                <p className="mt-1 text-xs text-[var(--muted)]">{ticket.issueCategory}</p>
+              </td>
+              <td>
+                <RepairStatusBadge status={ticket.status} label={ticket.statusLabel} />
+              </td>
+              <td>
+                <SeverityBadge severity={ticket.severity} />
+              </td>
+              <td className="metric-value text-right font-semibold text-[var(--foreground)]">{ticket.ageLabel}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function TechnicianStageSummary({ dashboard }: { dashboard: TechnicianDashboard }) {
+  const max = Math.max(1, ...dashboard.statusColumns.map((column) => column.tickets.length));
+
+  return (
+    <div className="grid gap-4">
+      {dashboard.statusColumns.map((column) => (
+        <div key={column.status}>
+          <div className="flex items-center justify-between gap-3 text-sm">
+            <p className="font-semibold text-[var(--foreground)]">{column.label}</p>
+            <p className="metric-value text-[var(--muted)]">{column.tickets.length}</p>
+          </div>
+          <div className="mt-2 h-2 overflow-hidden rounded-full bg-[var(--slate-100)]">
+            <div
+              className="h-full rounded-full bg-[var(--blue-600)]"
+              style={{ width: column.tickets.length === 0 ? 0 : `${Math.max(8, Math.round((column.tickets.length / max) * 100))}%` }}
+            />
+          </div>
         </div>
-        <SeverityBadge severity={ticket.severity} />
+      ))}
+    </div>
+  );
+}
+
+function TechnicianNextAction({ dashboard }: { dashboard: TechnicianDashboard }) {
+  const actionLabel =
+    dashboard.overdue > 0
+      ? `${dashboard.overdue} aging repairs need attention`
+      : dashboard.qualityCheck > 0
+        ? `${dashboard.qualityCheck} repairs are awaiting quality check`
+        : dashboard.activeRepairs > 0
+          ? "Continue the next assigned repair"
+          : "No active repair work assigned";
+
+  return (
+    <div className="rounded-lg border border-[var(--border)] bg-white p-5">
+      <p className="eyebrow">Next action</p>
+      <h3 className="mt-2 text-base font-semibold text-[var(--foreground)]">{actionLabel}</h3>
+      <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+        Use the workspace to filter your queue, open the repair detail, update diagnosis notes, and move the ticket through the repair flow.
+      </p>
+      <div className="mt-4">
+        <Link href="/technician/workspace" className="btn-primary">
+          Open workspace
+        </Link>
       </div>
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-        <p className="text-xs font-bold uppercase tracking-[0.08em] text-[var(--muted-strong)]">{ticket.faculty}</p>
-        <p className="metric-value text-xs text-[var(--muted)]">{ticket.ageLabel}</p>
-      </div>
-    </article>
+    </div>
   );
 }
 
@@ -243,6 +434,21 @@ function AdminDashboardView({ dashboard }: { dashboard: AdminDashboard }) {
         <MetricTile label="Devices In Custody" value={dashboard.devicesInCustody} detail="Physical accountability" />
         <MetricTile label="Custody Exceptions" value={dashboard.custodyExceptions} detail="Needs review" tone="danger" />
       </div>
+
+      <DashboardSection
+        eyebrow="Admin command"
+        title="Needs attention"
+        action={
+          <Link href="/repair-tickets" className="btn-ghost">
+            View requests
+          </Link>
+        }
+      >
+        <div className="grid gap-5">
+          <AttentionSummary dashboard={dashboard} />
+          <AdminAttentionTable dashboard={dashboard} />
+        </div>
+      </DashboardSection>
 
       <div className="grid gap-5 xl:grid-cols-[1.35fr_0.95fr]">
         <DashboardSection
@@ -306,41 +512,37 @@ function LeadDashboardView({ dashboard }: { dashboard: LeadTechnicianDashboard }
 }
 
 function TechnicianDashboardView({ dashboard }: { dashboard: TechnicianDashboard }) {
+  const queueTickets = dashboard.statusColumns.flatMap((column) => column.tickets);
+
   return (
     <section className="grid gap-5">
-      <div className="rounded-lg border border-[var(--slate-900)] bg-[var(--slate-900)] p-5 text-white">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--blue-200)]">My queue</p>
-            <h2 className="mt-2 text-lg font-semibold">You have {dashboard.activeRepairs} active repairs</h2>
-            <p className="mt-1 text-sm text-[var(--slate-300)]">
-              {dashboard.overdue} overdue · {dashboard.qualityCheck} awaiting quality check
-            </p>
-          </div>
-          <Link href="/technician/workspace" className="btn-secondary">
-            Start next
-          </Link>
-        </div>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <MetricTile label="Active Repairs" value={dashboard.activeRepairs} detail="Assigned to you" tone="accent" />
+        <MetricTile label="Diagnosing" value={dashboard.diagnosing} detail="Finding the fault" />
+        <MetricTile label="Repairing" value={dashboard.repairing} detail="Active bench work" />
+        <MetricTile label="Quality Check" value={dashboard.qualityCheck} detail="Ready for verification" tone="warning" />
+        <MetricTile label="Overdue" value={dashboard.overdue} detail="Aging requests" tone={dashboard.overdue > 0 ? "danger" : "default"} />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        {dashboard.statusColumns.map((column) => (
-          <section key={column.status} className="grid content-start gap-3">
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="text-sm font-bold text-[var(--foreground)]">{column.label}</h2>
-              <span className="rounded-full bg-[var(--slate-100)] px-2 py-0.5 text-xs font-bold text-[var(--slate-600)]">
-                {column.tickets.length}
-              </span>
-            </div>
-            {column.tickets.length > 0 ? (
-              column.tickets.map((ticket) => <TicketCard key={ticket.id} ticket={ticket} />)
-            ) : (
-              <div className="rounded-lg border border-dashed border-[var(--border-strong)] bg-white p-5 text-sm text-[var(--muted)]">
-                No tickets in this stage.
-              </div>
-            )}
-          </section>
-        ))}
+      <div className="grid gap-5 xl:grid-cols-[1.35fr_0.85fr]">
+        <DashboardSection
+          eyebrow="My queue"
+          title="Assigned repair work"
+          action={
+            <Link href="/technician/workspace" className="btn-ghost">
+              Open workspace
+            </Link>
+          }
+        >
+          <TechnicianQueueTable tickets={queueTickets} />
+        </DashboardSection>
+
+        <div className="grid content-start gap-5">
+          <DashboardSection eyebrow="Work stages" title="Queue by status">
+            <TechnicianStageSummary dashboard={dashboard} />
+          </DashboardSection>
+          <TechnicianNextAction dashboard={dashboard} />
+        </div>
       </div>
     </section>
   );
@@ -351,10 +553,10 @@ function DashboardActions({ role }: { role: "ADMIN" | "LEAD_TECHNICIAN" | "TECHN
     return (
       <>
         <Link href="/admin/users" className="btn-primary">
-          Staff
+          Add staff
         </Link>
         <Link href="/admin/service-desk/reports" className="btn-secondary">
-          Reports
+          View reports
         </Link>
       </>
     );
@@ -394,14 +596,14 @@ function renderDashboard(dashboard: AdminDashboard | LeadTechnicianDashboard | T
 
 function getDashboardTitle(role: "ADMIN" | "LEAD_TECHNICIAN" | "TECHNICIAN") {
   if (role === "ADMIN") {
-    return "Overview";
+    return "Admin overview";
   }
 
   if (role === "LEAD_TECHNICIAN") {
     return "Dashboard";
   }
 
-  return "My Queue";
+  return "My queue";
 }
 
 function getDashboardEyebrow(role: "ADMIN" | "LEAD_TECHNICIAN" | "TECHNICIAN") {
@@ -438,13 +640,13 @@ export default async function DashboardPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="eyebrow">{ROLE_LABELS[role]}</p>
-            <h1 className="mt-1 text-xl font-semibold text-[var(--foreground)]">
+            <p className="mt-1 text-xl font-semibold text-[var(--foreground)]">
               {role === "ADMIN"
-                ? "Management visibility for SIMADRepair."
+                ? "Monitor service desk health, staff capacity, and custody exceptions."
                 : role === "LEAD_TECHNICIAN"
                   ? "Control today's repair flow."
                   : "Focused assigned repair work."}
-            </h1>
+            </p>
           </div>
           <div className="flex items-center gap-3">
             <span className="status-badge status-received">Notifications {dashboard.unreadNotifications}</span>

@@ -1,4 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
+import { Prisma } from "@prisma/client";
 import { createPublicRepairRequest, PublicRepairRequestValidationError } from "@/lib/service-desk/public-requests";
 
 const mockPrisma = vi.hoisted(() => ({
@@ -14,6 +15,10 @@ const mockPrisma = vi.hoisted(() => ({
     create: vi.fn(),
     findFirst: vi.fn(),
     findUnique: vi.fn(),
+  },
+  trackingCodeCounter: {
+    create: vi.fn(),
+    update: vi.fn(),
   },
   user: {
     findFirst: vi.fn(),
@@ -57,6 +62,8 @@ function setupSuccessfulCreate() {
   mockPrisma.device.create.mockResolvedValue({ id: "device_123" });
   mockPrisma.repairTicket.count.mockResolvedValue(0);
   mockPrisma.repairTicket.findFirst.mockResolvedValue(null);
+  mockPrisma.trackingCodeCounter.update.mockResolvedValue({ lastValue: 1 });
+  mockPrisma.trackingCodeCounter.create.mockResolvedValue({ lastValue: 1 });
   mockPrisma.repairTicket.create.mockResolvedValue({
     id: "ticket_123",
     ticketId: "SIM-2026-000001",
@@ -170,6 +177,25 @@ describe("createPublicRepairRequest", () => {
         }),
       }),
     );
+  });
+
+  it("retries when a tracking code create collides", async () => {
+    const collision = new Prisma.PrismaClientKnownRequestError("Unique constraint failed on tracking code", {
+      clientVersion: "test",
+      code: "P2002",
+      meta: {
+        target: ["tracking_code"],
+      },
+    });
+
+    mockPrisma.$transaction
+      .mockRejectedValueOnce(collision)
+      .mockImplementationOnce(async (callback: (tx: typeof mockPrisma) => unknown) => callback(mockPrisma));
+
+    const result = await createPublicRepairRequest(validPublicRequest);
+
+    expect(result.trackingCode).toBe("SIM-2026-000001");
+    expect(mockPrisma.$transaction).toHaveBeenCalledTimes(2);
   });
 
   it("rejects missing required fields", async () => {

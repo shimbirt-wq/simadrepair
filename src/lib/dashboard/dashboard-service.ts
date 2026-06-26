@@ -70,6 +70,7 @@ export type AdminDashboard = DashboardBase & {
   activeTechnicians: number;
   weeklyClosedRepairs: Array<{ label: string; count: number }>;
   statusBreakdown: DashboardStatusCount[];
+  attentionTickets: DashboardTicketSummary[];
 };
 
 export type LeadTechnicianDashboard = DashboardBase & {
@@ -286,8 +287,9 @@ async function buildTechnicianWorkload(prisma: PrismaClient): Promise<DashboardW
 async function buildAdminDashboard(prisma: PrismaClient, user: PublicUser): Promise<AdminDashboard> {
   const sixWeeksAgo = daysAgo(42);
   const overdueDate = daysAgo(READY_PICKUP_OVERDUE_DAYS);
+  const riskCutoff = daysAgo(OPEN_TICKET_RISK_DAYS);
 
-  const [unreadNotifications, ticketCounts, custodyCounts, userCounts, weeklyClosedTicketRecords, statusBreakdown] =
+  const [unreadNotifications, ticketCounts, custodyCounts, userCounts, weeklyClosedTicketRecords, statusBreakdown, attentionTickets] =
     await Promise.all([
       getUnreadNotifications(prisma, user.id),
       prisma.$queryRaw<
@@ -301,26 +303,26 @@ async function buildAdminDashboard(prisma: PrismaClient, user: PublicUser): Prom
       >`
         SELECT
           COUNT(*)                                                                                      AS total,
-          COUNT(*) FILTER (WHERE status = ANY(${ACTIVE_REPAIR_STATUSES}::text[]))                      AS open,
-          COUNT(*) FILTER (WHERE status = 'DEVICE_COLLECTED')                                          AS closed,
-          COUNT(*) FILTER (WHERE status = ANY(${ACTIVE_REPAIR_STATUSES}::text[]) AND student_action_required IS NOT NULL) AS waiting_for_student,
-          COUNT(*) FILTER (WHERE status = 'READY_FOR_COLLECTION')                                      AS ready_for_pickup
+          COUNT(*) FILTER (WHERE status = ANY(${ACTIVE_REPAIR_STATUSES}::"RepairStatus"[]))            AS open,
+          COUNT(*) FILTER (WHERE status = 'DEVICE_COLLECTED'::"RepairStatus")                          AS closed,
+          COUNT(*) FILTER (WHERE status = ANY(${ACTIVE_REPAIR_STATUSES}::"RepairStatus"[]) AND student_action_required IS NOT NULL) AS waiting_for_student,
+          COUNT(*) FILTER (WHERE status = 'READY_FOR_COLLECTION'::"RepairStatus")                      AS ready_for_pickup
         FROM repair_tickets
       `,
       prisma.$queryRaw<
         Array<{ in_custody: bigint; exceptions: bigint }>
       >`
         SELECT
-          COUNT(*) FILTER (WHERE status = ANY(${[...ACTIVE_CUSTODY_STATUSES]}::text[]) AND collected_at IS NULL)                                                                                           AS in_custody,
-          COUNT(*) FILTER (WHERE status = ANY(${[...ACTIVE_CUSTODY_STATUSES]}::text[]) AND collected_at IS NULL AND (storage_location IS NULL OR ready_for_collection_at <= ${overdueDate})) AS exceptions
+          COUNT(*) FILTER (WHERE status = ANY(${[...ACTIVE_CUSTODY_STATUSES]}::"CustodyStatus"[]) AND collected_at IS NULL)                                                                                           AS in_custody,
+          COUNT(*) FILTER (WHERE status = ANY(${[...ACTIVE_CUSTODY_STATUSES]}::"CustodyStatus"[]) AND collected_at IS NULL AND (storage_location IS NULL OR ready_for_collection_at <= ${overdueDate})) AS exceptions
         FROM device_custody
       `,
       prisma.$queryRaw<
         Array<{ active_staff: bigint; active_technicians: bigint }>
       >`
         SELECT
-          COUNT(*) FILTER (WHERE role IN ('ADMIN','LEAD_TECHNICIAN','TECHNICIAN') AND is_active = true) AS active_staff,
-          COUNT(*) FILTER (WHERE role = 'TECHNICIAN'                              AND is_active = true) AS active_technicians
+          COUNT(*) FILTER (WHERE role IN ('ADMIN'::"UserRole",'LEAD_TECHNICIAN'::"UserRole",'TECHNICIAN'::"UserRole") AND is_active = true) AS active_staff,
+          COUNT(*) FILTER (WHERE role = 'TECHNICIAN'::"UserRole"                                                    AND is_active = true) AS active_technicians
         FROM users
       `,
       prisma.repairTicket.findMany({
@@ -328,6 +330,20 @@ async function buildAdminDashboard(prisma: PrismaClient, user: PublicUser): Prom
         select: { closedAt: true, completedAt: true, updatedAt: true },
       }),
       buildStatusCounts(prisma, ACTIVE_REPAIR_STATUSES),
+      prisma.repairTicket.findMany({
+        where: {
+          status: { in: ACTIVE_REPAIR_STATUSES },
+          OR: [
+            { createdAt: { lte: riskCutoff } },
+            { severity: { in: ["CRITICAL", "HIGH"] } },
+            { technicianId: null },
+            { studentActionRequired: { not: null } },
+          ],
+        },
+        select: ticketSummarySelect,
+        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+        take: 6,
+      }),
     ]);
 
   const t = ticketCounts[0];
@@ -358,6 +374,7 @@ async function buildAdminDashboard(prisma: PrismaClient, user: PublicUser): Prom
     activeTechnicians,
     weeklyClosedRepairs: buildWeeklyClosedRepairs(weeklyClosedTicketRecords),
     statusBreakdown,
+    attentionTickets: attentionTickets.map(toTicketSummary),
   };
 }
 
@@ -375,14 +392,14 @@ async function buildLeadTechnicianDashboard(prisma: PrismaClient, user: PublicUs
         ready_for_pickup: bigint;
         overdue: bigint;
       }>
-    >`
+      >`
       SELECT
-        COUNT(*) FILTER (WHERE status = 'REGISTRATION_COMPLETED')                                                                                        AS new_requests,
-        COUNT(*) FILTER (WHERE status = ANY(${ACTIVE_REPAIR_STATUSES}::text[]) AND technician_id IS NULL)                                               AS waiting_assignment,
-        COUNT(*) FILTER (WHERE status = 'REGISTRATION_COMPLETED' AND (id NOT IN (SELECT ticket_id FROM device_custody) OR id IN (SELECT ticket_id FROM device_custody WHERE status = 'NOT_RECEIVED'))) AS waiting_for_device,
-        COUNT(*) FILTER (WHERE status = ANY(${IN_REPAIR_STATUSES}::text[]))                                                                              AS in_repair,
-        COUNT(*) FILTER (WHERE status = 'READY_FOR_COLLECTION')                                                                                          AS ready_for_pickup,
-        COUNT(*) FILTER (WHERE status = ANY(${ACTIVE_REPAIR_STATUSES}::text[]) AND created_at <= ${riskCutoff})                                         AS overdue
+        COUNT(*) FILTER (WHERE status = 'REGISTRATION_COMPLETED'::"RepairStatus")                                                                        AS new_requests,
+        COUNT(*) FILTER (WHERE status = ANY(${ACTIVE_REPAIR_STATUSES}::"RepairStatus"[]) AND technician_id IS NULL)                                     AS waiting_assignment,
+        COUNT(*) FILTER (WHERE status = 'REGISTRATION_COMPLETED'::"RepairStatus" AND (id NOT IN (SELECT ticket_id FROM device_custody) OR id IN (SELECT ticket_id FROM device_custody WHERE status = 'NOT_RECEIVED'::"CustodyStatus"))) AS waiting_for_device,
+        COUNT(*) FILTER (WHERE status = ANY(${IN_REPAIR_STATUSES}::"RepairStatus"[]))                                                                    AS in_repair,
+        COUNT(*) FILTER (WHERE status = 'READY_FOR_COLLECTION'::"RepairStatus")                                                                          AS ready_for_pickup,
+        COUNT(*) FILTER (WHERE status = ANY(${ACTIVE_REPAIR_STATUSES}::"RepairStatus"[]) AND created_at <= ${riskCutoff})                               AS overdue
       FROM repair_tickets
     `,
     prisma.repairTicket.findMany({

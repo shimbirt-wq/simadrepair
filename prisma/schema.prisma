@@ -342,3 +342,11 @@ model Notification {
   @@index([createdAt])
   @@map("notifications")
 }
+
+model TrackingCodeCounter {
+  scope     String   @id
+  lastValue Int      @default(0) @map("last_value")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("tracking_code_counters")
+}

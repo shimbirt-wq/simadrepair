@@ -17,6 +17,12 @@ function readSearchParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
+function formatDate(value: Date) {
+  return new Intl.DateTimeFormat("en", {
+    dateStyle: "medium",
+  }).format(value);
+}
+
 export default async function RepairTicketsPage({ searchParams }: RepairTicketsPageProps) {
   const user = await getCurrentServerUser();
 
@@ -39,33 +45,65 @@ export default async function RepairTicketsPage({ searchParams }: RepairTicketsP
   });
 
   const ticketsResult = await listRepairTickets(prisma, user, filters);
+  const hasActiveFilters = Boolean(filters.ticketId || filters.status || filters.dateFrom || filters.dateTo);
+  const pageTitle =
+    user.role === "TECHNICIAN"
+      ? "Assigned ticket list"
+      : user.role === "LEAD_TECHNICIAN"
+        ? "Ticket queue"
+        : "Service desk ticket list";
+  const sectionEyebrow =
+    user.role === "TECHNICIAN"
+      ? "Assigned repairs"
+      : user.role === "LEAD_TECHNICIAN"
+        ? "Lead queue"
+        : "Ticket archive";
+  const sectionTitle =
+    user.role === "TECHNICIAN"
+      ? "Assigned ticket history"
+      : user.role === "LEAD_TECHNICIAN"
+        ? "All service desk requests"
+        : "All repair requests";
+  const sectionDescription =
+    user.role === "LEAD_TECHNICIAN"
+      ? "Search and review service desk requests from the lead technician workspace."
+      : user.role === "TECHNICIAN"
+        ? "Search and review repair tickets assigned to your technician workspace."
+        : "Search and review internal service desk requests without leaving the admin workspace.";
 
   return (
     <AppShell
       active="tickets"
       eyebrow="Repair tickets"
-      title={user.role === "TECHNICIAN" ? "Assigned ticket list" : "Service desk ticket list"}
+      title={pageTitle}
       user={user}
       actions={
-        <Link href="/devices" className="btn-secondary">
-          Devices
-        </Link>
+        <>
+          {hasActiveFilters ? (
+            <Link href="/repair-tickets" className="btn-secondary">
+              Reset filters
+            </Link>
+          ) : null}
+          <Link href="/devices" className="btn-secondary">
+            Devices
+          </Link>
+        </>
       }
     >
-      <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
-        <section className="panel p-8">
-          <p className="eyebrow">Ticket scope</p>
-          <h1 className="mt-3 text-3xl font-semibold text-[var(--foreground)]">
-            {user.role === "TECHNICIAN" ? "Assigned tickets" : "All repair tickets"}
-          </h1>
-          <p className="mt-4 text-sm leading-7 text-[var(--muted)]">
-            Students and lecturers submit new requests through the public repair intake. This workspace is for internal
-            service desk review and execution.
-          </p>
-        </section>
+      <section className="panel overflow-hidden">
+        <div className="border-b border-[var(--border)] bg-white px-5 py-4">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="eyebrow">{sectionEyebrow}</p>
+              <h2 className="mt-2 text-lg font-semibold text-[var(--foreground)]">{sectionTitle}</h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--muted)]">
+                {sectionDescription}
+              </p>
+            </div>
+            <span className="status-badge status-received">{ticketsResult.pagination.totalItems} tickets</span>
+          </div>
 
-        <section className="panel p-6">
-          <form className="mt-8 grid gap-4 rounded-2xl border border-[var(--border)] bg-[var(--surface-alt)] p-5 sm:grid-cols-2">
+          <form className="mt-5 grid gap-3 rounded-lg border border-[var(--border)] bg-[var(--surface-alt)] p-4 lg:grid-cols-[1fr_220px_160px_160px_auto]">
             <input
               type="search"
               name="ticketId"
@@ -98,72 +136,94 @@ export default async function RepairTicketsPage({ searchParams }: RepairTicketsP
               className="field-control"
             />
             <input type="hidden" name="pageSize" value={String(filters.pageSize)} />
-            <div className="sm:col-span-2">
-              <button
-                type="submit"
-                className="btn-primary"
-              >
-                Apply filters
-              </button>
-            </div>
+            <button type="submit" className="btn-primary">
+              Apply
+            </button>
           </form>
+        </div>
 
-          <div className="mt-8 grid gap-4">
-            {ticketsResult.tickets.length > 0 ? (
-              ticketsResult.tickets.map((ticket) => (
-                <article key={ticket.id} className="panel p-5">
-                  <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div>
-                      <h2 className="text-lg font-semibold text-[var(--foreground)]">{ticket.ticketId}</h2>
-                      <p className="mt-2 text-sm text-[var(--muted)]">
+        {ticketsResult.tickets.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="data-table min-w-[860px] text-left text-sm">
+              <thead>
+                <tr>
+                  <th>Ticket</th>
+                  <th>Device</th>
+                  <th>Status</th>
+                  <th>Created</th>
+                  <th>Issue</th>
+                  <th className="text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ticketsResult.tickets.map((ticket) => (
+                  <tr key={ticket.id}>
+                    <td>
+                      <Link href={`/repair-tickets/${ticket.id}`} className="tracking-code font-bold text-[var(--blue-700)]">
+                        {ticket.ticketId}
+                      </Link>
+                    </td>
+                    <td>
+                      <p className="font-semibold text-[var(--foreground)]">
                         {ticket.device.brand} {ticket.device.model}
                       </p>
-                    </div>
-                    <div className="flex flex-wrap gap-3">
+                      <p className="mt-1 text-xs text-[var(--muted)]">{ticket.device.deviceType}</p>
+                    </td>
+                    <td>
                       <StatusBadge status={ticket.status} />
-                      <Link
-                        href={`/repair-tickets/${ticket.id}`}
-                        className="btn-secondary"
-                      >
-                        View ticket
+                    </td>
+                    <td className="text-[var(--muted-strong)]">{formatDate(ticket.createdAt)}</td>
+                    <td className="max-w-[320px] truncate text-[var(--muted-strong)]">{ticket.issueDescription}</td>
+                    <td className="text-right">
+                      <Link href={`/repair-tickets/${ticket.id}`} className="btn-secondary">
+                        View
                       </Link>
-                    </div>
-                  </div>
-                  <p className="mt-4 text-sm leading-7 text-[var(--muted)]">{ticket.issueDescription}</p>
-                </article>
-              ))
-            ) : (
-              <article className="panel p-5">
-                <p className="text-sm text-[var(--muted)]">No tickets match the current filters.</p>
-              </article>
-            )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
+        ) : (
+          <div className="p-5">
+            <article className="rounded-lg border border-dashed border-[var(--border-strong)] bg-white p-6">
+              <p className="text-sm font-semibold text-[var(--foreground)]">No tickets match the current filters.</p>
+              <p className="mt-2 max-w-xl text-sm leading-6 text-[var(--muted)]">
+                Clear filters or search by another tracking code to review archived service desk requests.
+              </p>
+              {hasActiveFilters ? (
+                <Link href="/repair-tickets" className="btn-secondary mt-4">
+                  Clear filters
+                </Link>
+              ) : null}
+            </article>
+          </div>
+        )}
 
-          <div className="mt-6 flex flex-wrap items-center justify-between gap-4 text-sm text-[var(--muted)]">
-            <p>
-              Page {ticketsResult.pagination.page} of {ticketsResult.pagination.totalPages} - {ticketsResult.pagination.totalItems} tickets
-            </p>
-            <div className="flex gap-3">
-              {ticketsResult.pagination.page > 1 ? (
-                <Link
-                  href={`/repair-tickets?page=${ticketsResult.pagination.page - 1}&pageSize=${ticketsResult.pagination.pageSize}&status=${filters.status ?? ""}&ticketId=${encodeURIComponent(filters.ticketId ?? "")}&dateFrom=${filters.dateFrom ?? ""}&dateTo=${filters.dateTo ?? ""}`}
-                  className="btn-secondary"
-                >
-                  Previous
-                </Link>
-              ) : null}
-              {ticketsResult.pagination.page < ticketsResult.pagination.totalPages ? (
-                <Link
-                  href={`/repair-tickets?page=${ticketsResult.pagination.page + 1}&pageSize=${ticketsResult.pagination.pageSize}&status=${filters.status ?? ""}&ticketId=${encodeURIComponent(filters.ticketId ?? "")}&dateFrom=${filters.dateFrom ?? ""}&dateTo=${filters.dateTo ?? ""}`}
-                  className="btn-secondary"
-                >
-                  Next
-                </Link>
-              ) : null}
-            </div>
+        <div className="flex flex-wrap items-center justify-between gap-4 border-t border-[var(--border)] bg-white px-5 py-4 text-sm text-[var(--muted)]">
+          <p>
+            Page {ticketsResult.pagination.page} of {ticketsResult.pagination.totalPages} - {ticketsResult.pagination.totalItems} tickets
+          </p>
+          <div className="flex gap-3">
+            {ticketsResult.pagination.page > 1 ? (
+              <Link
+                href={`/repair-tickets?page=${ticketsResult.pagination.page - 1}&pageSize=${ticketsResult.pagination.pageSize}&status=${filters.status ?? ""}&ticketId=${encodeURIComponent(filters.ticketId ?? "")}&dateFrom=${filters.dateFrom ?? ""}&dateTo=${filters.dateTo ?? ""}`}
+                className="btn-secondary"
+              >
+                Previous
+              </Link>
+            ) : null}
+            {ticketsResult.pagination.page < ticketsResult.pagination.totalPages ? (
+              <Link
+                href={`/repair-tickets?page=${ticketsResult.pagination.page + 1}&pageSize=${ticketsResult.pagination.pageSize}&status=${filters.status ?? ""}&ticketId=${encodeURIComponent(filters.ticketId ?? "")}&dateFrom=${filters.dateFrom ?? ""}&dateTo=${filters.dateTo ?? ""}`}
+                className="btn-secondary"
+              >
+                Next
+              </Link>
+            ) : null}
           </div>
-        </section>
-      </div>
+        </div>
+      </section>
     </AppShell>
   );
 }

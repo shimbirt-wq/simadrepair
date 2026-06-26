@@ -3,19 +3,12 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { SimadRepairLogo } from "@/components/brand/simad-repair-logo";
+import { getPostLoginRedirectPath } from "@/app/auth/login/redirects";
 
-type LoginState = {
-  error: string | null;
-};
+type LoginState = { error: string | null };
+const initialState: LoginState = { error: null };
 
-const initialState: LoginState = {
-  error: null,
-};
-
-type LoginFormProps = {
-  nextPath: string;
-};
+type LoginFormProps = { nextPath: string | null };
 
 export function LoginForm({ nextPath }: LoginFormProps) {
   const router = useRouter();
@@ -33,74 +26,101 @@ export function LoginForm({ nextPath }: LoginFormProps) {
     startTransition(async () => {
       const response = await fetch("/api/auth/login", {
         method: "POST",
-        headers: {
-          "content-type": "application/json",
-        },
+        headers: { "content-type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
-      const body = (await response.json().catch(() => null)) as { error?: string } | null;
+      const body = (await response.json().catch(() => null)) as { error?: string; user?: { role?: string } } | null;
 
       if (!response.ok) {
-        setState({
-          error: body?.error ?? "Unable to sign in.",
-        });
+        setState({ error: body?.error ?? "Unable to sign in." });
         return;
       }
 
-      router.push(nextPath);
+      router.push(getPostLoginRedirectPath(nextPath, body?.user?.role));
       router.refresh();
     });
   }
 
   return (
-    <form onSubmit={handleSubmit} className="panel p-8">
-      <div className="mb-8">
-        <SimadRepairLogo className="h-12 w-auto" />
-      </div>
-      <p className="eyebrow">Sign in</p>
-      <h1 className="mt-3 text-3xl font-semibold text-[var(--foreground)]">Staff workspace access</h1>
-      <p className="mt-3 text-sm leading-7 text-[var(--muted)]">
-        Sign in with an admin, lead technician, or technician account. Students and lecturers use the public repair
-        request and tracking flow.
+    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+      <p
+        style={{
+          fontSize: 11,
+          fontWeight: 700,
+          letterSpacing: "0.10em",
+          textTransform: "uppercase",
+          color: "var(--blue-600)",
+          marginBottom: 10,
+        }}
+      >
+        Staff access
+      </p>
+      <h1 style={{ fontSize: 26, fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-0.02em", lineHeight: 1.2 }}>
+        Sign in to your workspace
+      </h1>
+      <p style={{ marginTop: 8, fontSize: 13, lineHeight: 1.7, color: "var(--text-tertiary)" }}>
+        For admin, lead technician, and technician accounts only.
       </p>
 
-      <div className="mt-8 grid gap-5">
-        <label className="flex flex-col gap-2 text-sm font-medium text-[var(--foreground)]">
-          Email
+      <div style={{ marginTop: 28, display: "flex", flexDirection: "column", gap: 16 }}>
+        <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>
+          Email address
           <input
             type="email"
             name="email"
             required
+            autoComplete="email"
+            placeholder="you@simad.edu.so"
             className="field-control"
           />
         </label>
-        <label className="flex flex-col gap-2 text-sm font-medium text-[var(--foreground)]">
+        <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>
           Password
           <input
             type="password"
             name="password"
             required
+            autoComplete="current-password"
+            placeholder="••••••••"
             className="field-control"
           />
         </label>
       </div>
 
-      {state.error ? <p className="mt-4 text-sm font-medium text-[var(--danger)]">{state.error}</p> : null}
-
-      <div className="mt-6 flex flex-wrap gap-3">
-        <button
-          type="submit"
-          disabled={isPending}
-          className="btn-primary disabled:cursor-not-allowed disabled:opacity-60"
+      {state.error ? (
+        <div
+          style={{
+            marginTop: 16,
+            borderRadius: 8,
+            background: "var(--danger-bg)",
+            border: "1px solid var(--fill-danger-soft-border)",
+            padding: "10px 14px",
+            fontSize: 13,
+            color: "var(--danger)",
+            fontWeight: 500,
+          }}
         >
-          {isPending ? "Signing in..." : "Sign in"}
-        </button>
-        <Link href="/request-repair" className="btn-secondary">
-          Request repair
+          {state.error}
+        </div>
+      ) : null}
+
+      <button
+        type="submit"
+        disabled={isPending}
+        className="btn-primary"
+        style={{ marginTop: 24, width: "100%", minHeight: 44, fontSize: 14, fontWeight: 700 }}
+      >
+        {isPending ? "Signing in..." : "Sign in"}
+      </button>
+
+      <div style={{ marginTop: 20, display: "flex", gap: 16, justifyContent: "center" }}>
+        <Link href="/request-repair" style={{ fontSize: 13, color: "var(--text-accent)" }}>
+          Submit a repair
         </Link>
-        <Link href="/track" className="btn-secondary">
-          Track repair
+        <span style={{ color: "var(--border-strong)" }}>·</span>
+        <Link href="/track" style={{ fontSize: 13, color: "var(--text-accent)" }}>
+          Track a repair
         </Link>
       </div>
     </form>

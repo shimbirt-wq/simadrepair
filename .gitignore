@@ -10,6 +10,8 @@ build/
 dist/
 coverage/
 tsconfig.tsbuildinfo
+playwright-report/
+test-results/
 
 # env
 .env
@@ -32,3 +34,6 @@ pnpm-debug.log*
 # system
 .DS_Store
 Thumbs.db
+
+# local agent/tooling
+.claude/

@@ -243,6 +243,14 @@ function canMarkTicketCollected(status: RepairStatus) {
   return status === "READY_FOR_COLLECTION" && canTransitionRepairStatus(status, "DEVICE_COLLECTED");
 }
 
+function getTicketStatusAfterCheckIn(status: RepairStatus) {
+  return canTransitionRepairStatus(status, "DEVICE_RECEIVED") ? "DEVICE_RECEIVED" : status;
+}
+
+function canMarkTicketReadyForCollection(status: RepairStatus) {
+  return status === "READY_FOR_COLLECTION" || canTransitionRepairStatus(status, "READY_FOR_COLLECTION");
+}
+
 export async function getCustodyForTicket(ticketIdOrTrackingCode: string): Promise<DeviceCustodyResult<TicketCustodyDetail>> {
   const ticket = await prisma.repairTicket.findFirst({
     where: buildTicketLookupFilter(ticketIdOrTrackingCode),
@@ -326,6 +334,34 @@ export async function checkInDevice(input: {
       });
     }
 
+    const statusTo = getTicketStatusAfterCheckIn(ticket.status);
+
+    if (statusTo !== ticket.status) {
+      await tx.repairTicket.update({
+        where: { id: ticket.id },
+        data: {
+          status: statusTo,
+        },
+      });
+
+      await tx.repairEvent.create({
+        data: {
+          ticketId: ticket.id,
+          actorId: input.actor.id,
+          actorRole: input.actor.role,
+          eventType: "STATUS_CHANGED",
+          statusFrom: ticket.status,
+          statusTo,
+          custodyFrom,
+          custodyTo: "RECEIVED",
+          note: "Ticket marked device received after physical check-in.",
+          metadata: {
+            source: "lead_custody_check_in",
+          },
+        },
+      });
+    }
+
     await tx.repairEvent.create({
       data: {
         ticketId: ticket.id,
@@ -333,7 +369,7 @@ export async function checkInDevice(input: {
         actorRole: input.actor.role,
         eventType: "CUSTODY_CHANGED",
         statusFrom: ticket.status,
-        statusTo: ticket.status,
+        statusTo,
         custodyFrom,
         custodyTo: "RECEIVED",
         note: "Device checked in.",
@@ -393,13 +429,34 @@ export async function moveCustodyStatus(input: {
       };
     }
 
+    const shouldMarkTicketReady = statusData.status === "READY_FOR_COLLECTION" && ticket.status !== "READY_FOR_COLLECTION";
+
+    if (statusData.status === "READY_FOR_COLLECTION" && !canMarkTicketReadyForCollection(ticket.status)) {
+      return {
+        kind: "transition-error" as const,
+        message: "Repair ticket must pass quality inspection before the device can be marked ready for collection.",
+      };
+    }
+
+    const movedAt = new Date();
+
     await tx.deviceCustody.update({
       where: { id: ticket.custody.id },
       data: {
         status: statusData.status,
-        ...(statusData.status === "READY_FOR_COLLECTION" ? { readyForCollectionAt: new Date() } : {}),
+        ...(statusData.status === "READY_FOR_COLLECTION" ? { readyForCollectionAt: movedAt } : {}),
       },
     });
+
+    if (shouldMarkTicketReady) {
+      await tx.repairTicket.update({
+        where: { id: ticket.id },
+        data: {
+          status: "READY_FOR_COLLECTION",
+          readyForPickupAt: movedAt,
+        },
+      });
+    }
 
     await tx.repairEvent.create({
       data: {
@@ -408,7 +465,7 @@ export async function moveCustodyStatus(input: {
         actorRole: input.actor.role,
         eventType: "CUSTODY_CHANGED",
         statusFrom: ticket.status,
-        statusTo: ticket.status,
+        statusTo: shouldMarkTicketReady ? "READY_FOR_COLLECTION" : ticket.status,
         custodyFrom: ticket.custody.status,
         custodyTo: statusData.status,
         note: statusData.note ?? `Custody moved to ${statusData.status.replaceAll("_", " ")}.`,
@@ -417,6 +474,25 @@ export async function moveCustodyStatus(input: {
         },
       },
     });
+
+    if (shouldMarkTicketReady) {
+      await tx.repairEvent.create({
+        data: {
+          ticketId: ticket.id,
+          actorId: input.actor.id,
+          actorRole: input.actor.role,
+          eventType: "READY_FOR_PICKUP",
+          statusFrom: ticket.status,
+          statusTo: "READY_FOR_COLLECTION",
+          custodyFrom: ticket.custody.status,
+          custodyTo: "READY_FOR_COLLECTION",
+          note: "Device marked ready for pickup.",
+          metadata: {
+            source: "lead_custody",
+          },
+        },
+      });
+    }
 
     return { kind: "updated" as const, ticket: await findCustodyDetailInTransaction(tx, ticket.id) };
   });
@@ -467,6 +543,13 @@ export async function confirmPickup(input: {
       };
     }
 
+    if (!canMarkTicketCollected(ticket.status)) {
+      return {
+        kind: "transition-error" as const,
+        message: "Repair ticket must be ready for collection before device pickup can be confirmed.",
+      };
+    }
+
     const pickupTime = new Date();
 
     await tx.deviceCustody.update({
@@ -481,15 +564,13 @@ export async function confirmPickup(input: {
       },
     });
 
-    if (canMarkTicketCollected(ticket.status)) {
-      await tx.repairTicket.update({
-        where: { id: ticket.id },
-        data: {
-          status: "DEVICE_COLLECTED",
-          closedAt: pickupTime,
-        },
-      });
-    }
+    await tx.repairTicket.update({
+      where: { id: ticket.id },
+      data: {
+        status: "DEVICE_COLLECTED",
+        closedAt: pickupTime,
+      },
+    });
 
     await tx.repairEvent.create({
       data: {
@@ -498,7 +579,7 @@ export async function confirmPickup(input: {
         actorRole: input.actor.role,
         eventType: "PICKUP_CONFIRMED",
         statusFrom: ticket.status,
-        statusTo: canMarkTicketCollected(ticket.status) ? "DEVICE_COLLECTED" : ticket.status,
+        statusTo: "DEVICE_COLLECTED",
         custodyFrom: "READY_FOR_COLLECTION",
         custodyTo: "COLLECTED",
         note: "Device pickup confirmed.",

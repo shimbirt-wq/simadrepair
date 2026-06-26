@@ -23,6 +23,12 @@ export async function POST(request: Request) {
       return validationErrorResponse("Invalid public repair request data.", error.validationError);
     }
 
+    console.error("Public repair request submission failed.", {
+      name: error instanceof Error ? error.name : "UnknownError",
+      message: error instanceof Error ? error.message : "Unknown public repair request error.",
+      code: typeof error === "object" && error && "code" in error ? error.code : undefined,
+    });
+
     return internalErrorResponse();
   }
 }

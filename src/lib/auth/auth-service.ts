@@ -2,7 +2,7 @@ import type { PrismaClient } from "@prisma/client";
 import { verifyPassword } from "@/lib/auth/password";
 import { requireAuthenticatedUser } from "@/lib/auth/authorization";
 import { signSessionToken } from "@/lib/auth/session";
-import { publicUserSelect, toPublicUser, type PublicUser } from "@/lib/auth/public-user";
+import { toPublicUser, type PublicUser } from "@/lib/auth/public-user";
 import type { LoginInput } from "@/lib/validations/auth";
 
 type AuthServiceResult =

@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { AppShell } from "@/app/app-shell";
 import { NotificationList } from "@/app/profile/notification-list";
 import { getCurrentServerUser } from "@/lib/auth/server-user";
-import { isInternalUserRole } from "@/lib/auth/roles";
+import { isInternalUserRole, ROLE_LABELS } from "@/lib/auth/roles";
 import { prisma } from "@/lib/db/prisma";
 import { listCurrentUserNotifications } from "@/lib/notifications/notification-service";
 import { notificationListQuerySchema } from "@/lib/validations/notifications";
@@ -29,6 +29,14 @@ type ProfilePageProps = {
 
 function readSearchParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
+}
+
+function formatProfileValue(user: NonNullable<Awaited<ReturnType<typeof getCurrentServerUser>>>, key: (typeof profileFields)[number]["key"]) {
+  if (key === "role") {
+    return ROLE_LABELS[user.role];
+  }
+
+  return user[key] ? String(user[key]) : "Not provided";
 }
 
 export default async function ProfilePage({ searchParams }: ProfilePageProps) {
@@ -77,22 +85,18 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
       title={user.fullName}
       user={user}
       actions={
-        <>
-          <Link href="/dashboard" className="btn-secondary">
-            Open dashboard
-          </Link>
-          <Link href="/devices" className="btn-primary">
-            Devices
-          </Link>
-        </>
+        <Link href="/dashboard" className="btn-secondary">
+          Open dashboard
+        </Link>
       }
     >
       <section className="panel p-6">
         <div className="flex flex-wrap items-start justify-between gap-6">
           <div>
+            <p className="eyebrow">Account details</p>
+            <h2 className="mt-3 text-2xl font-semibold text-[var(--foreground)]">Profile information</h2>
             <p className="max-w-2xl text-sm leading-7 text-[var(--muted)]">
-              Your account profile stays limited to safe public fields only. Password hashes and protected auth details
-              are never returned here.
+              Review your staff identity, department, and contact details used across the service desk workspace.
             </p>
             {user.role !== "ADMIN" ? (
               <p className="mt-4 max-w-2xl rounded-xl border border-[var(--border)] bg-[var(--surface-alt)] px-4 py-3 text-sm leading-7 text-[var(--muted)]">
@@ -103,12 +107,9 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
           <div className="flex flex-wrap gap-3">
             {user.role === "ADMIN" ? (
               <Link href="/admin/users" className="btn-secondary">
-                Open admin users
+                Manage staff
               </Link>
             ) : null}
-            <Link href="/api/users/me" className="btn-secondary">
-              Open JSON
-            </Link>
           </div>
         </div>
 
@@ -117,7 +118,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
             <article key={key} className="rounded-xl border border-[var(--border)] bg-[var(--surface-alt)] p-5">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">{label}</p>
               <p className="mt-3 text-base font-medium text-[var(--foreground)]">
-                {user[key] ? String(user[key]) : "Not provided"}
+                {formatProfileValue(user, key)}
               </p>
             </article>
           ))}
@@ -133,6 +134,23 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
             <p className="mt-3 text-base font-medium text-[var(--foreground)]">{formatDate(user.updatedAt)}</p>
           </article>
         </div>
+
+        <div className="mt-6 grid gap-4 lg:grid-cols-2">
+          <article className="rounded-xl border border-[var(--border)] bg-white p-5">
+            <p className="eyebrow">Security</p>
+            <h3 className="mt-3 text-base font-semibold text-[var(--foreground)]">Protected staff account</h3>
+            <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+              Passwords and session secrets are not exposed in this workspace. Contact an administrator for account access changes.
+            </p>
+          </article>
+          <article className="rounded-xl border border-[var(--border)] bg-white p-5">
+            <p className="eyebrow">Preferences</p>
+            <h3 className="mt-3 text-base font-semibold text-[var(--foreground)]">Dashboard notifications</h3>
+            <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+              Service desk alerts are shown below and can be marked as read from this page.
+            </p>
+          </article>
+        </div>
       </section>
 
       <section className="panel mt-6 p-6">
@@ -144,12 +162,6 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
               You have {notificationsResult.unreadCount} unread notification{notificationsResult.unreadCount === 1 ? "" : "s"}.
             </p>
           </div>
-          <Link
-            href={`/api/notifications?page=${notificationsResult.pagination.page}&pageSize=${notificationsResult.pagination.pageSize}`}
-            className="btn-secondary"
-          >
-            Open notifications JSON
-          </Link>
         </div>
 
         <div className="mt-6">

@@ -21,42 +21,91 @@ export default async function TrackPage({ searchParams }: TrackPageProps) {
   const initialCode = getInitialCode(params.code);
 
   return (
-    <main className="app-shell">
-      <section className="border-b border-[var(--border)] bg-white">
-        <div className="page-container">
-          <nav className="flex flex-wrap items-center justify-between gap-4">
-            <Link href="/" aria-label="SIMADRepair home">
-              <SimadRepairLogo className="h-12 w-auto" />
-            </Link>
-            <Link href="/request-repair" className="btn-secondary">
-              Request repair
-            </Link>
-          </nav>
+    <div style={{ minHeight: "100vh", backgroundColor: "#f5f5f2" }}>
+      {/* Simplified top navbar */}
+      <header
+        style={{
+          borderBottom: "1px solid #e2e2dc",
+          backgroundColor: "#ffffff",
+          height: "60px",
+          display: "flex",
+          alignItems: "center",
+          padding: "0 24px",
+        }}
+      >
+        <div
+          style={{
+            maxWidth: "1180px",
+            margin: "0 auto",
+            width: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <Link href="/" aria-label="SIMADRepair home">
+            <SimadRepairLogo className="h-8 w-auto" />
+          </Link>
+          <Link href="/request-repair" className="btn-primary" style={{ fontSize: "13px" }}>
+            Submit repair
+          </Link>
         </div>
-      </section>
+      </header>
 
-      <section className="page-container grid gap-8 py-8 lg:grid-cols-[0.78fr_1.22fr] lg:py-12">
-        <div className="lg:pt-8">
-          <p className="eyebrow">Public repair tracking</p>
-          <h1 className="mt-4 max-w-2xl text-4xl font-bold tracking-normal text-[var(--foreground)] sm:text-5xl">
-            Check your SIMAD computer maintenance progress.
-          </h1>
-          <p className="mt-5 max-w-xl text-base leading-8 text-[var(--muted-strong)]">
-            Use the tracking code from your repair request confirmation. This page only shows public repair progress,
-            not private contact details or internal technician notes.
-          </p>
+      {/* Hero search strip */}
+      <div
+        style={{
+          backgroundColor: "#0b1120",
+          padding: "80px 24px",
+          textAlign: "center",
+        }}
+      >
+        <p
+          style={{
+            fontSize: "11px",
+            fontWeight: 600,
+            letterSpacing: "0.14em",
+            textTransform: "uppercase",
+            color: "rgba(255,255,255,0.35)",
+            marginBottom: "16px",
+          }}
+        >
+          REPAIR TRACKING
+        </p>
+        <h1
+          style={{
+            fontSize: "36px",
+            fontWeight: 700,
+            letterSpacing: "-0.025em",
+            color: "#ffffff",
+            lineHeight: 1.15,
+            marginBottom: "12px",
+          }}
+        >
+          Check your repair status.
+        </h1>
+        <p
+          style={{
+            fontSize: "14px",
+            color: "rgba(255,255,255,0.45)",
+            lineHeight: 1.6,
+          }}
+        >
+          Enter the tracking code from your repair request.
+        </p>
+      </div>
 
-          <div className="mt-8 rounded-lg border border-[var(--border)] bg-white p-5">
-            <p className="text-sm font-bold text-[var(--foreground)]">Privacy note</p>
-            <p className="mt-2 text-sm leading-7 text-[var(--muted)]">
-              Tracking results are limited to safe status details such as request progress, device type, issue category,
-              and public timeline updates.
-            </p>
-          </div>
-        </div>
-
+      {/* Tracking content */}
+      <div
+        className="page-container"
+        style={{
+          maxWidth: "720px",
+          margin: "0 auto",
+          padding: "40px 24px 60px",
+        }}
+      >
         <PublicTracking initialCode={initialCode} />
-      </section>
-    </main>
+      </div>
+    </div>
   );
 }

@@ -66,6 +66,10 @@ function buildBundle() {
     ticketsByIssueCategory: [{ issueCategory: "HARDWARE_STORAGE", count: 1 }],
     technicianWorkload: [],
     custodyExceptions: [],
+    averageRepairTime: {
+      weekly: [],
+      byIssueCategory: [],
+    },
   };
 }
 

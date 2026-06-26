@@ -1,0 +1,27 @@
+- main:
+  - img "SIMADRepair IT Service Desk"
+  - paragraph: Sign in
+  - heading "Staff workspace access" [level=1]
+  - paragraph: Sign in with an admin, lead technician, or technician account. Students and lecturers use the public repair request and tracking flow.
+  - text: Email
+  - textbox "Email"
+  - text: Password
+  - textbox "Password"
+  - button "Sign in"
+  - link "Request repair":
+    - /url: /request-repair
+  - link "Track repair":
+    - /url: /track
+  - complementary:
+    - paragraph: Access notes
+    - heading "Admin tools stay protected" [level=2]
+    - paragraph: In line with the project architecture and security constraints, admin user listing, search, pagination, and role updates only unlock after a verified admin session is active.
+    - paragraph: Local seed accounts
+    - generic: Admin
+    - generic: admin@simadrepair.test
+    - generic: Lead technician
+    - generic: lead@simadrepair.test
+    - generic: Technician
+    - generic: tech@simadrepair.test
+    - paragraph: "Password: TestPass123!"
+    - paragraph: This is for local development only. If the account does not exist yet, run the Prisma seed command.

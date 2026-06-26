@@ -13,6 +13,10 @@ const mockPrisma = vi.hoisted(() => ({
     create: vi.fn(),
     findFirst: vi.fn(),
   },
+  trackingCodeCounter: {
+    create: vi.fn(),
+    update: vi.fn(),
+  },
   repairEvent: {
     create: vi.fn(),
   },
@@ -60,6 +64,8 @@ describe("public repair request route", () => {
     mockPrisma.device.create.mockResolvedValue({ id: "device_123" });
     mockPrisma.repairTicket.count.mockResolvedValue(0);
     mockPrisma.repairTicket.findFirst.mockResolvedValue(null);
+    mockPrisma.trackingCodeCounter.update.mockResolvedValue({ lastValue: 1 });
+    mockPrisma.trackingCodeCounter.create.mockResolvedValue({ lastValue: 1 });
     mockPrisma.repairTicket.create.mockResolvedValue({
       id: "ticket_123",
       ticketId: "SIM-2026-000001",
@@ -108,5 +114,26 @@ describe("public repair request route", () => {
     expect(response.status).toBe(400);
     expect(body.error).toBe("Invalid public repair request data.");
     expect(mockPrisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("logs unexpected create failures and returns a safe 500 response", async () => {
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    mockPrisma.$transaction.mockRejectedValueOnce(new Error("database unavailable"));
+    const { POST } = await import("./route");
+
+    const response = await POST(buildRequest(validPublicRequest));
+    const body = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(body.error).toBe("An unexpected error occurred.");
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      "Public repair request submission failed.",
+      expect.objectContaining({
+        message: "database unavailable",
+        name: "Error",
+      }),
+    );
+
+    consoleErrorSpy.mockRestore();
   });
 });

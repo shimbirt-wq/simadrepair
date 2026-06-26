@@ -1,0 +1,23 @@
+- main:
+  - navigation:
+    - link "SIMADRepair home":
+      - /url: /
+      - img "SIMADRepair IT Service Desk"
+    - link "Request repair":
+      - /url: /request-repair
+  - paragraph: Public repair tracking
+  - heading "Check your SIMAD computer maintenance progress." [level=1]
+  - paragraph: Use the tracking code from your repair request confirmation. This page only shows public repair progress, not private contact details or internal technician notes.
+  - paragraph: Privacy note
+  - paragraph: Tracking results are limited to safe status details such as request progress, device type, issue category, and public timeline updates.
+  - text: Tracking code
+  - textbox "Tracking code Check status":
+    - /placeholder: SIM-2026-000001
+  - button "Check status"
+  - paragraph: Enter the tracking code you received after submitting your SIMAD computer maintenance request.
+  - heading "Enter your tracking code" [level=2]
+  - paragraph: Your repair progress will appear here after lookup.
+  - link "Submit a repair request":
+    - /url: /request-repair
+  - link "Back to home":
+    - /url: /

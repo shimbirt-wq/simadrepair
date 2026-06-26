@@ -179,8 +179,8 @@ describe("lead custody route handlers", () => {
   it("allows lead technicians to check in a device and creates a repair event", async () => {
     const cookie = await authCookie({ id: "lead_123", role: "LEAD_TECHNICIAN" });
     mockPrisma.user.findUnique.mockResolvedValue(buildUser());
-    mockPrisma.repairTicket.findFirst.mockResolvedValue(buildMutationTicket());
-    mockPrisma.repairTicket.findUnique.mockResolvedValue(buildCustodyDetail());
+    mockPrisma.repairTicket.findFirst.mockResolvedValue(buildMutationTicket({ status: "REGISTRATION_COMPLETED" }));
+    mockPrisma.repairTicket.findUnique.mockResolvedValue(buildCustodyDetail({ status: "DEVICE_RECEIVED" }));
     const { POST } = await import("./[ticketId]/custody/route");
 
     const response = await POST(
@@ -215,10 +215,29 @@ describe("lead custody route handlers", () => {
         }),
       }),
     );
+    expect(mockPrisma.repairTicket.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "ticket_123" },
+        data: {
+          status: "DEVICE_RECEIVED",
+        },
+      }),
+    );
+    expect(mockPrisma.repairEvent.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          eventType: "STATUS_CHANGED",
+          statusFrom: "REGISTRATION_COMPLETED",
+          statusTo: "DEVICE_RECEIVED",
+        }),
+      }),
+    );
     expect(mockPrisma.repairEvent.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           eventType: "CUSTODY_CHANGED",
+          statusFrom: "REGISTRATION_COMPLETED",
+          statusTo: "DEVICE_RECEIVED",
           custodyFrom: "NOT_RECEIVED",
           custodyTo: "RECEIVED",
           metadata: expect.objectContaining({
@@ -376,10 +395,10 @@ describe("lead custody route handlers", () => {
       phone: "+252610001111",
     });
     mockPrisma.repairTicket.findFirst.mockResolvedValue(
-      buildMutationTicket({ custody: { id: "custody_123", status: "IN_REPAIR_ROOM" } }),
+      buildMutationTicket({ status: "QUALITY_INSPECTION", custody: { id: "custody_123", status: "IN_REPAIR_ROOM" } }),
     );
     mockPrisma.repairTicket.findUnique
-      .mockResolvedValueOnce(buildCustodyDetail({ custody: buildCustody("READY_FOR_COLLECTION") }))
+      .mockResolvedValueOnce(buildCustodyDetail({ status: "READY_FOR_COLLECTION", custody: buildCustody("READY_FOR_COLLECTION") }))
       .mockResolvedValueOnce(buildNotificationTicket());
     mockPrisma.notification.create.mockResolvedValue(buildNotification());
     const { PATCH } = await import("./[ticketId]/custody/status/route");
@@ -399,6 +418,26 @@ describe("lead custody route handlers", () => {
     );
 
     expect(response.status).toBe(200);
+    expect(mockPrisma.repairTicket.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "ticket_123" },
+        data: expect.objectContaining({
+          status: "READY_FOR_COLLECTION",
+          readyForPickupAt: expect.any(Date),
+        }),
+      }),
+    );
+    expect(mockPrisma.repairEvent.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          eventType: "READY_FOR_PICKUP",
+          statusFrom: "QUALITY_INSPECTION",
+          statusTo: "READY_FOR_COLLECTION",
+          custodyFrom: "IN_REPAIR_ROOM",
+          custodyTo: "READY_FOR_COLLECTION",
+        }),
+      }),
+    );
     expect(mockPrisma.notification.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
@@ -408,6 +447,37 @@ describe("lead custody route handlers", () => {
         }),
       }),
     );
+    vi.unstubAllEnvs();
+  });
+
+  it("requires quality inspection before custody can be marked ready for collection", async () => {
+    const cookie = await authCookie({ id: "lead_123", role: "LEAD_TECHNICIAN" });
+    mockPrisma.user.findUnique.mockResolvedValue(buildUser());
+    mockPrisma.repairTicket.findFirst.mockResolvedValue(
+      buildMutationTicket({ status: "REPAIR_IN_PROGRESS", custody: { id: "custody_123", status: "IN_REPAIR_ROOM" } }),
+    );
+    const { PATCH } = await import("./[ticketId]/custody/status/route");
+
+    const response = await PATCH(
+      buildRequest("/api/lead/tickets/ticket_123/custody/status", {
+        method: "PATCH",
+        headers: {
+          "content-type": "application/json",
+          cookie,
+        },
+        body: JSON.stringify({
+          status: "READY_FOR_COLLECTION",
+        }),
+      }),
+      { params: Promise.resolve({ ticketId: "ticket_123" }) },
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(409);
+    expect(body.error).toBe("Repair ticket must pass quality inspection before the device can be marked ready for collection.");
+    expect(mockPrisma.deviceCustody.update).not.toHaveBeenCalled();
+    expect(mockPrisma.repairTicket.update).not.toHaveBeenCalled();
+    expect(mockPrisma.repairEvent.create).not.toHaveBeenCalled();
     vi.unstubAllEnvs();
   });
 
@@ -459,6 +529,39 @@ describe("lead custody route handlers", () => {
 
     expect(response.status).toBe(409);
     expect(mockPrisma.deviceCustody.update).not.toHaveBeenCalled();
+    vi.unstubAllEnvs();
+  });
+
+  it("requires ready-for-collection ticket status before pickup", async () => {
+    const cookie = await authCookie({ id: "lead_123", role: "LEAD_TECHNICIAN" });
+    mockPrisma.user.findUnique.mockResolvedValue(buildUser());
+    mockPrisma.repairTicket.findFirst.mockResolvedValue(
+      buildMutationTicket({
+        status: "QUALITY_INSPECTION",
+        custody: { id: "custody_123", status: "READY_FOR_COLLECTION" },
+      }),
+    );
+    const { PATCH } = await import("./[ticketId]/custody/pickup/route");
+
+    const response = await PATCH(
+      buildRequest("/api/lead/tickets/ticket_123/custody/pickup", {
+        method: "PATCH",
+        headers: {
+          "content-type": "application/json",
+          cookie,
+        },
+        body: JSON.stringify({
+          collectedByName: "Asha Mohamed",
+        }),
+      }),
+      { params: Promise.resolve({ ticketId: "ticket_123" }) },
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(409);
+    expect(body.error).toBe("Repair ticket must be ready for collection before device pickup can be confirmed.");
+    expect(mockPrisma.deviceCustody.update).not.toHaveBeenCalled();
+    expect(mockPrisma.repairTicket.update).not.toHaveBeenCalled();
     vi.unstubAllEnvs();
   });
 

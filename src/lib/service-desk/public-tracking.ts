@@ -6,7 +6,7 @@ const publicTrackingCodeSchema = z
   .string()
   .trim()
   .toUpperCase()
-  .regex(/^SIM-\d{4}-\d{6}$/, "Tracking code format is invalid");
+  .regex(/^SIM-\d{4}-\d+$/, "Tracking code format is invalid");
 
 const PUBLIC_REPAIR_EVENT_TYPES = new Set<RepairEventType>([
   "TICKET_CREATED",

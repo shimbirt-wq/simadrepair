@@ -46,12 +46,18 @@ export type CustodyException = {
   readyForCollectionAt: Date | null;
 };
 
+export type AverageRepairTimeReport = {
+  weekly: Array<{ label: string; days: number; count: number }>;
+  byIssueCategory: Array<{ issueCategory: string; days: number; count: number }>;
+};
+
 export type ServiceDeskReportBundle = {
   overview: ServiceDeskOverview;
   ticketsByFaculty: TicketsByFaculty[];
   ticketsByIssueCategory: TicketsByIssueCategory[];
   technicianWorkload: TechnicianWorkload[];
   custodyExceptions: CustodyException[];
+  averageRepairTime: AverageRepairTimeReport;
 };
 
 const ACTIVE_CUSTODY_STATUSES: CustodyStatus[] = ["RECEIVED", "IN_REPAIR_ROOM", "READY_FOR_COLLECTION"];
@@ -87,6 +93,16 @@ function increment(map: Map<string, number>, key: string) {
   map.set(key, (map.get(key) ?? 0) + 1);
 }
 
+function normalizeCountLabel(value: string | null | undefined, fallback = "Unspecified") {
+  const trimmed = value?.trim();
+
+  if (!trimmed) {
+    return fallback;
+  }
+
+  return trimmed.replace(/\s+/g, " ");
+}
+
 function sortedCountGroups<Key extends "faculty" | "issueCategory">(
   map: Map<string, number>,
   keyName: Key,
@@ -94,6 +110,21 @@ function sortedCountGroups<Key extends "faculty" | "issueCategory">(
   return [...map.entries()]
     .map(([key, count]) => ({ [keyName]: key, count }) as CountGroup<Key>)
     .sort((left, right) => right.count - left.count || left[keyName].localeCompare(right[keyName]));
+}
+
+function getWeekNumber(date: Date) {
+  const firstDay = new Date(date.getFullYear(), 0, 1);
+  const pastDays = Math.floor((date.getTime() - firstDay.getTime()) / 86400000);
+
+  return Math.ceil((pastDays + firstDay.getDay() + 1) / 7);
+}
+
+function daysBetween(start: Date, end: Date) {
+  return Math.max(0, (end.getTime() - start.getTime()) / (24 * 60 * 60 * 1000));
+}
+
+function roundDays(value: number) {
+  return Math.round(value * 10) / 10;
 }
 
 export async function getServiceDeskOverview(): Promise<ServiceDeskOverview> {
@@ -193,7 +224,7 @@ export async function getTicketsByFaculty(): Promise<TicketsByFaculty[]> {
   const counts = new Map<string, number>();
 
   for (const ticket of tickets) {
-    increment(counts, ticket.requester?.faculty?.trim() || "Unspecified");
+    increment(counts, normalizeCountLabel(ticket.requester?.faculty));
   }
 
   return sortedCountGroups(counts, "faculty");
@@ -208,7 +239,7 @@ export async function getTicketsByIssueCategory(): Promise<TicketsByIssueCategor
   const counts = new Map<string, number>();
 
   for (const ticket of tickets) {
-    increment(counts, ticket.issueCategory?.trim() || "Unspecified");
+    increment(counts, normalizeCountLabel(ticket.issueCategory));
   }
 
   return sortedCountGroups(counts, "issueCategory");
@@ -315,13 +346,65 @@ export async function getCustodyExceptions(): Promise<CustodyException[]> {
   }));
 }
 
+export async function getAverageRepairTime(): Promise<AverageRepairTimeReport> {
+  const closedTickets = await prisma.repairTicket.findMany({
+    where: {
+      OR: [{ status: "DEVICE_COLLECTED" }, { closedAt: { not: null } }, { completedAt: { not: null } }],
+    },
+    select: {
+      status: true,
+      issueCategory: true,
+      createdAt: true,
+      updatedAt: true,
+      completedAt: true,
+      closedAt: true,
+    },
+  });
+
+  const weekly = new Map<string, { totalDays: number; count: number }>();
+  const issueCategories = new Map<string, { totalDays: number; count: number }>();
+
+  for (const ticket of closedTickets) {
+    const completedAt = ticket.closedAt ?? ticket.completedAt ?? (ticket.status === "DEVICE_COLLECTED" ? ticket.updatedAt : null);
+
+    if (!completedAt) {
+      continue;
+    }
+
+    const days = daysBetween(ticket.createdAt, completedAt);
+    const weekLabel = `W${getWeekNumber(completedAt)}`;
+    const category = normalizeCountLabel(ticket.issueCategory);
+    const currentWeek = weekly.get(weekLabel) ?? { totalDays: 0, count: 0 };
+    const currentCategory = issueCategories.get(category) ?? { totalDays: 0, count: 0 };
+
+    currentWeek.totalDays += days;
+    currentWeek.count += 1;
+    currentCategory.totalDays += days;
+    currentCategory.count += 1;
+    weekly.set(weekLabel, currentWeek);
+    issueCategories.set(category, currentCategory);
+  }
+
+  return {
+    weekly: [...weekly.entries()]
+      .map(([label, value]) => ({ label, days: roundDays(value.totalDays / value.count), count: value.count }))
+      .sort((left, right) => left.label.localeCompare(right.label, undefined, { numeric: true }))
+      .slice(-5),
+    byIssueCategory: [...issueCategories.entries()]
+      .map(([issueCategory, value]) => ({ issueCategory, days: roundDays(value.totalDays / value.count), count: value.count }))
+      .sort((left, right) => right.days - left.days || right.count - left.count || left.issueCategory.localeCompare(right.issueCategory))
+      .slice(0, 6),
+  };
+}
+
 export async function getServiceDeskReportBundle(): Promise<ServiceDeskReportBundle> {
-  const [overview, ticketsByFaculty, ticketsByIssueCategory, technicianWorkload, custodyExceptions] = await Promise.all([
+  const [overview, ticketsByFaculty, ticketsByIssueCategory, technicianWorkload, custodyExceptions, averageRepairTime] = await Promise.all([
     getServiceDeskOverview(),
     getTicketsByFaculty(),
     getTicketsByIssueCategory(),
     getTechnicianWorkload(),
     getCustodyExceptions(),
+    getAverageRepairTime(),
   ]);
 
   return {
@@ -330,5 +413,6 @@ export async function getServiceDeskReportBundle(): Promise<ServiceDeskReportBun
     ticketsByIssueCategory,
     technicianWorkload,
     custodyExceptions,
+    averageRepairTime,
   };
 }

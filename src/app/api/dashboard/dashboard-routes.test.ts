@@ -76,6 +76,7 @@ describe("dashboard route handlers", () => {
     expect(response.status).toBe(200);
     expect(mockDashboardService.getRoleDashboard).toHaveBeenCalledWith(mockPrisma, expect.objectContaining({ id: "admin_123" }));
     expect(body.dashboard.role).toBe("ADMIN");
+    expect(body.dashboard.openTickets).toBe(6);
   });
 
   it("returns lead technician dashboard data for lead technicians", async () => {
@@ -98,6 +99,7 @@ describe("dashboard route handlers", () => {
 
     expect(response.status).toBe(200);
     expect(body.dashboard.role).toBe("LEAD_TECHNICIAN");
+    expect(body.dashboard.newRequests).toBe(3);
   });
 
   it("returns technician dashboard data for technicians", async () => {
@@ -120,6 +122,7 @@ describe("dashboard route handlers", () => {
 
     expect(response.status).toBe(200);
     expect(body.dashboard.role).toBe("TECHNICIAN");
+    expect(body.dashboard.activeRepairs).toBe(4);
   });
 
   it("rejects unauthenticated dashboard access", async () => {
