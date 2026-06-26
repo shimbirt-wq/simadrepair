@@ -4,7 +4,7 @@ import { PublicRepairRequestForm } from "@/components/service-desk/public-repair
 
 export default function RequestRepairPage() {
   return (
-    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", backgroundColor: "#f1f5f9" }}>
+    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", background: "linear-gradient(160deg, #06101E 0%, #050D1B 100%)" }}>
 
       {/* ── Sticky dark navbar ── */}
       <header
@@ -114,13 +114,13 @@ export default function RequestRepairPage() {
       <main
         style={{
           flex: 1,
-          padding: "40px 24px 72px",
+          padding: "48px 24px 80px",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
         }}
       >
-        <div style={{ width: "100%", maxWidth: "680px" }}>
+        <div style={{ width: "100%", maxWidth: "720px" }}>
 
           {/* Back link */}
           <Link
@@ -130,36 +130,44 @@ export default function RequestRepairPage() {
               alignItems: "center",
               gap: "6px",
               fontSize: "13px",
-              color: "#64748b",
+              fontWeight: 500,
+              color: "rgba(255,255,255,0.4)",
               textDecoration: "none",
-              marginBottom: "24px",
+              marginBottom: "32px",
+              transition: "color 0.2s",
             }}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M19 12H5M12 5l-7 7 7 7" />
             </svg>
-            Back to portal
+            Back to home
           </Link>
 
           {/* Page heading */}
-          <h1
-            style={{
-              fontSize: "28px",
-              fontWeight: 800,
-              letterSpacing: "-0.03em",
-              color: "#0f172a",
-              lineHeight: 1.2,
-              marginBottom: "6px",
-            }}
-          >
-            Request a repair
-          </h1>
-          <p style={{ fontSize: "14px", color: "#64748b", marginBottom: "28px", lineHeight: 1.6 }}>
-            Fields marked <span style={{ color: "#2563eb", fontWeight: 600 }}>*</span> are required.
-            You&apos;ll receive a tracking code on submission.
-          </p>
+          <div style={{ marginBottom: "28px" }}>
+            <p style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: "#60A5FA", marginBottom: "12px" }}>
+              IT Service Desk
+            </p>
+            <h1
+              className="landing-heading"
+              style={{
+                fontSize: "clamp(28px, 4vw, 40px)",
+                fontWeight: 800,
+                letterSpacing: "-0.04em",
+                color: "#ffffff",
+                lineHeight: 1.1,
+                marginBottom: "10px",
+              }}
+            >
+              Request a repair
+            </h1>
+            <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.45)", lineHeight: 1.6 }}>
+              Fields marked <span style={{ color: "#60A5FA", fontWeight: 600 }}>*</span> are required.
+              You&apos;ll receive a tracking code on submission.
+            </p>
+          </div>
 
-          {/* Form */}
+          {/* Form — white card floating on dark background */}
           <PublicRepairRequestForm />
         </div>
       </main>

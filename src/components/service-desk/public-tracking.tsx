@@ -378,15 +378,6 @@ function TrackingResult({ trackingInfo }: { trackingInfo: PublicTrackingInfo }) 
   );
 }
 
-function InlineMessage({ body, title, tone = "neutral" }: { body: string; title: string; tone?: "neutral" | "danger" }) {
-  const isDanger = tone === "danger";
-  return (
-    <div className={`rounded-lg border p-4 ${isDanger ? "border-red-200 bg-red-50" : "border-[var(--border)] bg-white"}`}>
-      <p className={`text-sm font-semibold ${isDanger ? "text-red-800" : "text-[var(--foreground)]"}`}>{title}</p>
-      <p className={`mt-1 text-sm leading-6 ${isDanger ? "text-red-700" : "text-[var(--muted)]"}`}>{body}</p>
-    </div>
-  );
-}
 
 export function PublicTracking({ initialCode = "" }: { initialCode?: string }) {
   const normalizedInitialCode = useMemo(() => normalizeTrackingCode(initialCode), [initialCode]);
@@ -447,34 +438,101 @@ export function PublicTracking({ initialCode = "" }: { initialCode?: string }) {
   }, [normalizedInitialCode]);
 
   return (
-    <div className="grid gap-5">
-      <div className="rounded-xl border border-[var(--border)] bg-white p-5">
-        <p className="mb-1 text-sm font-semibold text-[var(--foreground)]">Enter your tracking code</p>
-        <p className="mb-4 text-sm text-[var(--muted)]">You received this code after submitting your repair request. It looks like SIM-2026-1000001.</p>
-        <form onSubmit={handleSubmit} className="flex gap-3">
+    <div className="grid gap-6">
+      {/* ── Search box ── */}
+      <div
+        style={{
+          borderRadius: "20px",
+          border: "1px solid rgba(255,255,255,0.1)",
+          background: "rgba(255,255,255,0.05)",
+          backdropFilter: "blur(12px)",
+          padding: "28px 28px 24px",
+        }}
+      >
+        <p
+          style={{ fontSize: "13px", fontWeight: 600, color: "rgba(255,255,255,0.7)", marginBottom: "6px" }}
+        >
+          Enter your tracking code
+        </p>
+        <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.35)", marginBottom: "20px", lineHeight: 1.5 }}>
+          You received this after submitting your request. Format: SIM-2026-1000001
+        </p>
+        <form onSubmit={handleSubmit} style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
           <input
-            className="field-control flex-1 tracking-code"
+            style={{
+              flex: "1 1 200px",
+              height: "50px",
+              padding: "0 16px",
+              fontSize: "16px",
+              fontWeight: 600,
+              letterSpacing: "0.06em",
+              fontFamily: "var(--font-mono, monospace)",
+              color: "#fff",
+              background: "rgba(255,255,255,0.08)",
+              border: "1.5px solid rgba(255,255,255,0.15)",
+              borderRadius: "12px",
+              outline: "none",
+              transition: "border-color 150ms",
+            }}
             value={trackingCode}
             onChange={(event) => setTrackingCode(event.target.value.toUpperCase())}
             placeholder="SIM-2026-100001"
             aria-label="Tracking code"
           />
-          <button className="btn-primary flex-shrink-0" disabled={isPending}>
+          <button
+            disabled={isPending}
+            style={{
+              flexShrink: 0,
+              height: "50px",
+              padding: "0 24px",
+              fontSize: "14px",
+              fontWeight: 700,
+              color: "#fff",
+              background: "linear-gradient(135deg, #1D4ED8 0%, #2563EB 100%)",
+              border: "none",
+              borderRadius: "12px",
+              cursor: isPending ? "not-allowed" : "pointer",
+              boxShadow: "0 0 0 1px rgba(37,99,235,0.5), 0 8px 20px rgba(29,78,216,0.35)",
+              transition: "opacity 150ms",
+              opacity: isPending ? 0.7 : 1,
+              whiteSpace: "nowrap",
+            }}
+          >
             {isPending ? "Checking…" : "Check status"}
           </button>
         </form>
       </div>
 
-      {state === "idle" ? null : null}
-      {state === "invalid" ? <InlineMessage tone="danger" title="Invalid tracking code" body={message ?? "Check the tracking code and try again."} /> : null}
-      {state === "not-found" ? <InlineMessage tone="danger" title="Not found" body="No repair request matches this tracking code. Double-check the code and try again." /> : null}
-      {state === "error" ? <InlineMessage tone="danger" title="Unable to load status" body={message ?? "Try again in a moment."} /> : null}
-      {(state === "loading" || isPending) && state !== "success" ? <InlineMessage title="Loading…" body="Checking your repair status." /> : null}
+      {/* ── State messages ── */}
+      {state === "invalid" ? (
+        <div style={{ borderRadius: "12px", border: "1px solid rgba(239,68,68,0.3)", background: "rgba(239,68,68,0.08)", padding: "14px 18px" }}>
+          <p style={{ fontSize: "14px", fontWeight: 600, color: "#f87171", marginBottom: "4px" }}>Invalid tracking code</p>
+          <p style={{ fontSize: "13px", color: "rgba(248,113,113,0.7)", lineHeight: 1.5 }}>{message ?? "Check the tracking code and try again."}</p>
+        </div>
+      ) : null}
+      {state === "not-found" ? (
+        <div style={{ borderRadius: "12px", border: "1px solid rgba(239,68,68,0.3)", background: "rgba(239,68,68,0.08)", padding: "14px 18px" }}>
+          <p style={{ fontSize: "14px", fontWeight: 600, color: "#f87171", marginBottom: "4px" }}>Not found</p>
+          <p style={{ fontSize: "13px", color: "rgba(248,113,113,0.7)", lineHeight: 1.5 }}>No repair request matches this tracking code. Double-check the code and try again.</p>
+        </div>
+      ) : null}
+      {state === "error" ? (
+        <div style={{ borderRadius: "12px", border: "1px solid rgba(239,68,68,0.3)", background: "rgba(239,68,68,0.08)", padding: "14px 18px" }}>
+          <p style={{ fontSize: "14px", fontWeight: 600, color: "#f87171", marginBottom: "4px" }}>Unable to load status</p>
+          <p style={{ fontSize: "13px", color: "rgba(248,113,113,0.7)", lineHeight: 1.5 }}>{message ?? "Try again in a moment."}</p>
+        </div>
+      ) : null}
+      {(state === "loading" || isPending) && state !== "success" ? (
+        <div style={{ borderRadius: "12px", border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", padding: "14px 18px" }}>
+          <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.6)" }}>Checking your repair status…</p>
+        </div>
+      ) : null}
+
       {state === "success" && trackingInfo ? <TrackingResult trackingInfo={trackingInfo} /> : null}
 
-      <p className="text-center text-sm text-[var(--muted)]">
+      <p style={{ textAlign: "center", fontSize: "13px", color: "rgba(255,255,255,0.35)" }}>
         Need a repair?{" "}
-        <Link href="/request-repair" className="font-semibold text-[var(--blue-700)]">
+        <Link href="/request-repair" style={{ fontWeight: 600, color: "#60A5FA" }}>
           Submit a new request
         </Link>
       </p>

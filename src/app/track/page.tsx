@@ -21,7 +21,7 @@ export default async function TrackPage({ searchParams }: TrackPageProps) {
   const initialCode = getInitialCode(params.code);
 
   return (
-    <div style={{ minHeight: "100vh", backgroundColor: "#f1f5f9" }}>
+    <div style={{ minHeight: "100vh", background: "linear-gradient(160deg, #06101E 0%, #050D1B 100%)" }}>
       {/* Dark sticky navbar — consistent with request-repair */}
       <header
         style={{
@@ -170,11 +170,10 @@ export default async function TrackPage({ searchParams }: TrackPageProps) {
 
       {/* Tracking content */}
       <div
-        className="page-container"
         style={{
-          maxWidth: "720px",
+          maxWidth: "760px",
           margin: "0 auto",
-          padding: "40px 24px 60px",
+          padding: "40px 24px 80px",
         }}
       >
         <PublicTracking initialCode={initialCode} />
