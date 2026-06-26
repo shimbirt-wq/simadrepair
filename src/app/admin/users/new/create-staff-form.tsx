@@ -113,8 +113,9 @@ export function CreateStaffForm({ actorRole }: CreateStaffFormProps) {
           Role
           {actorRole === "ADMIN" ? (
             <select name="role" defaultValue="TECHNICIAN" className="field-control">
-              <option value="TECHNICIAN">Technician</option>
+              <option value="ADMIN">Admin</option>
               <option value="LEAD_TECHNICIAN">Lead Technician</option>
+              <option value="TECHNICIAN">Technician</option>
             </select>
           ) : (
             <>

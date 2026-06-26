@@ -1,109 +1,66 @@
 import bcrypt from "bcryptjs";
-import type { RepairStatus, UserRole } from "@prisma/client";
+import type { UserRole } from "@prisma/client";
 
-export const LOCAL_SEED_PASSWORD = "TestPass123!";
-export const LOCAL_SEED_EMAIL_DOMAIN = "simadrepair.test";
+const PASSWORD_MIN_LENGTH = 8;
 
-export const LOCAL_SEED_EMAILS = {
-  admin: `admin@${LOCAL_SEED_EMAIL_DOMAIN}`,
-  leadTechnician: `lead@${LOCAL_SEED_EMAIL_DOMAIN}`,
-  technician: `tech@${LOCAL_SEED_EMAIL_DOMAIN}`,
-} as const;
+export const BOOTSTRAP_ADMIN_ID = "seed_admin_abdulsalam";
+export const BOOTSTRAP_ADMIN_EMAIL = "abdulsalam.shiikhow@gmail.com";
+export const BOOTSTRAP_ADMIN_DEFAULT_PASSWORD = "password";
+export const BOOTSTRAP_ADMIN_PASSWORD_ENV = "SEED_ADMIN_PASSWORD";
 
-export const LOCAL_SEED_LOGIN_ACCOUNTS = [
-  { label: "Admin", role: "ADMIN", email: LOCAL_SEED_EMAILS.admin },
-  { label: "Lead technician", role: "LEAD_TECHNICIAN", email: LOCAL_SEED_EMAILS.leadTechnician },
-  { label: "Technician", role: "TECHNICIAN", email: LOCAL_SEED_EMAILS.technician },
-] as const satisfies ReadonlyArray<{ label: string; role: UserRole; email: string }>;
+export const LEGACY_LOCAL_SEED_USER_IDS = [
+  "seed_admin_001",
+  "seed_technician_001",
+  "seed_lead_technician_001",
+] as const;
 
-export type LocalSeedUser = {
+export const LEGACY_LOCAL_SEED_EMAILS = [
+  "admin@simadrepair.test",
+  "lead@simadrepair.test",
+  "tech@simadrepair.test",
+] as const;
+
+export type BootstrapAdminSeed = {
   id: string;
   fullName: string;
-  universityId: string;
-  faculty: string;
-  department: string;
-  phone: string;
+  universityId: string | null;
+  faculty: string | null;
+  department: string | null;
+  phone: string | null;
   email: string;
   passwordHash: string;
   role: UserRole;
   isActive: boolean;
 };
 
-export type LocalSeedDevice = {
-  id: string;
-  ownerId: string;
-  deviceType: string;
-  brand: string;
-  model: string;
-  serialNumber: string;
-};
+export function getBootstrapAdminPassword(env: Record<string, string | undefined> = process.env): string {
+  const configuredPassword = env[BOOTSTRAP_ADMIN_PASSWORD_ENV];
+  const password = configuredPassword && configuredPassword.trim().length > 0
+    ? configuredPassword
+    : BOOTSTRAP_ADMIN_DEFAULT_PASSWORD;
 
-export type LocalSeedRepairTicket = {
-  id: string;
-  ticketId: string;
-  deviceId: string;
-  technicianId: string | null;
-  issueDescription: string;
-  status: RepairStatus;
-};
+  if (password.length < PASSWORD_MIN_LENGTH) {
+    throw new Error(`${BOOTSTRAP_ADMIN_PASSWORD_ENV} must be at least ${PASSWORD_MIN_LENGTH} characters.`);
+  }
 
-export type LocalSeedData = {
-  users: LocalSeedUser[];
-  devices: LocalSeedDevice[];
-  repairTickets: LocalSeedRepairTicket[];
-};
+  return password;
+}
 
-export async function hashLocalSeedPassword(password = LOCAL_SEED_PASSWORD): Promise<string> {
+export async function hashBootstrapAdminPassword(password = getBootstrapAdminPassword()): Promise<string> {
   return bcrypt.hash(password, 12);
 }
 
-export function buildLocalSeedData(passwordHash: string): LocalSeedData {
-  const users: LocalSeedUser[] = [
-    {
-      id: "seed_admin_001",
-      fullName: "Local Admin",
-      universityId: "SIMAD-TEST-ADMIN",
-      faculty: "Operations",
-      department: "IT Services",
-      phone: "+252610000001",
-      email: LOCAL_SEED_EMAILS.admin,
-      passwordHash,
-      role: "ADMIN",
-      isActive: true,
-    },
-    {
-      id: "seed_technician_001",
-      fullName: "Local Technician",
-      universityId: "SIMAD-TEST-TECH",
-      faculty: "Operations",
-      department: "Computer Maintenance",
-      phone: "+252610000002",
-      email: LOCAL_SEED_EMAILS.technician,
-      passwordHash,
-      role: "TECHNICIAN",
-      isActive: true,
-    },
-    {
-      id: "seed_lead_technician_001",
-      fullName: "Local Lead Technician",
-      universityId: "SIMAD-TEST-LEAD-TECH",
-      faculty: "Operations",
-      department: "Computer Maintenance",
-      phone: "+252610000005",
-      email: LOCAL_SEED_EMAILS.leadTechnician,
-      passwordHash,
-      role: "LEAD_TECHNICIAN",
-      isActive: true,
-    },
-  ];
-
-  const devices: LocalSeedDevice[] = [];
-
-  const repairTickets: LocalSeedRepairTicket[] = [];
-
+export function buildBootstrapAdminSeed(passwordHash: string): BootstrapAdminSeed {
   return {
-    users,
-    devices,
-    repairTickets,
+    id: BOOTSTRAP_ADMIN_ID,
+    fullName: "Abdulsalam Shiikhow",
+    universityId: null,
+    faculty: "SIMAD University",
+    department: "IT Services",
+    phone: null,
+    email: BOOTSTRAP_ADMIN_EMAIL,
+    passwordHash,
+    role: "ADMIN",
+    isActive: true,
   };
 }

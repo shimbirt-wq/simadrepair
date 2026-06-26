@@ -246,7 +246,7 @@ Risks:
 - Some pale blue uppercase text and small labels may be weak on lower-quality displays.
 - Dead anchor links create keyboard and screen-reader dead ends.
 - Request form validation errors are client-side visible, but fields do not set `aria-invalid` or `aria-describedby` for error text.
-- The login page shows local seed credentials in development. That is acceptable locally, but production must ensure `NODE_ENV` gating is correct.
+- The login page must not expose bootstrap credentials. Keep admin bootstrap details in the seed output or deployment runbook only.
 
 ## Priority Roadmap
 
@@ -280,5 +280,5 @@ Improve later:
 1. Home landing page: generally healthy but credibility and order need work. Screenshot saved as `01-home.png`.
 2. Request repair page: strong public intake, accurate no-login positioning. DOM evidence saved as `02-request-repair.dom.txt`.
 3. Track page: strong privacy-limited lookup, should stay as second public CTA. DOM evidence saved as `03-track.dom.txt`.
-4. Staff login: accurate staff-only framing, but local seed credentials must remain development-only. DOM evidence saved as `04-login.dom.txt`.
+4. Staff login: accurate staff-only framing, with no visible seed credential hints. DOM evidence saved as `04-login.dom.txt`.
 5. Authenticated dashboards: conceptually strong, but navigation order and legacy V2 mismatch need cleanup. Audited from source.

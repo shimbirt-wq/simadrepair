@@ -1,63 +1,90 @@
 import { PrismaClient } from "@prisma/client";
-import { buildLocalSeedData, hashLocalSeedPassword, LOCAL_SEED_LOGIN_ACCOUNTS, LOCAL_SEED_PASSWORD } from "./seed-helpers";
+import {
+  BOOTSTRAP_ADMIN_DEFAULT_PASSWORD,
+  BOOTSTRAP_ADMIN_EMAIL,
+  BOOTSTRAP_ADMIN_PASSWORD_ENV,
+  LEGACY_LOCAL_SEED_EMAILS,
+  LEGACY_LOCAL_SEED_USER_IDS,
+  buildBootstrapAdminSeed,
+  getBootstrapAdminPassword,
+  hashBootstrapAdminPassword,
+} from "./seed-helpers";
 
 const prisma = new PrismaClient();
 
 async function main() {
-  const passwordHash = await hashLocalSeedPassword();
-  const seedData = buildLocalSeedData(passwordHash);
+  const password = getBootstrapAdminPassword();
+  const passwordHash = await hashBootstrapAdminPassword(password);
+  const bootstrapAdmin = buildBootstrapAdminSeed(passwordHash);
+  const usesConfiguredPassword = Boolean(process.env[BOOTSTRAP_ADMIN_PASSWORD_ENV]?.trim());
 
-  for (const user of seedData.users) {
-    await prisma.user.upsert({
-      where: { id: user.id },
-      update: {
-        fullName: user.fullName,
-        email: user.email,
-        universityId: user.universityId,
-        faculty: user.faculty,
-        department: user.department,
-        phone: user.phone,
-        passwordHash: user.passwordHash,
-        role: user.role,
-        isActive: user.isActive,
+  const cleanup = await prisma.$transaction(async (tx) => {
+    const legacyRepairTickets = await tx.repairTicket.deleteMany({
+      where: {
+        ticketId: {
+          startsWith: "TCK-LOCAL-",
+        },
       },
-      create: user,
     });
-  }
 
-  for (const device of seedData.devices) {
-    await prisma.device.upsert({
-      where: { id: device.id },
-      update: {
-        ownerId: device.ownerId,
-        deviceType: device.deviceType,
-        brand: device.brand,
-        model: device.model,
-        serialNumber: device.serialNumber,
+    const legacyDevices = await tx.device.deleteMany({
+      where: {
+        id: {
+          startsWith: "seed_device_",
+        },
       },
-      create: device,
     });
-  }
 
-  for (const ticket of seedData.repairTickets) {
-    await prisma.repairTicket.upsert({
-      where: { ticketId: ticket.ticketId },
-      update: {
-        deviceId: ticket.deviceId,
-        technicianId: ticket.technicianId,
-        issueDescription: ticket.issueDescription,
-        status: ticket.status,
+    const legacyUsers = await tx.user.deleteMany({
+      where: {
+        OR: [
+          {
+            id: {
+              in: [...LEGACY_LOCAL_SEED_USER_IDS],
+            },
+          },
+          {
+            email: {
+              in: [...LEGACY_LOCAL_SEED_EMAILS],
+            },
+          },
+        ],
+        NOT: {
+          email: BOOTSTRAP_ADMIN_EMAIL,
+        },
       },
-      create: ticket,
     });
-  }
 
-  console.log("Local seed data inserted.");
-  console.log(`Local seed password for all sample users: ${LOCAL_SEED_PASSWORD}`);
-  console.log("Local seed login accounts:");
-  for (const account of LOCAL_SEED_LOGIN_ACCOUNTS) {
-    console.log(`- ${account.label}: ${account.email}`);
-  }
+    await tx.user.upsert({
+      where: { email: bootstrapAdmin.email },
+      update: {
+        fullName: bootstrapAdmin.fullName,
+        universityId: bootstrapAdmin.universityId,
+        faculty: bootstrapAdmin.faculty,
+        department: bootstrapAdmin.department,
+        phone: bootstrapAdmin.phone,
+        passwordHash: bootstrapAdmin.passwordHash,
+        role: bootstrapAdmin.role,
+        isActive: bootstrapAdmin.isActive,
+      },
+      create: bootstrapAdmin,
+    });
+
+    return {
+      legacyRepairTickets: legacyRepairTickets.count,
+      legacyDevices: legacyDevices.count,
+      legacyUsers: legacyUsers.count,
+    };
+  });
+
+  console.log("Bootstrap admin seed applied.");
+  console.log(`Admin email: ${BOOTSTRAP_ADMIN_EMAIL}`);
+  console.log(
+    `Password: ${usesConfiguredPassword ? `from ${BOOTSTRAP_ADMIN_PASSWORD_ENV}` : BOOTSTRAP_ADMIN_DEFAULT_PASSWORD}`,
+  );
+  console.log(
+    `Legacy local seeds removed: ${cleanup.legacyUsers} users, ${cleanup.legacyDevices} devices, ${cleanup.legacyRepairTickets} tickets.`,
+  );
 }
 
 main()

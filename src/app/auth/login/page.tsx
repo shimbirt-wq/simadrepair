@@ -4,7 +4,6 @@ import { SimadRepairLogo } from "@/components/brand/simad-repair-logo";
 import { LoginForm } from "@/app/auth/login/login-form";
 import { getSafeNextPath } from "@/app/auth/login/redirects";
 import { getAuthRuntimeIssue } from "@/lib/config/runtime";
-import { LOCAL_SEED_LOGIN_ACCOUNTS, LOCAL_SEED_PASSWORD } from "../../../../prisma/seed-helpers";
 
 type LoginPageProps = {
   searchParams?: Promise<{ next?: string }>;
@@ -17,7 +16,6 @@ const brandFeatures = [
 ];
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
-  const showSeedHint = process.env.NODE_ENV !== "production";
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const nextPath = getSafeNextPath(resolvedSearchParams?.next);
   const runtimeIssue = getAuthRuntimeIssue();
@@ -185,33 +183,6 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
                 Configuration required
               </p>
               <p style={{ marginTop: 8, fontSize: 13, lineHeight: 1.6, color: "var(--red-800)" }}>{runtimeIssue}</p>
-            </div>
-          ) : null}
-
-          {showSeedHint ? (
-            <div
-              style={{
-                marginTop: 20,
-                borderRadius: 10,
-                border: "1px solid var(--border)",
-                background: "var(--bg-sunken)",
-                padding: "16px 20px",
-              }}
-            >
-              <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--muted)" }}>
-                Dev seed accounts
-              </p>
-              <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
-                {LOCAL_SEED_LOGIN_ACCOUNTS.map((account) => (
-                  <div key={account.role} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-                    <span style={{ fontSize: 13, fontWeight: 500, color: "var(--foreground)" }}>{account.label}</span>
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--muted)" }}>{account.email}</span>
-                  </div>
-                ))}
-              </div>
-              <p style={{ marginTop: 12, fontSize: 13, color: "var(--foreground)" }}>
-                Password: <code style={{ fontFamily: "var(--font-mono)" }}>{LOCAL_SEED_PASSWORD}</code>
-              </p>
             </div>
           ) : null}
         </div>
