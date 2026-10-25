@@ -211,10 +211,6 @@ html {
   scroll-behavior: smooth;
 }
 
-html[data-theme="dark"] {
-  color-scheme: dark;
-}
-
 body {
   min-height: 100%;
   margin: 0;
