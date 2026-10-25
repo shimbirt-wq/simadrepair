@@ -34,16 +34,16 @@ def d1():
     b.append(node(960, 64, 240, 72, "Lead technician desk", "check-in · assign · pickup", "input", "STAFF"))
     b.append(node(960, 212, 240, 72, "Volunteer technicians", "claim · repair · test", "input", "STAFF"))
     b.append(node(960, 360, 240, 72, "Admin", "events · staff · reports", "input", "STAFF"))
-    b.append(node(280, 432, 200, 72, "Maintenance Week", "dates · venue · hours", "store", "SETTINGS"))
+    b.append(node(280, 432, 200, 72, "Maintenance Program", "dates · venue · hours", "store", "SETTINGS"))
     b.append(node(540, 432, 200, 72, "Secure records", "encrypted · private", "store", "DATA"))
     b.append(node(780, 432, 200, 72, "WhatsApp", "to every student", "external", "MESSAGES"))
     b.append(legend(580, [("input", "People who use it"), ("focal", "The platform"), ("store", "Data and settings"),
                           ("external", "Outside service"), ("arrow-accent", "Main path")]))
     write("01-platform-overview.html", page(
         "platform-overview", "01 · Platform overview", "One desk for every repair",
-        "Students register online; three staff roles run the week on the same platform; every step is saved and the student is kept informed on WhatsApp.",
+        "Students register online; three staff roles run the program on the same platform; every step is saved and the student is kept informed on WhatsApp.",
         "\n".join(b),
-        "Architecture of SIMADRepair: students and staff, the lead desk, volunteer technicians and the admin all work through one platform that stores secure records, reads the Maintenance Week settings and sends WhatsApp updates.",
+        "Architecture of SIMADRepair: students and staff, the lead desk, volunteer technicians and the admin all work through one platform that stores secure records, reads the Maintenance Program settings and sends WhatsApp updates.",
         vb=(1280, 616)))
 
 
@@ -155,10 +155,10 @@ def d2():
     b.append(legend(656, [("backend", "Step"), ("focal", "Verified handover"), ("arrow", "Next step"),
                           ("arrow-dashed", "Rolls up into the report")], step=230))
     write("02-end-to-end-swimlane.html", page(
-        "end-to-end-swimlane", "02 · The week, end to end", "Who does what, from registration to report",
+        "end-to-end-swimlane", "02 · The program, end to end", "Who does what, from registration to report",
         "Every handoff between the student, the desk, the technician and the admin happens in the platform, so nothing is lost between people.",
         "\n".join(b),
-        "Swimlane of the Maintenance Week flow: the student registers, the lead desk checks the device in, a technician claims and repairs it, the desk hands it over against the university ID card, the student rates the service and the admin gets the event report.",
+        "Swimlane of the Maintenance Program flow: the student registers, the lead desk checks the device in, a technician claims and repairs it, the desk hands it over against the university ID card, the student rates the service and the admin gets the event report.",
         vb=(1280, 696)))
 
 
@@ -243,7 +243,7 @@ def d5():
     b.append(node(552, 200, 200, 80, "Assign", "workload · skills", "backend", "STEP 2"))
     b.append(node(808, 200, 200, 80, "Live board", "stuck alerts", "backend", "STEP 3"))
     b.append(node(808, 400, 200, 80, "Pickup by ID card", "collector recorded", "backend", "STEP 4"))
-    b.append(node(1064, 400, 176, 80, "End of week", "bulk close · remind", "optional", "LAST DAY"))
+    b.append(node(1064, 400, 176, 80, "End of event", "bulk close · remind", "optional", "LAST DAY"))
     b.append(callout(1032, 232, ["Turns red when a device", "waits over 1 hour", "unassigned."]))
     b.append(legend(616, [("input", "Ways in"), ("focal", "Most important step"), ("backend", "Desk step"),
                           ("optional", "Once per event"), ("arrow-accent", "Ready for pickup")], step=210))
@@ -298,12 +298,12 @@ def d7():
     b = []
     base = 288
     b.append(f'<rect x="520" y="120" width="300" height="336" rx="8" fill="{PAPER2}" stroke="{RULE}" stroke-width="1"/>')
-    b.append(t(670, 144, "MAINTENANCE WEEK", size=11, weight=500, fill=ACCENT, family=MONO, spacing="0.14em"))
+    b.append(t(670, 144, "MAINTENANCE PROGRAM", size=11, weight=500, fill=ACCENT, family=MONO, spacing="0.14em"))
     b.append(f'<line x1="64" y1="{base}" x2="1000" y2="{base}" stroke="{INK}" stroke-width="1"/>')
     b.append(f'<line x1="1028" y1="{base}" x2="1216" y2="{base}" stroke="{INK}" stroke-width="1"/>')
     b.append(f'<line x1="1004" y1="{base+8}" x2="1012" y2="{base-8}" stroke="{INK}" stroke-width="1"/>')
     b.append(f'<line x1="1016" y1="{base+8}" x2="1024" y2="{base-8}" stroke="{INK}" stroke-width="1"/>')
-    for x, lab in ((290, "WEEKS BEFORE"), (670, "MON – FRI"), (910, "WEEK AFTER"), (1120, "12 MONTHS LATER")):
+    for x, lab in ((290, "WEEKS BEFORE"), (670, "EVENT DAYS"), (910, "WEEK AFTER"), (1120, "12 MONTHS LATER")):
         b.append(t(x, 488, lab, size=11, weight=500, fill=SOFT, family=MONO, spacing="0.1em"))
     above = [(140, "Create the event", "dates · venue · hours", False),
              (380, "Registration opens", "form goes live", True),
@@ -326,12 +326,12 @@ def d7():
             b.append(f'<circle cx="{x}" cy="{base}" r="6" fill="{ACCENT}"/>')
         else:
             b.append(f'<circle cx="{x}" cy="{base}" r="4" fill="{INK}"/>')
-    b.append(legend(560, [("dot", "Admin action"), ("dot-accent", "Milestone"), ("band", "The event week")], step=220))
+    b.append(legend(560, [("dot", "Admin action"), ("dot-accent", "Milestone"), ("band", "The event days")], step=220))
     write("07-admin-event-cycle.html", page(
         "admin-event-cycle", "07 · Admin", "One event, from setup to report",
-        "The admin sets the week up once; registration, volunteer accounts, the report and data clean-up all follow the event’s dates automatically.",
+        "The admin sets the event up once; registration, volunteer accounts, the report and data clean-up all follow the event’s dates automatically.",
         "\n".join(b),
-        "Timeline of one Maintenance Week for the admin: create the event and add volunteers before, open registration, watch the live overview during the week, close out on the last day, publish the report after, and erase personal data twelve months later.",
+        "Timeline of one Maintenance Program for the admin: create the event and add volunteers before, open registration, watch the live overview during the event, close out on the last day, publish the report after, and erase personal data twelve months later.",
         vb=(1280, 512), dy=-88))
 
 
