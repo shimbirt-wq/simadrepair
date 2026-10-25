@@ -1,6 +1,6 @@
 import { PublicLayout } from "@/components/public/public-layout";
 import { RegistrationClosed } from "@/components/public/registration-closed";
-import { PublicRepairRequestForm } from "@/components/service-desk/public-repair-request-form";
+import { RequestForm } from "@/components/public/request-form";
 import { Eyebrow } from "@/components/ui";
 import { prisma } from "@/lib/db/prisma";
 import { getRegistration } from "@/lib/events/event-service";
@@ -27,7 +27,9 @@ export default async function RequestRepairPage() {
         </Eyebrow>
         <h1 className="text-h1 text-ink">Request a repair</h1>
       </div>
-      <PublicRepairRequestForm />
+      <RequestForm
+        event={{ name: event.name, venue: event.venue, hours: event.hours, dates: formatEventDates(event.startsOn, event.endsOn), holdDays: event.holdDays }}
+      />
     </PublicLayout>
   );
 }
