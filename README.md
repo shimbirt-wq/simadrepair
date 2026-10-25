@@ -2,7 +2,7 @@
 
 SIMAD University IT Service Desk for Computer Maintenance Week: students and staff register a device online, drop it off at the event, follow the repair, and collect it with their university ID card. Lead technicians run the desk, volunteer technicians repair, admins run the event and its report.
 
-Built by XeelTech Solutions.
+Built by the Faculty of Computing engineering team, SIMAD University.
 
 ## Documentation
 
