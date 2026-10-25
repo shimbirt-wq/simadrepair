@@ -174,6 +174,8 @@ model RepairTicket {
   tagNumber             Int?           @map("tag_number")
   priority              TicketPriority @default(NORMAL)
   startedAt             DateTime?      @map("started_at")
+  /// AES-256-GCM ciphertext of the device password (src/lib/secrets). Deleted at pickup and event end.
+  devicePasswordEnc     String?        @map("device_password_enc")
   accessoriesLeft       String[]       @default([]) @map("accessories_left")
   wipeAllowed           Boolean        @default(false) @map("wipe_allowed")
   needsPassword         Boolean        @default(false) @map("needs_password")
@@ -219,7 +221,10 @@ model DeviceCustody {
   receivedById         String?       @map("received_by_id")
   receivedBy           User?         @relation("CustodyReceivedBy", fields: [receivedById], references: [id], onDelete: SetNull)
   receivedAt           DateTime?     @map("received_at")
+  idChecked            Boolean       @default(false) @map("id_checked")
+  conditionChecks      String[]      @default([]) @map("condition_checks")
   condition            String?
+  accessoriesReceived  String[]      @default([]) @map("accessories_received")
   storageLocation      String?       @map("storage_location")
   releasedById         String?       @map("released_by_id")
   releasedBy           User?         @relation("CustodyReleasedBy", fields: [releasedById], references: [id], onDelete: SetNull)

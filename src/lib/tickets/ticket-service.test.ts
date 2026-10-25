@@ -15,7 +15,7 @@ describe.skipIf(!hasTestDatabase)("ticket service (database)", () => {
     const tech = staff(await createStaff(prisma, "TECHNICIAN"));
     const ticket = await createSubmittedTicket(prisma);
 
-    expect(await performTicketAction(prisma, ticket.trackingCode!, lead, { action: { type: "CHECK_IN" }, checkIn: { storageLocation: "Zone A", condition: "Scratched lid" } })).toMatchObject({ ok: true, status: "RECEIVED" });
+    expect(await performTicketAction(prisma, ticket.trackingCode!, lead, { action: { type: "CHECK_IN" }, checkIn: { idChecked: true, zone: "A", condition: "Scratched lid", devicePassword: "Hodan#2026" } })).toMatchObject({ ok: true, status: "RECEIVED" });
     expect(await performTicketAction(prisma, ticket.id, lead, { action: { type: "ASSIGN", technicianId: tech.id } })).toMatchObject({ ok: true });
     expect(await performTicketAction(prisma, ticket.id, tech, { action: { type: "START" } })).toMatchObject({ ok: true, status: "IN_REPAIR" });
     expect(await performTicketAction(prisma, ticket.id, tech, { action: { type: "MARK_READY" } })).toMatchObject({ ok: true, status: "READY_FOR_PICKUP" });
@@ -26,7 +26,9 @@ describe.skipIf(!hasTestDatabase)("ticket service (database)", () => {
     expect(stored.assignedAt).not.toBeNull();
     expect(stored.readyForPickupAt).not.toBeNull();
     expect(stored.closedAt).not.toBeNull();
-    expect(stored.custody).toMatchObject({ receivedById: lead.id, storageLocation: "Zone A", condition: "Scratched lid", releasedById: lead.id, collectedByName: "Hodan Ali" });
+    expect(stored.custody).toMatchObject({ receivedById: lead.id, storageLocation: "A", idChecked: true, condition: "Scratched lid", releasedById: lead.id, collectedByName: "Hodan Ali" });
+    expect(stored.tagNumber).toBe(1);
+    expect(stored.devicePasswordEnc).toBeNull(); // deleted at pickup
     expect(stored.events.map((event) => event.eventType)).toEqual(["CHECKED_IN", "TECHNICIAN_ASSIGNED", "REPAIR_STARTED", "READY_FOR_PICKUP", "PICKUP_CONFIRMED"]);
   });
 
@@ -63,6 +65,24 @@ describe.skipIf(!hasTestDatabase)("ticket service (database)", () => {
     await performTicketAction(prisma, ticket.id, lead, { action: { type: "CHECK_IN" } });
 
     expect(await performTicketAction(prisma, ticket.id, lead, { action: { type: "ASSIGN", technicianId: admin.id } })).toMatchObject({ ok: false, status: 409 });
+  });
+
+  it("gives each checked-in device the next tag number of its event, even under concurrency", async () => {
+    const lead = staff(await createStaff(prisma, "LEAD_TECHNICIAN"));
+    const tickets = [];
+    for (let i = 0; i < 6; i += 1) tickets.push(await createSubmittedTicket(prisma));
+    await Promise.all(tickets.map((ticket) => performTicketAction(prisma, ticket.id, lead, { action: { type: "CHECK_IN" }, checkIn: { idChecked: true } })));
+    const tags = (await prisma.repairTicket.findMany({ select: { tagNumber: true } })).map((t) => t.tagNumber).sort((a, b) => a! - b!);
+    expect(tags).toEqual([1, 2, 3, 4, 5, 6]);
+  });
+
+  it("stores the device password encrypted until pickup", async () => {
+    const lead = staff(await createStaff(prisma, "LEAD_TECHNICIAN"));
+    const ticket = await createSubmittedTicket(prisma);
+    await performTicketAction(prisma, ticket.id, lead, { action: { type: "CHECK_IN" }, checkIn: { idChecked: true, devicePassword: "Hodan#2026" } });
+    const stored = await prisma.repairTicket.findUniqueOrThrow({ where: { id: ticket.id } });
+    expect(stored.devicePasswordEnc).toMatch(/^v1\./);
+    expect(stored.devicePasswordEnc).not.toContain("Hodan");
   });
 
   it("lets only one of two simultaneous check-ins win", async () => {

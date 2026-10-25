@@ -2,8 +2,19 @@ import { describe, expect, it } from "vitest";
 import { staffTicketActionSchema } from "@/lib/tickets/action-schema";
 
 describe("staffTicketActionSchema", () => {
-  it("accepts a check-in with optional details", () => {
-    expect(staffTicketActionSchema.parse({ type: "CHECK_IN", storageLocation: " Shelf B " })).toEqual({ type: "CHECK_IN", condition: null, storageLocation: "Shelf B" });
+  it("accepts a check-in with optional details and normalises the zone", () => {
+    expect(staffTicketActionSchema.parse({ type: "CHECK_IN", idChecked: true, zone: "b", conditionChecks: ["SCRATCHES"] })).toMatchObject({
+      type: "CHECK_IN",
+      zone: "B",
+      conditionChecks: ["SCRATCHES"],
+      priority: "NORMAL",
+      devicePassword: null,
+    });
+  });
+
+  it("requires the ID card check and a single-letter zone", () => {
+    expect(staffTicketActionSchema.safeParse({ type: "CHECK_IN" }).success).toBe(false);
+    expect(staffTicketActionSchema.safeParse({ type: "CHECK_IN", idChecked: true, zone: "AB" }).success).toBe(false);
   });
 
   it("requires the collector's name at pickup", () => {

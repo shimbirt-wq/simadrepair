@@ -30,7 +30,7 @@ describe.skipIf(!hasTestDatabase)("public tracking (database)", () => {
   it("never exposes the requester's full name, university ID or phone, nor storage details", async () => {
     const lead = await createStaff(prisma, "LEAD_TECHNICIAN");
     const ticket = await createSubmittedTicket(prisma, "SIM-26-ABCDEF");
-    await performTicketAction(prisma, ticket.id, { kind: "staff", ...lead }, { action: { type: "CHECK_IN" }, checkIn: { storageLocation: "Shelf B3", condition: "Cracked hinge" } });
+    await performTicketAction(prisma, ticket.id, { kind: "staff", ...lead }, { action: { type: "CHECK_IN" }, checkIn: { zone: "B", condition: "Cracked hinge", devicePassword: "secret-pass" } });
 
     const info = await getPublicTrackingInfo("sim26abcdef", prisma);
     const json = JSON.stringify(info);
@@ -38,7 +38,8 @@ describe.skipIf(!hasTestDatabase)("public tracking (database)", () => {
     expect(json).not.toContain("Hassan");
     expect(json).not.toContain("CS1");
     expect(json).not.toContain("+252611234567");
-    expect(json).not.toContain("Shelf B3");
+    expect(json).not.toContain("secret-pass");
+    expect(json).not.toContain("Zone");
     expect(json).not.toContain("Cracked hinge");
   });
 
