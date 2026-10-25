@@ -1,5 +1,6 @@
 "use client";
 
+import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 
@@ -9,9 +10,7 @@ export function LogoutButton() {
 
   function handleLogout() {
     startTransition(async () => {
-      await fetch("/api/auth/logout", {
-        method: "POST",
-      });
+      await fetch("/api/auth/logout", { method: "POST" });
       router.push("/auth/login");
       router.refresh();
     });
@@ -22,28 +21,11 @@ export function LogoutButton() {
       type="button"
       onClick={handleLogout}
       disabled={isPending}
-      style={{
-        background: "none",
-        border: "none",
-        color: "rgba(255,255,255,0.35)",
-        cursor: "pointer",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 4,
-        borderRadius: 6,
-        marginLeft: "auto",
-        flexShrink: 0,
-        transition: "color 120ms ease",
-        opacity: isPending ? 0.4 : 1,
-      }}
-      title="Logout"
+      title="Sign out"
+      aria-label="Sign out"
+      className="rounded-sm p-1.5 text-white/50 transition-colors hover:bg-white/10 hover:text-white focus-visible:shadow-focus focus-visible:outline-none disabled:opacity-40"
     >
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-        <polyline points="16 17 21 12 16 7" />
-        <line x1="21" y1="12" x2="9" y2="12" />
-      </svg>
+      <LogOut className="h-4 w-4" strokeWidth={1.75} />
     </button>
   );
 }

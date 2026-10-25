@@ -1,236 +1,206 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import {
-  BarChart2,
-  ChevronRight,
-  Cpu,
-  LayoutDashboard,
-  ScrollText,
-  Shield,
-  Ticket,
-  UserCircle,
-  Users,
-  Wrench,
-} from "lucide-react";
+import { BarChart2, Cpu, LayoutDashboard, Menu, Shield, Ticket, UserCircle, Users, Wrench } from "lucide-react";
 import { SimadRepairLogo } from "@/components/brand/simad-repair-logo";
+import { Eyebrow, ToastProvider, cn } from "@/components/ui";
 import type { PublicUser } from "@/lib/auth/public-user";
 import { ROLE_LABELS, isInternalUserRole } from "@/lib/auth/roles";
 import { LogoutButton } from "@/app/logout-button";
 
+export type AppShellSection =
+  | "dashboard"
+  | "lead"
+  | "technician"
+  | "tickets"
+  | "devices"
+  | "reports"
+  | "users"
+  | "events"
+  | "audit"
+  | "profile";
+
 type AppShellProps = {
-  active: "dashboard" | "lead" | "technician" | "tickets" | "devices" | "reports" | "users" | "profile";
+  active: AppShellSection;
   actions?: ReactNode;
   children: ReactNode;
   eyebrow?: string;
   title: string;
   user: PublicUser;
+  /** Wide pages (board, tables) use the full 1440px; others stay at 1200px. */
+  width?: "content" | "wide";
 };
 
-type NavItem = {
-  key: string;
-  href: string;
-  label: string;
-  icon: ReactNode;
-};
+type NavItem = { key: AppShellSection; href: string; label: string; icon: ReactNode };
+type NavGroup = { label: string; items: NavItem[] };
 
-const iconProps = { size: 16, strokeWidth: 1.75 };
+const icon = { className: "h-[18px] w-[18px]", strokeWidth: 1.75 };
 
-function getNavItems(user: PublicUser): { operations: NavItem[]; manage: NavItem[]; account: NavItem[] } {
-  if (!isInternalUserRole(user.role)) {
-    return { operations: [], manage: [], account: [] };
+function getNavGroups(user: PublicUser): NavGroup[] {
+  if (!isInternalUserRole(user.role)) return [];
+
+  if (user.role === "TECHNICIAN") {
+    return [
+      {
+        label: "Work",
+        items: [
+          { key: "technician", href: "/technician/workspace", label: "My tickets", icon: <Wrench {...icon} /> },
+          { key: "dashboard", href: "/dashboard", label: "Overview", icon: <LayoutDashboard {...icon} /> },
+        ],
+      },
+    ];
   }
 
   if (user.role === "LEAD_TECHNICIAN") {
-    return {
-      operations: [
-        { key: "lead",      href: "/lead",                           label: "Command Center", icon: <Shield {...iconProps} /> },
-        { key: "dashboard", href: "/dashboard",                      label: "Dashboard",      icon: <LayoutDashboard {...iconProps} /> },
-        { key: "tickets",   href: "/repair-tickets",                 label: "Ticket Queue",   icon: <Ticket {...iconProps} /> },
-        { key: "devices",   href: "/devices",                        label: "Device Custody", icon: <Cpu {...iconProps} /> },
-        { key: "reports",   href: "/reports",                        label: "Reports",        icon: <BarChart2 {...iconProps} /> },
-      ],
-      manage: [
-        { key: "users", href: "/admin/users/new", label: "Add Technician", icon: <Users {...iconProps} /> },
-      ],
-      account: [
-        { key: "profile",  href: "/profile",                          label: "Profile",        icon: <UserCircle {...iconProps} /> },
-      ],
-    };
+    return [
+      {
+        label: "Desk",
+        items: [
+          { key: "lead", href: "/lead", label: "Board", icon: <Shield {...icon} /> },
+          { key: "technician", href: "/technician/workspace", label: "My repairs", icon: <Wrench {...icon} /> },
+          { key: "dashboard", href: "/dashboard", label: "Overview", icon: <LayoutDashboard {...icon} /> },
+          { key: "reports", href: "/reports", label: "Reports", icon: <BarChart2 {...icon} /> },
+        ],
+      },
+      {
+        label: "Records",
+        items: [
+          { key: "tickets", href: "/repair-tickets", label: "Tickets", icon: <Ticket {...icon} /> },
+          { key: "devices", href: "/devices", label: "Devices", icon: <Cpu {...icon} /> },
+        ],
+      },
+    ];
   }
 
-  if (user.role === "TECHNICIAN") {
-    return {
-      operations: [
-        { key: "technician", href: "/technician/workspace", label: "Assigned Tickets", icon: <Wrench {...iconProps} /> },
-        { key: "dashboard",  href: "/dashboard",            label: "My Queue",         icon: <LayoutDashboard {...iconProps} /> },
-        { key: "tickets",    href: "/repair-tickets",       label: "History",          icon: <ScrollText {...iconProps} /> },
+  return [
+    {
+      label: "Event",
+      items: [
+        { key: "dashboard", href: "/dashboard", label: "Overview", icon: <LayoutDashboard {...icon} /> },
+        { key: "lead", href: "/lead", label: "Board", icon: <Shield {...icon} /> },
+        { key: "reports", href: "/reports", label: "Reports", icon: <BarChart2 {...icon} /> },
       ],
-      manage: [],
-      account: [
-        { key: "profile", href: "/profile", label: "Profile", icon: <UserCircle {...iconProps} /> },
+    },
+    {
+      label: "Manage",
+      items: [
+        { key: "users", href: "/admin/users", label: "Staff", icon: <Users {...icon} /> },
+        { key: "tickets", href: "/repair-tickets", label: "Tickets", icon: <Ticket {...icon} /> },
+        { key: "devices", href: "/admin/devices", label: "Devices", icon: <Cpu {...icon} /> },
       ],
-    };
-  }
-
-  return {
-    operations: [
-      { key: "dashboard", href: "/dashboard",                  label: "Overview",          icon: <LayoutDashboard {...iconProps} /> },
-      { key: "tickets",   href: "/repair-tickets",             label: "Requests",          icon: <Ticket {...iconProps} /> },
-      { key: "reports",   href: "/reports",                    label: "Reports",           icon: <BarChart2 {...iconProps} /> },
-      { key: "devices",   href: "/admin/devices",              label: "Devices & Custody", icon: <Cpu {...iconProps} /> },
-    ],
-    manage: [
-      { key: "users", href: "/admin/users", label: "Staff", icon: <Users {...iconProps} /> },
-    ],
-    account: [
-      { key: "profile", href: "/profile", label: "Profile", icon: <UserCircle {...iconProps} /> },
-    ],
-  };
+    },
+  ];
 }
 
-const ROLE_BADGE_COLORS: Record<string, string> = {
-  ADMIN:            "rgba(37,99,235,0.22)",
-  LEAD_TECHNICIAN:  "rgba(59,130,246,0.18)",
-  TECHNICIAN:       "rgba(22,163,74,0.18)",
-};
-
-const ROLE_TEXT_COLORS: Record<string, string> = {
-  ADMIN:            "#bfdbfe",
-  LEAD_TECHNICIAN:  "#dbeafe",
-  TECHNICIAN:       "#bbf7d0",
-};
-
-function NavSection({ label, items, active }: { label: string; items: NavItem[]; active: string }) {
-  if (items.length === 0) return null;
+function NavLinks({ groups, active }: { groups: NavGroup[]; active: AppShellSection }) {
   return (
-    <div className="ops-sidebar-section">
-      <p className="ops-sidebar-label">{label}</p>
-      {items.map((item) => (
-        <Link
-          key={item.key}
-          href={item.href}
-          className={`ops-nav-link ${active === item.key ? "ops-nav-link-active" : ""}`}
-          aria-current={active === item.key ? "page" : undefined}
-        >
-          <span className="ops-nav-icon">{item.icon}</span>
-          <span style={{ flex: 1 }}>{item.label}</span>
-          {active === item.key && <ChevronRight size={13} strokeWidth={2} style={{ opacity: 0.4 }} />}
-        </Link>
+    <>
+      {groups.map((group) => (
+        <div key={group.label} className="flex flex-col gap-0.5">
+          <p className="px-3 pb-1 pt-4 font-mono text-[11px] font-medium uppercase tracking-[0.08em] text-white/45">{group.label}</p>
+          {group.items.map((item) => {
+            const isActive = item.key === active;
+            return (
+              <Link
+                key={item.key}
+                href={item.href}
+                aria-current={isActive ? "page" : undefined}
+                className={cn(
+                  "flex h-10 items-center gap-3 rounded-sm px-3 text-small font-medium transition-colors duration-fast",
+                  isActive ? "bg-green-400/20 text-white" : "text-white/70 hover:bg-white/5 hover:text-white",
+                )}
+              >
+                <span className={isActive ? "text-green-300" : "text-white/55"}>{item.icon}</span>
+                {item.label}
+              </Link>
+            );
+          })}
+        </div>
       ))}
+    </>
+  );
+}
+
+function initialsOf(name: string) {
+  return name
+    .split(/\s+/)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+function UserFooter({ user }: { user: PublicUser }) {
+  return (
+    <div className="flex items-center gap-3 border-t border-white/10 px-4 py-4">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-green-500 text-caption font-semibold text-white">{initialsOf(user.fullName)}</span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-small font-semibold text-white">{user.fullName}</span>
+        <span className="block text-caption text-white/50">{ROLE_LABELS[user.role]}</span>
+      </span>
+      <LogoutButton />
     </div>
   );
 }
 
-export function AppShell({ active, actions, children, eyebrow, title, user }: AppShellProps) {
-  const { operations, manage, account } = getNavItems(user);
-
-  const initials = user.fullName
-    .split(" ")
-    .map((p) => p[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
+export function AppShell({ active, actions, children, eyebrow, title, user, width = "content" }: AppShellProps) {
+  const groups = getNavGroups(user);
+  const profileActive = active === "profile";
 
   return (
-    <main className="ops-shell">
-      <div className="ops-layout">
-        <aside className="ops-sidebar">
-          <div className="ops-brand">
-            <Link href="/dashboard">
-              <SimadRepairLogo className="h-8 w-auto" variant="light" />
-            </Link>
-            <span
-              style={{
-                marginLeft: "auto",
-                background: ROLE_BADGE_COLORS[user.role] ?? "rgba(255,255,255,0.1)",
-                color: ROLE_TEXT_COLORS[user.role] ?? "rgba(255,255,255,0.6)",
-                borderRadius: "999px",
-                fontSize: "9px",
-                fontWeight: 700,
-                letterSpacing: "0.08em",
-                padding: "3px 8px",
-                textTransform: "uppercase",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {ROLE_LABELS[user.role]}
-            </span>
-          </div>
-
-          <nav className="ops-sidebar-nav">
-            <NavSection label="Operations" items={operations} active={active} />
-            <NavSection label="Manage" items={manage} active={active} />
-            <NavSection label="Account" items={account} active={active} />
-          </nav>
-
-          <div className="ops-sidebar-user">
-            <div className="ops-sidebar-avatar">{initials}</div>
-            <div className="ops-sidebar-user-info">
-              <p style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.90)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {user.fullName}
-              </p>
-              <p style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 1 }}>
-                {ROLE_LABELS[user.role]}
-              </p>
+    <ToastProvider>
+      <div className="min-h-screen bg-app lg:grid lg:grid-cols-[248px_minmax(0,1fr)]">
+        <aside className="sticky top-0 hidden h-screen flex-col bg-inverse lg:flex">
+          <Link href="/dashboard" className="flex h-[60px] items-center px-5">
+            <SimadRepairLogo className="h-8 w-auto" variant="light" />
+          </Link>
+          <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-3" aria-label="Main">
+            <NavLinks groups={groups} active={active} />
+            <div className="mt-auto pb-2 pt-4">
+              <Link
+                href="/profile"
+                aria-current={profileActive ? "page" : undefined}
+                className={cn(
+                  "flex h-10 items-center gap-3 rounded-sm px-3 text-small font-medium",
+                  profileActive ? "bg-green-400/20 text-white" : "text-white/70 hover:bg-white/5 hover:text-white",
+                )}
+              >
+                <UserCircle {...icon} className="h-[18px] w-[18px] text-white/55" />
+                Profile
+              </Link>
             </div>
-            <LogoutButton />
-          </div>
+          </nav>
+          <UserFooter user={user} />
         </aside>
 
-        <section className="ops-main">
-          <header className="ops-topbar">
-            <div>
-              {eyebrow ? <p className="eyebrow">{eyebrow}</p> : null}
-              <h1
-                style={{ fontSize: 18, fontWeight: 700, lineHeight: 1.3, color: "var(--text-primary)", marginTop: eyebrow ? 3 : 0 }}
-              >
-                {title}
-              </h1>
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
-              {actions}
-              <div
-                style={{
-                  alignItems: "center",
-                  background: "var(--bg-sunken)",
-                  border: "1px solid var(--border)",
-                  borderRadius: "var(--radius-xl)",
-                  display: "flex",
-                  gap: 8,
-                  padding: "6px 12px 6px 8px",
-                }}
-              >
-                <span
-                  style={{
-                    alignItems: "center",
-                    background: "var(--blue-700)",
-                    borderRadius: "50%",
-                    color: "#fff",
-                    display: "flex",
-                    fontSize: 11,
-                    fontWeight: 700,
-                    height: 28,
-                    justifyContent: "center",
-                    width: 28,
-                    flexShrink: 0,
-                  }}
-                >
-                  {initials}
-                </span>
-                <span>
-                  <span style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--text-primary)", lineHeight: 1.3 }}>
-                    {user.fullName.split(" ")[0]}
-                  </span>
-                  <span style={{ display: "block", fontSize: 11, color: "var(--muted)", lineHeight: 1.3 }}>
-                    {ROLE_LABELS[user.role]}
-                  </span>
-                </span>
+        <div className="flex min-w-0 flex-col">
+          <details className="group border-b border-white/10 bg-inverse lg:hidden">
+            <summary className="flex h-14 cursor-pointer list-none items-center justify-between px-4 [&::-webkit-details-marker]:hidden">
+              <SimadRepairLogo className="h-7 w-auto" variant="light" />
+              <Menu className="h-6 w-6 text-white" strokeWidth={1.75} aria-label="Menu" />
+            </summary>
+            <nav className="flex flex-col gap-1 px-3 pb-3" aria-label="Main">
+              <NavLinks groups={groups} active={active} />
+              <Link href="/profile" className="flex h-10 items-center gap-3 rounded-sm px-3 text-small font-medium text-white/70">
+                <UserCircle {...icon} className="h-[18px] w-[18px] text-white/55" />
+                Profile
+              </Link>
+            </nav>
+            <UserFooter user={user} />
+          </details>
+
+          <header className="sticky top-0 z-20 border-b border-line bg-surface/90 backdrop-blur">
+            <div className={cn("mx-auto flex min-h-[60px] items-center justify-between gap-4 px-4 py-2 sm:px-7", width === "wide" ? "max-w-ops" : "max-w-content")}>
+              <div className="min-w-0">
+                {eyebrow ? <Eyebrow>{eyebrow}</Eyebrow> : null}
+                <h1 className="truncate text-[18px] font-bold leading-tight text-ink">{title}</h1>
               </div>
+              {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
             </div>
           </header>
-          <div className="ops-content">{children}</div>
-        </section>
+
+          <main className={cn("mx-auto w-full flex-1 px-4 py-6 sm:px-7", width === "wide" ? "max-w-ops" : "max-w-content")}>{children}</main>
+        </div>
       </div>
-    </main>
+    </ToastProvider>
   );
 }
