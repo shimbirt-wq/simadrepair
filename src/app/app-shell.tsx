@@ -44,7 +44,6 @@ function getNavGroups(user: PublicUser): NavGroup[] {
         label: "Work",
         items: [
           { key: "technician", href: "/technician/workspace", label: "My tickets", icon: <Wrench {...icon} /> },
-          { key: "dashboard", href: "/dashboard", label: "Overview", icon: <LayoutDashboard {...icon} /> },
         ],
       },
     ];

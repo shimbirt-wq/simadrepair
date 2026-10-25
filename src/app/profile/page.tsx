@@ -1,3 +1,4 @@
+import { getDefaultPathForRole } from "@/app/auth/login/redirects";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AppShell } from "@/app/app-shell";
@@ -66,8 +67,8 @@ export default async function ProfilePage() {
       title={user.fullName}
       user={user}
       actions={
-        <Link href="/dashboard" className="btn-secondary">
-          Open dashboard
+        <Link href={getDefaultPathForRole(user.role)} className="btn-secondary">
+          Back to work
         </Link>
       }
     >

@@ -1,370 +1,94 @@
+import { AlertTriangle, CalendarDays } from "lucide-react";
 import Link from "next/link";
-import { StatusBadge } from "@/components/ui";
 import { redirect } from "next/navigation";
 import { AppShell } from "@/app/app-shell";
-import { ROLE_LABELS } from "@/lib/auth/roles";
-import { getCurrentServerUser } from "@/lib/auth/server-user";
-import type {
-  AdminDashboard,
-  DashboardStatusCount,
-  DashboardTicketSummary,
-  DashboardWorkload,
-  LeadTechnicianDashboard,
-  TechnicianDashboard,
-} from "@/lib/dashboard/dashboard-service";
-import { getRoleDashboard } from "@/lib/dashboard/dashboard-service";
+import { DataTable, Section, StatTile } from "@/components/reports/report-parts";
+import { ButtonLink, EmptyState, StatusBadge, TagNumber } from "@/components/ui";
+import { requirePageRole } from "@/lib/auth/require-page-role";
 import { prisma } from "@/lib/db/prisma";
+import { getLiveOverview } from "@/lib/reports/event-report";
 
-type MetricTone = "default" | "accent" | "success" | "warning" | "danger";
+const since = new Intl.DateTimeFormat("en-GB", { weekday: "short", hour: "2-digit", minute: "2-digit", timeZone: "Africa/Mogadishu" });
 
-const metricToneClasses: Record<MetricTone, string> = {
-  default: "border-[var(--border)] bg-white border-l-[3px] border-l-[var(--slate-300)]",
-  accent: "border-[var(--border)] bg-white border-l-[3px] border-l-[var(--blue-600)]",
-  success: "border-[var(--border)] bg-white border-l-[3px] border-l-[var(--green-700)]",
-  warning: "border-[var(--border)] bg-white border-l-[3px] border-l-[var(--amber-600)]",
-  danger: "border-[var(--border)] bg-white border-l-[3px] border-l-[var(--red-600)]",
-};
+/** Live overview during the event (AA3): today, open work, stuck tickets, technician load. */
+export default async function OverviewPage() {
+  const user = await requirePageRole("/dashboard", ["ADMIN", "LEAD_TECHNICIAN", "TECHNICIAN"]);
+  if (user.role === "TECHNICIAN") redirect("/technician/workspace");
+  const overview = await getLiveOverview(prisma);
 
-function formatNumber(value: number) {
-  return new Intl.NumberFormat("en").format(value);
-}
-
-function MetricTile({
-  detail,
-  label,
-  tone = "default",
-  value,
-}: {
-  detail?: string;
-  label: string;
-  tone?: MetricTone;
-  value: number | string;
-}) {
-  return (
-    <article className={`rounded-lg border p-4 ${metricToneClasses[tone]}`}>
-      <p className="eyebrow">{label}</p>
-      <p className="metric-value mt-3 text-3xl font-bold leading-none text-[var(--foreground)]">
-        {typeof value === "number" ? formatNumber(value) : value}
-      </p>
-      {detail ? <p className="mt-2 text-xs font-medium text-[var(--muted)]">{detail}</p> : null}
-    </article>
-  );
-}
-
-function DashboardSection({
-  action,
-  children,
-  eyebrow,
-  title,
-}: {
-  action?: React.ReactNode;
-  children: React.ReactNode;
-  eyebrow?: string;
-  title: string;
-}) {
-  return (
-    <section className="panel overflow-hidden">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] bg-white px-5 py-4">
-        <div>
-          {eyebrow ? <p className="eyebrow">{eyebrow}</p> : null}
-          <h2 className="mt-1 text-base font-semibold text-[var(--foreground)]">{title}</h2>
-        </div>
-        {action}
-      </div>
-      <div className="p-5">{children}</div>
-    </section>
-  );
-}
-
-function StatusList({ rows }: { rows: DashboardStatusCount[] }) {
-  const max = Math.max(1, ...rows.map((row) => row.count));
-
-  return (
-    <div className="grid gap-3">
-      {rows.map((row) => (
-        <div key={row.status}>
-          <div className="flex items-center justify-between gap-3 text-sm">
-            <span className="font-medium text-[var(--foreground)]">{row.label}</span>
-            <span className="metric-value font-semibold text-[var(--foreground)]">{formatNumber(row.count)}</span>
-          </div>
-          <div className="mt-2 h-2 overflow-hidden rounded-full bg-[var(--slate-100)]">
-            <div className="h-full rounded-full bg-[var(--blue-600)]" style={{ width: row.count === 0 ? 0 : `${Math.round((row.count / max) * 100)}%` }} />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function WeeklyClosedChart({ rows }: { rows: AdminDashboard["weeklyClosedRepairs"] }) {
-  const max = Math.max(1, ...rows.map((row) => row.count));
-
-  return (
-    <div className="grid min-h-[168px] grid-cols-6 items-end gap-4">
-      {rows.map((row) => (
-        <div key={row.label} className="grid gap-2">
-          <p className="metric-value text-center text-xs font-semibold text-[var(--slate-700)]">{formatNumber(row.count)}</p>
-          <div className="mx-auto flex h-24 w-8 items-end overflow-hidden rounded-t-md bg-[var(--slate-100)]">
-            <div
-              className="w-full rounded-t-md bg-[var(--blue-600)]"
-              style={{ height: row.count === 0 ? 0 : `${Math.max(8, Math.round((row.count / max) * 96))}px` }}
-            />
-          </div>
-          <p className="text-center text-xs font-medium text-[var(--muted)]">{row.label}</p>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function TrackingLink({ ticket }: { ticket: DashboardTicketSummary }) {
-  return (
-    <Link href={`/repair-tickets/${ticket.id}`} className="tracking-code font-bold text-[var(--blue-700)]">
-      {ticket.trackingCode}
-    </Link>
-  );
-}
-
-function TicketTable({ emptyText, tickets }: { emptyText: string; tickets: DashboardTicketSummary[] }) {
-  if (tickets.length === 0) {
+  if (!overview.event) {
     return (
-      <div className="rounded-lg border border-dashed border-[var(--border-strong)] bg-white p-5">
-        <p className="text-sm font-semibold text-[var(--foreground)]">{emptyText}</p>
-        <p className="mt-2 text-sm text-[var(--muted)]">New work will appear here as requests move through the service desk.</p>
-      </div>
+      <AppShell active="dashboard" eyebrow="Overview" title="No active event" user={user}>
+        <EmptyState
+          icon={<CalendarDays className="h-8 w-8" strokeWidth={1.5} />}
+          title="Activate a Maintenance Week to see live numbers."
+          action={user.role === "ADMIN" ? <ButtonLink href="/admin/events">Events</ButtonLink> : undefined}
+        />
+      </AppShell>
     );
   }
 
-  return (
-    <div className="overflow-x-auto">
-      <table className="data-table min-w-[760px] text-left text-sm">
-        <thead>
-          <tr>
-            <th>Tracking</th>
-            <th>Requester</th>
-            <th>Device</th>
-            <th>Status</th>
-            <th>Owner</th>
-            <th className="text-right">Age</th>
-          </tr>
-        </thead>
-        <tbody>
-          {tickets.map((ticket) => (
-            <tr key={ticket.id}>
-              <td>
-                <TrackingLink ticket={ticket} />
-                <p className="mt-1 text-xs text-[var(--muted)]">{ticket.ticketId}</p>
-              </td>
-              <td>
-                <p className="font-semibold text-[var(--foreground)]">{ticket.requesterName}</p>
-                <p className="mt-1 text-xs text-[var(--muted)]">{ticket.faculty}</p>
-              </td>
-              <td className="font-medium text-[var(--foreground)]">{ticket.deviceName}</td>
-              <td>
-                <StatusBadge status={ticket.status} />
-              </td>
-              <td className="text-[var(--muted-strong)]">{ticket.technicianName ?? "Unassigned"}</td>
-              <td className="metric-value text-right font-semibold text-[var(--foreground)]">{ticket.ageLabel}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function WorkloadPanel({ rows }: { rows: DashboardWorkload[] }) {
-  const max = Math.max(1, ...rows.map((row) => row.activeTickets));
-
-  if (rows.length === 0) {
-    return <p className="text-sm text-[var(--muted)]">No active technician workload yet.</p>;
-  }
-
-  return (
-    <div className="grid gap-4">
-      {rows.map((row) => (
-        <div key={row.technicianId}>
-          <div className="flex items-center justify-between gap-3 text-sm">
-            <p className="font-semibold text-[var(--foreground)]">{row.fullName}</p>
-            <p className="metric-value text-[var(--muted)]">{row.activeTickets} active</p>
-          </div>
-          <div className="mt-2 h-2 overflow-hidden rounded-full bg-[var(--slate-100)]">
-            <div
-              className="h-full rounded-full bg-[var(--blue-600)]"
-              style={{ width: `${Math.max(8, Math.round((row.activeTickets / max) * 100))}%` }}
-            />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function AdminDashboardView({ dashboard }: { dashboard: AdminDashboard }) {
-  return (
-    <section className="grid gap-5">
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricTile label="Open Tickets" value={dashboard.openTickets} detail={`${dashboard.totalTickets} total`} tone="accent" />
-        <MetricTile label="Closed Tickets" value={dashboard.closedTickets} detail="Collected" tone="success" />
-        <MetricTile label="Waiting Assignment" value={dashboard.waitingAssignment} detail="Needs technician" tone="warning" />
-        <MetricTile label="Custody Exceptions" value={dashboard.custodyExceptions} detail="Needs review" tone="danger" />
-      </div>
-
-      <DashboardSection eyebrow="Admin command" title="Needs attention" action={<Link href="/repair-tickets" className="btn-ghost">View requests</Link>}>
-        <TicketTable tickets={dashboard.attentionTickets} emptyText="No tickets need admin review." />
-      </DashboardSection>
-
-      <div className="grid gap-5 xl:grid-cols-[1.35fr_0.95fr]">
-        <DashboardSection eyebrow="Last 6 weeks" title="Repairs closed per week" action={<Link href="/reports" className="btn-ghost">Details</Link>}>
-          <WeeklyClosedChart rows={dashboard.weeklyClosedRepairs} />
-        </DashboardSection>
-        <DashboardSection eyebrow="Live snapshot" title="Tickets by status">
-          <StatusList rows={dashboard.statusBreakdown} />
-        </DashboardSection>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricTile label="Not Received" value={dashboard.devicesNotReceived} detail="Requester has not brought device" />
-        <MetricTile label="Ready Pickup" value={dashboard.readyForPickup} detail="Collection queue" tone="success" />
-        <MetricTile label="Active Staff" value={dashboard.activeStaff} detail="Admins, leads, technicians" />
-        <MetricTile label="Technicians" value={dashboard.activeTechnicians} detail="Active repair owners" />
-      </div>
-    </section>
-  );
-}
-
-function LeadDashboardView({ dashboard }: { dashboard: LeadTechnicianDashboard }) {
-  return (
-    <section className="grid gap-5">
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
-        <MetricTile label="New Requests" value={dashboard.newRequests} detail="Fresh intake" tone="accent" />
-        <MetricTile label="Waiting Assignment" value={dashboard.waitingAssignment} detail="Needs owner" tone="warning" />
-        <MetricTile label="Waiting Device" value={dashboard.waitingForDevice} detail="Not received" />
-        <MetricTile label="In Repair" value={dashboard.inRepair} detail="Active bench work" />
-        <MetricTile label="Ready Pickup" value={dashboard.readyForPickup} detail="Collection queue" tone="success" />
-        <MetricTile label="Overdue" value={dashboard.overdue} detail="Aging requests" tone={dashboard.overdue > 0 ? "danger" : "default"} />
-      </div>
-
-      <div className="grid gap-5 xl:grid-cols-[1.35fr_0.95fr]">
-        <DashboardSection eyebrow="Lead attention" title="Queue requiring action" action={<Link href="/lead" className="btn-ghost">Open command center</Link>}>
-          <TicketTable tickets={dashboard.atRiskTickets} emptyText="No requests require lead action." />
-        </DashboardSection>
-        <DashboardSection eyebrow="Capacity" title="Workload by technician">
-          <WorkloadPanel rows={dashboard.workloadByTechnician} />
-        </DashboardSection>
-      </div>
-    </section>
-  );
-}
-
-function TechnicianDashboardView({ dashboard }: { dashboard: TechnicianDashboard }) {
-  const queueTickets = dashboard.statusColumns.flatMap((column) => column.tickets);
-
-  return (
-    <section className="grid gap-5">
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        <MetricTile label="Active Repairs" value={dashboard.activeRepairs} detail="Assigned to you" tone="accent" />
-        <MetricTile label="Waiting Start" value={dashboard.waitingToStart} detail="Device received" />
-        <MetricTile label="In Repair" value={dashboard.inRepair} detail="Active bench work" />
-        <MetricTile label="Ready Pickup" value={dashboard.readyForPickup} detail="Completed work" tone="success" />
-        <MetricTile label="Overdue" value={dashboard.overdue} detail="Aging requests" tone={dashboard.overdue > 0 ? "danger" : "default"} />
-      </div>
-
-      <DashboardSection eyebrow="My queue" title="Assigned repair work" action={<Link href="/technician/workspace" className="btn-ghost">Open workspace</Link>}>
-        <TicketTable tickets={queueTickets} emptyText="No assigned repair tickets." />
-      </DashboardSection>
-    </section>
-  );
-}
-
-function DashboardActions({ role }: { role: "ADMIN" | "LEAD_TECHNICIAN" | "TECHNICIAN" }) {
-  if (role === "ADMIN") {
-    return (
-      <>
-        <Link href="/admin/users/new" className="btn-primary">Add staff</Link>
-        <Link href="/reports" className="btn-secondary">View reports</Link>
-      </>
-    );
-  }
-
-  if (role === "LEAD_TECHNICIAN") {
-    return (
-      <>
-        <Link href="/lead" className="btn-primary">Command Center</Link>
-        <Link href="/reports" className="btn-secondary">Reports</Link>
-      </>
-    );
-  }
-
-  return <Link href="/technician/workspace" className="btn-primary">Open Workspace</Link>;
-}
-
-function renderDashboard(dashboard: AdminDashboard | LeadTechnicianDashboard | TechnicianDashboard) {
-  if (dashboard.role === "ADMIN") {
-    return <AdminDashboardView dashboard={dashboard} />;
-  }
-
-  if (dashboard.role === "LEAD_TECHNICIAN") {
-    return <LeadDashboardView dashboard={dashboard} />;
-  }
-
-  return <TechnicianDashboardView dashboard={dashboard} />;
-}
-
-function getDashboardTitle(role: "ADMIN" | "LEAD_TECHNICIAN" | "TECHNICIAN") {
-  if (role === "ADMIN") {
-    return "Admin overview";
-  }
-
-  if (role === "LEAD_TECHNICIAN") {
-    return "Dashboard";
-  }
-
-  return "My queue";
-}
-
-function getDashboardEyebrow(role: "ADMIN" | "LEAD_TECHNICIAN" | "TECHNICIAN") {
-  if (role === "ADMIN") {
-    return "Administration";
-  }
-
-  if (role === "LEAD_TECHNICIAN") {
-    return "Operations";
-  }
-
-  return "Work";
-}
-
-export default async function DashboardPage() {
-  const user = await getCurrentServerUser();
-
-  if (!user) {
-    redirect("/auth/login?next=/dashboard");
-  }
-
-  const dashboard = await getRoleDashboard(prisma, user);
-  const role = dashboard.role;
+  const { today, open, stuck, technicians } = overview;
 
   return (
     <AppShell
       active="dashboard"
-      eyebrow={getDashboardEyebrow(role)}
-      title={getDashboardTitle(role)}
+      eyebrow={overview.event.dates}
+      title={overview.event.name}
       user={user}
-      actions={<DashboardActions role={role} />}
+      actions={<ButtonLink href="/lead" variant="secondary">Open board</ButtonLink>}
     >
-      <div className="grid gap-5">
-        <div>
-          <p className="eyebrow">{ROLE_LABELS[role]}</p>
-          <p className="mt-1 text-xl font-semibold text-[var(--foreground)]">
-            {role === "ADMIN"
-              ? "Monitor service desk health, staff capacity, and custody exceptions."
-              : role === "LEAD_TECHNICIAN"
-                ? "Control today's repair flow."
-                : "Manage your assigned repairs."}
-          </p>
+      <div className="flex flex-col gap-6">
+        <section aria-labelledby="today" className="flex flex-col gap-3">
+          <h2 id="today" className="text-h3 text-ink">Today</h2>
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <StatTile label="Registered" value={today.registered} />
+            <StatTile label="Received" value={today.received} />
+            <StatTile label="Ready" value={today.ready} emphasis />
+            <StatTile label="Collected" value={today.collected} />
+          </div>
+        </section>
+
+        <section aria-labelledby="now" className="flex flex-col gap-3">
+          <h2 id="now" className="text-h3 text-ink">Right now</h2>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+            <StatTile label="Waiting drop-off" value={open.dropOff} />
+            <StatTile label="To assign" value={open.toAssign} />
+            <StatTile label="In repair" value={open.inRepair} />
+            <StatTile label="Blocked" value={open.blocked} />
+            <StatTile label="Ready for pickup" value={open.ready} />
+          </div>
+        </section>
+
+        <div className="grid gap-4 lg:grid-cols-[3fr_2fr]">
+          <Section title={stuck.length ? `Stuck (${stuck.length})` : "Stuck"}>
+            {stuck.length === 0 ? (
+              <p className="text-small text-ink-muted">Nothing stuck.</p>
+            ) : (
+              <ul className="flex flex-col divide-y divide-line">
+                {stuck.map((ticket) => (
+                  <li key={ticket.id}>
+                    <Link href={`/lead?ticket=${ticket.id}`} className="flex flex-wrap items-center gap-3 py-2.5 hover:bg-n-50">
+                      <AlertTriangle className="h-4 w-4 text-warning" strokeWidth={2} aria-hidden />
+                      <TagNumber tag={ticket.tagNumber} size="sm" />
+                      <span className="min-w-0 flex-1 truncate text-small text-ink">{ticket.device}</span>
+                      <span className="text-caption text-ink-muted">{ticket.technician ?? "Unassigned"}</span>
+                      <StatusBadge status={ticket.status} />
+                      <span className="font-mono text-caption text-ink-muted">since {since.format(new Date(ticket.since))}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Section>
+          <Section title="Technician load">
+            <DataTable
+              columns={[{ label: "Technician" }, { label: "Open repairs", align: "right" }]}
+              rows={technicians.map((t) => [t.name, t.openCount])}
+              empty="No technicians with access."
+            />
+          </Section>
         </div>
-        {renderDashboard(dashboard)}
       </div>
     </AppShell>
   );
