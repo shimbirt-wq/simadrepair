@@ -122,6 +122,16 @@ These are observations from reading the code, not confirmed bugs. We'll settle e
 9. **`Device.ownerId`** (device owned by a staff `User`) is left over from the old student/lecturer accounts.
 10. **README links to docs that don't exist** (`PROJECT_DEFINITION.md`, `ARCHITECTURE.md`, ...) and still says "FarsamoTech Repair Hub".
 
+## Role documents
+
+| Role | Doc | Status |
+| --- | --- | --- |
+| Requester | [requester.md](requester.md) | agreed |
+| Lead Technician | [lead-technician.md](lead-technician.md) | agreed |
+| Technician | [technician.md](technician.md) | agreed |
+| Admin | [admin.md](admin.md) | in grilling |
+| All screens | [ui-principles.md](ui-principles.md) | agreed |
+
 ## How we'll work
 
 1. You write `docs/platform/<role>.md` — a rough draft of how that role *should* work. Bullet points are fine.

@@ -1,6 +1,6 @@
 # Technician — Workspace
 
-Status: **draft — assumed decisions + open questions**. Builds on `requester.md` (structured intake, photos, outcomes) and `lead-technician.md` (tag numbers, claim pool, claim cap, lead confirms "Cannot be repaired").
+Status: **agreed**. Builds on `requester.md` (structured intake, photos, outcomes) and `lead-technician.md` (tag numbers, claim pool, claim cap, lead confirms "Cannot be repaired").
 
 ---
 
@@ -40,10 +40,15 @@ Status: **draft — assumed decisions + open questions**. Builds on `requester.m
 | TA10 | **Time is measured automatically** from events (claimed → started → ready). No manual timers. |
 | TA11 | Requester phone + WhatsApp button stay visible to the assigned technician only. |
 
-### 3.2 Open questions — see decisions log once answered
 
 ---
 
 ## 4. Decisions log
 
-_Filled in as we grill._
+| # | Decision | Round |
+| --- | --- | --- |
+| TD1 | All assumed decisions TA1–TA11 accepted. | 1 |
+| TD2 | **Passwords:** entered at the desk at check-in, stored encrypted, visible only to the assigned technician, **auto-deleted at pickup** (and at event end). Never on paper. | 1 |
+| TD3 | **Parts:** the student buys and brings them. Technician names the exact part; the "Action needed" WhatsApp message tells the student what to buy. No inventory. | 1 |
+| TD4 | **Wipe permission:** optional checkbox on the request form, "OK to reinstall Windows if needed". Ticked → technician proceeds; not ticked → "Action needed" and wait. | 1 |
+| TD5 | **Software:** only free or university-licensed software. Licence list to be supplied by SIMAD IT. | 1 |
