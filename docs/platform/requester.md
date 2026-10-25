@@ -1,6 +1,6 @@
 # Requester (public, no account)
 
-Status: **draft — being grilled**. Section 1 is how the code works today. Section 3 is a proposal, not decided.
+Status: **agreed (3 rounds of grilling)**. Section 1 is how the code works today, section 2 the problems found, section 3 the agreed design.
 
 ---
 
@@ -92,43 +92,76 @@ Ranked by risk.
 
 ---
 
-## 3. Proposal — a professional requester experience
+## 3. Agreed design
 
-### 3.1 Principles
-- **No account, still secure.** The tracking code is a *reference*, not a key. Seeing personal details or collecting a device needs a second factor the requester has (their phone).
-- **The desk is the single point of contact.** Requesters never get staff personal numbers.
-- **Push, don't make them poll.** Send messages at the moments that matter.
-- **Every ticket ends with a clear outcome.**
-
-### 3.2 The new journey
+### 3.1 Journey
 
 ```
-1. Request   → short multi-step form (who → device → problem → review & consent)
-2. Confirm   → code on screen + SMS/WhatsApp: "SIM-2026-K7P3QX received. Bring device to <desk>, <hours>."
-3. Drop-off  → desk checks in; requester gets "Device received" message
-4. Repair    → status updates; if the tech needs something: "Action needed" message
-5. Ready     → message with a 6-digit PICKUP CODE (never shown on the website)
-6. Collect   → requester gives pickup code (or shows ID); desk verifies → "Collected" receipt
-7. Feedback  → one-tap rating link
+1. Request   → multi-step form: You → Device → Problem & photos → Review & consent
+2. Confirm   → code on screen; lead sends ready-made WhatsApp "Registered" message
+3. Drop-off  → desk checks in at the event venue
+4. Repair    → tracking page shows status + technician WhatsApp; "Action needed" message if blocked
+5. Ready     → technician sends "Ready for pickup" WhatsApp
+6. Collect   → anyone with the owner's university ID card; desk checks ID, records collector
+7. Feedback  → 1–5 rating on the tracking page
 ```
 
-### 3.3 Changes, grouped into shippable slices
+### 3.2 Requester details (step 1)
+- University ID **required**, letters + digits (e.g. `CS383833`): trimmed, upper-cased, validated as `^[A-Z]{1,6}[0-9]{3,10}$`.
+- Type: Student / Lecturer / Staff. Full name, faculty, department.
+- Phone **required**, Somali mobile, stored as `+2526XXXXXXXX`.
 
-| Slice | What | Fixes |
+### 3.3 Device information (step 2) — the technician's starting point
+| Field | Input | Why |
 | --- | --- | --- |
-| **A. Lock down tracking** | Random, non-sequential codes (e.g. `SIM-26-K7P3QX`, no 0/O/1/I). Public page shows status + timeline only. Details (device, name) need code + last 4 digits of phone. Remove technician phone/WhatsApp; show a public *pickup point* instead of storage location. Delete `/lookup`. | P1, P3, P4 |
-| **B. Verified pickup** | On "Ready", generate a 6-digit pickup code, store only the hash in `pickupCodeHash`, send it to the requester. Desk must enter it to release the device; fallback = ID check with reason logged. | P2 |
-| **C. Abuse protection** | Durable rate limit (DB table or Upstash) on submit + tracking; honeypot field; per-phone cap on open tickets. | P5, P6, P10 |
-| **D. Better intake** | Multi-step form; phone normalized to `+252…`; device type & issue category as picklists; optional photo; drop-off instructions; consent checkbox (backup your data, abandoned-device policy). | P8, P9, P15, P16 |
-| **E. Notifications** | `Notification` outbox table + provider adapter (SMS first; WhatsApp later). Events: submitted, received, action needed, ready (+pickup code), collected. | P11, P13 |
-| **F. Recovery** | "Find my request": university ID or phone → sends active codes by SMS. Never displays them on screen. | P12 |
-| **G. Outcomes** | Requester-visible states: *Waiting for parts*, *Action needed*, *Cannot be repaired*, *Cancelled*. Requester can cancel before drop-off. | P14 |
-| **H. Matching** | Match by university ID only; phone match never merges; update contact info on reuse. | P7 |
-| **I. Feedback & language** | Post-collection rating; Somali + English. | P17 |
+| Device type | Laptop / Desktop / All-in-one / Tablet / Other | grouping, reports |
+| Brand | picklist (HP, Dell, Lenovo, Acer, Asus, Apple, Toshiba, Other) + free text | |
+| Model | free text, with hint "on the sticker under the laptop" | |
+| Operating system | Windows 11 / 10 / 7-8 / macOS / Linux / Don't know | most fixes are OS-specific |
+| RAM | 2 / 4 / 8 / 16+ GB / Don't know | "slow" diagnosis |
+| Storage | HDD / SSD / Don't know (+ size optional) | "slow" diagnosis, upgrade advice |
+| Age | < 1 yr / 1–3 / 3–5 / 5+ | |
+| Serial number | optional | identification at pickup |
+| Accessories left with device | checkboxes: charger, bag, mouse, other | disputes at pickup |
 
-Suggested order: **A → B → C** (security first, small), then **E** (unlocks B's code delivery and F), then **D, G, F, H, I**.
+Help text links to "How to find your specs" (Windows: Settings → System → About).
 
----
+### 3.4 Problem & photos (step 3) — structured diagnosis
+- **Problem categories** (multi-select): Slow / virus, Won't turn on, Screen, Keyboard / touchpad, Battery / charging, Windows / software install, Wi-Fi / network, Other.
+- **Follow-up questions per category** (only shown when picked), e.g.
+  - Won't turn on → Any lights? Any sound? Did it get wet or fall?
+  - Screen → Cracked? Lines/flicker? Black but running?
+  - Slow / virus → Pop-ups? Since when? Antivirus installed?
+  - Software install → Which software? Need licence?
+- **When did it start?** Today / This week / This month / Longer.
+- **Recent events** (multi-select): dropped, liquid spill, Windows update, new software, none.
+- **Error message**: free text.
+- **Description**: free text, 10–2000 chars.
+- **Photos: up to 3** (JPEG/PNG/WebP, ≤ 5 MB, resized on the client). Suggested shots: the problem, the error screen, the model/serial sticker. Stored in a **private** Supabase bucket; staff view via short-lived signed URLs. Never shown on the public tracking page.
+- **Password handling**: "Will the technician need your password?" Yes → requester gives it **in person at drop-off**; it is never typed into the website.
+
+### 3.5 Review & consent (step 4)
+Summary of everything + one required checkbox: data backed up, SIMAD IT not liable for data loss, end-of-event policy (values from Event settings).
+
+### 3.6 Tracking, recovery, cancel
+- Code alone shows status, timeline, device, contact number (D8). Never full name or university ID.
+- **Find my request**: university ID + last 4 phone digits → list of open requests.
+- **Cancel** before drop-off: re-enter university ID.
+- After collection: 1–5 rating + comment.
+
+### 3.7 Protection
+Random codes; honeypot; max 3 requests/day per university ID; IP rate limit stored in the database (works across server instances); duplicate check (same ID + device type + brand open → blocked with the existing code).
+
+### 3.8 Language
+Website English; WhatsApp ready-made messages Somali + English.
+
+### 3.9 Build slices (in order)
+1. **Lock down**: random codes, tracking page cleanup, delete `/lookup`, DB rate limit, honeypot, duplicate check.
+2. **Event settings** + closed page + venue/desk number used everywhere.
+3. **New intake form**: ID/phone validation, device info, diagnosis questions, consent, photos.
+4. **WhatsApp ready-made messages** + send log; WhatsApp Cloud API adapter later.
+5. **Outcomes**: Waiting for parts, Action needed, Cannot be repaired, Cancelled.
+6. **Find my request, cancel, rating.**
 
 ## 4. Decisions log
 
@@ -147,3 +180,6 @@ Suggested order: **A → B → C** (security first, small), then **E** (unlocks 
 | D11 | **End of week:** fixed-but-uncollected → IT office for 30 days + WhatsApp reminder, then abandoned-property policy. Unfinished → returned as "Cannot be repaired – event ended". Requester agrees on the form. | 2 |
 | D12 | **Random tracking codes** that can't be guessed (e.g. `SIM-26-K7P3QX`). | 2 |
 | D13 | **Event settings** (admin, once per event): name, dates, venue/pickup point, hours, desk WhatsApp number. The form is open only during the event window; otherwise a "closed — next event soon" page. | 2 |
+| D14 | University ID = letters + digits (e.g. `CS383833`). | 3 |
+| D15 | **Device information and photos are top priority**: structured specs, per-category diagnosis questions, up to 3 photos (private storage). Reverses the earlier "no photos" suggestion. | 3 |
+| D16 | Accepted as recommended: phone normalisation, match by ID only, code-only tracking, Find my request, cancel before drop-off, duplicate check, category lists, consent, English site + bilingual WhatsApp, spam protection, rating. | 3 |
