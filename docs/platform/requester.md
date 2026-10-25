@@ -132,4 +132,9 @@ Suggested order: **A → B → C** (security first, small), then **E** (unlocks 
 
 ## 4. Decisions log
 
-_Filled in as we grill._
+| # | Decision | Round |
+| --- | --- | --- |
+| D1 | **WhatsApp is the channel.** Now: staff send ready-made messages (pre-filled `wa.me` links from the platform). In parallel: WhatsApp Cloud API, behind one notification module so the switch is invisible to the rest of the code. | 1 |
+| D2 | **Public tracking shows the assigned technician's phone number.** | 1 |
+| D3 | **Pickup = the requester's registered university ID.** No pickup codes. Staff check the ID card against the ID on the ticket. | 1 |
+| D4 | **Main focus is Computer Maintenance Week only.** Year-round walk-in is not a goal for now. | 1 |
