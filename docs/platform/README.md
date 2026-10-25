@@ -129,7 +129,7 @@ These are observations from reading the code, not confirmed bugs. We'll settle e
 | Requester | [requester.md](requester.md) | agreed |
 | Lead Technician | [lead-technician.md](lead-technician.md) | agreed |
 | Technician | [technician.md](technician.md) | agreed |
-| Admin | [admin.md](admin.md) | in grilling |
+| Admin | [admin.md](admin.md) | agreed |
 | All screens | [ui-principles.md](ui-principles.md) | agreed |
 
 ## How we'll work

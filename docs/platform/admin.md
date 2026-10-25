@@ -1,6 +1,8 @@
 # Admin
 
-Status: **draft — assumed decisions + open questions**.
+Status: **agreed**.
+
+> **Event** = one Computer Maintenance Week (e.g. "Maintenance Week 2026, 10–14 Nov, Main Hall"). Each year's week is a new event, so its tickets, tag numbers (#001…), staff and report stay separate from other years.
 
 ---
 
@@ -37,10 +39,14 @@ Status: **draft — assumed decisions + open questions**.
 | AA7 | **Event settings drive all public text** (venue, hours, number, policy days); nothing hard-coded. |
 | AA8 | Category lists, accessories and action checklists are **fixed in code for v1** (change by a small PR). |
 
-### 3.2 Open questions — see decisions log once answered
 
 ---
 
 ## 4. Decisions log
 
-_Filled in as we grill._
+| # | Decision | Round |
+| --- | --- | --- |
+| AD1 | All assumed decisions AA1–AA8 accepted. | 1 |
+| AD2 | **Technicians are mostly student volunteers.** Technician accounts are tied to an event and **deactivate automatically when it ends**; the admin re-activates them for the next event. | 1 |
+| AD3 | **Final report:** one-page PDF summary (faculty heads, management) + CSV of all tickets. | 1 |
+| AD4 | **Data retention:** personal details (name, phone, university ID) kept 12 months after the event, then erased; anonymous stats kept. Passwords deleted at pickup (TD2). | 1 |
