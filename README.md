@@ -27,6 +27,10 @@ npm run dev
 
 Checks before pushing: `npm run lint`, `npm run typecheck`, `npm test`.
 
+## Deploying (Vercel)
+
+Production builds apply pending database migrations before `next build` (`scripts/migrate-on-deploy.mjs`), so the live database always matches the code. This needs `DIRECT_URL` (the direct Supabase connection, port 5432) set in Vercel; previews and local builds skip the step.
+
 ## Scheduled job
 
 `GET /api/cron/retention` runs once a day (see `vercel.json`) with `Authorization: Bearer $CRON_SECRET`. It erases personal details of tickets whose event ended more than 12 months ago and keeps anonymous numbers for reports. It also clears unclaimed photo uploads and expired rate-limit counters. On other hosts, call it from any scheduler with the same header.
