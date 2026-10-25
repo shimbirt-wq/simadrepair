@@ -56,6 +56,7 @@ export async function PublicLayout({ children, width = "content" }: { children: 
             <Link href="/track" className="hover:text-ink">Track repair</Link>
             <Link href="/request-repair" className="hover:text-ink">Request repair</Link>
             <Link href="/find" className="hover:text-ink">Find my request</Link>
+            <Link href="/about" className="hover:text-ink">About</Link>
             <Link href="/auth/login" className="hover:text-ink">Staff sign-in</Link>
           </nav>
           <p className="text-caption text-ink-muted">© {new Date().getFullYear()} SIMAD University · Faculty of Computing</p>
