@@ -4,6 +4,7 @@ import { MessageCircle, Phone } from "lucide-react";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { IntakePanel } from "@/components/staff/intake-panel";
 import { RepairSummary } from "@/components/staff/repair-summary";
+import { EVENT_LABELS, personNote } from "@/lib/tickets/event-labels";
 import { Badge, Dialog, Eyebrow, StatusBadge, TagNumber, Timeline, UrgentBadge } from "@/components/ui";
 import { sendJson } from "@/lib/client/api";
 import { formatDateTime } from "@/lib/client/format";
@@ -117,8 +118,8 @@ export function TicketSheet({
             <Timeline
               items={[...ticket.timeline].reverse().map((event) => ({
                 id: event.id,
-                title: event.note ?? event.type.replaceAll("_", " ").toLowerCase(),
-                detail: event.actor ?? "Requester",
+                title: EVENT_LABELS[event.type],
+                detail: [personNote(event.note), event.actor ?? "Requester"].filter(Boolean).join(" · "),
                 at: event.at,
               }))}
             />
