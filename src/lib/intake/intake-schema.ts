@@ -11,6 +11,7 @@ import {
   STORAGE_VALUES,
 } from "@/lib/intake/options";
 import { normalizeUniversityId } from "@/lib/intake/university-id";
+import { intakeDiagnosisSchema } from "@/lib/intake/diagnosis";
 
 const optionalText = (max: number) =>
   z
@@ -66,9 +67,7 @@ export const intakeDeviceSchema = z
     if (value.brand === "OTHER" && !value.brandOther) ctx.addIssue({ code: "custom", path: ["brandOther"], message: "Enter the brand." });
   });
 
-export const intakeProblemSchema = z.object({
-  description: z.string().trim().min(10, "Describe the problem in a sentence or two.").max(2000),
-});
+export const intakeProblemSchema = intakeDiagnosisSchema;
 
 export const intakeSchema = z.object({
   requester: intakeRequesterSchema,

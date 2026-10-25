@@ -1,5 +1,6 @@
 import { Prisma, type RepairEventType, type TicketStatus, type UserRole } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
+import { getIntakeDetail, type IntakeDetail } from "@/lib/tickets/intake-detail";
 
 type LeadWorkspaceErrorStatus = 403 | 404 | 409;
 
@@ -37,7 +38,7 @@ export type LeadQueueTicket = {
   } | null;
 };
 
-export type LeadTicketDetail = LeadQueueTicket & {
+export type LeadTicketDetail = { intake: IntakeDetail | null } & LeadQueueTicket & {
   issueDescription: string;
   requester: LeadQueueTicket["requester"] & {
     email: string | null;
@@ -200,7 +201,7 @@ function toQueueTicket(ticket: LeadQueueTicketRecord): LeadQueueTicket {
   };
 }
 
-function toTicketDetail(ticket: LeadTicketDetailRecord): LeadTicketDetail {
+function toTicketDetail(ticket: LeadTicketDetailRecord, intake: IntakeDetail | null = null): LeadTicketDetail {
   return {
     ...toQueueTicket(ticket),
     issueDescription: ticket.issueDescription,
@@ -210,6 +211,7 @@ function toTicketDetail(ticket: LeadTicketDetailRecord): LeadTicketDetail {
     },
     device: ticket.device,
     events: ticket.events,
+    intake,
   };
 }
 
@@ -241,6 +243,6 @@ export async function getLeadTicket(ticketIdOrTrackingCode: string): Promise<Lea
 
   return {
     ok: true,
-    data: toTicketDetail(ticket),
+    data: toTicketDetail(ticket, await getIntakeDetail(prisma, ticket.id)),
   };
 }

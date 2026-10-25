@@ -18,6 +18,8 @@ import {
   STORAGE_TYPES,
   labelOf,
 } from "@/lib/intake/options";
+import { MAX_PHOTOS, PROBLEM_CATEGORIES, RECENT_EVENTS, STARTED_WHEN } from "@/lib/intake/diagnosis";
+import { PhotoUploader, type UploadedPhoto } from "./photo-uploader";
 
 export type RequestFormEvent = { name: string; venue: string; hours: string; dates: string; holdDays: number };
 
@@ -35,7 +37,7 @@ type Values = {
     serialNumber: string;
     accessories: string[];
   };
-  problem: { description: string };
+  problem: { categories: string[]; answers: Record<string, Record<string, string>>; startedWhen: string; recentEvents: string[]; errorMessage: string; description: string; photoTokens: string[] };
   wipeAllowed: boolean;
   needsPassword: boolean;
   consent: boolean;
@@ -45,7 +47,7 @@ type Values = {
 const EMPTY: Values = {
   requester: { requesterType: "STUDENT", fullName: "", universityId: "", phone: "", faculty: "", department: "", email: "" },
   device: { deviceType: "", brand: "", brandOther: "", model: "", operatingSystem: "", ram: "", storageType: "", ageBand: "", serialNumber: "", accessories: [] },
-  problem: { description: "" },
+  problem: { categories: [], answers: {}, startedWhen: "", recentEvents: [], errorMessage: "", description: "", photoTokens: [] },
   wipeAllowed: false,
   needsPassword: false,
   consent: false,
@@ -116,6 +118,7 @@ export function RequestForm({ event, endpoint = "/api/public/repair-requests", o
   const [errors, setErrors] = useState<Errors>({});
   const [formError, setFormError] = useState<ReactNode>(null);
   const [created, setCreated] = useState<{ code: string; firstName: string } | null>(null);
+  const [photos, setPhotos] = useState<UploadedPhoto[]>([]);
   const [pending, startTransition] = useTransition();
   const topRef = useRef<HTMLDivElement>(null);
 
@@ -181,6 +184,7 @@ export function RequestForm({ event, endpoint = "/api/public/repair-requests", o
 
   const r = values.requester;
   const d = values.device;
+  const p = values.problem;
 
   return (
     <div ref={topRef} className="flex scroll-mt-24 flex-col gap-6">
@@ -313,15 +317,110 @@ export function RequestForm({ event, endpoint = "/api/public/repair-requests", o
         ) : null}
 
         {step === 2 ? (
-          <Field label="What's wrong?" hint="When did it start? What do you see?" error={error("problem.description")}>
-            <Textarea
-              rows={5}
-              value={values.problem.description}
-              onChange={(e) => update("problem", "description", e.target.value)}
-              placeholder="It turns on but the screen stays black…"
-              aria-invalid={Boolean(error("problem.description"))}
-            />
-          </Field>
+          <>
+            <ChoiceGroup legend="What's the problem?" columns={2} error={error("problem.categories")}>
+              {PROBLEM_CATEGORIES.map((category) => (
+                <ChoiceCard
+                  key={category.value}
+                  type="checkbox"
+                  label={category.label}
+                  checked={p.categories.includes(category.value)}
+                  onChange={(e) => update("problem", "categories", e.target.checked ? [...p.categories, category.value] : p.categories.filter((value) => value !== category.value))}
+                />
+              ))}
+            </ChoiceGroup>
+
+            {PROBLEM_CATEGORIES.filter((category) => p.categories.includes(category.value) && category.followUps.length > 0).map((category) => (
+              <fieldset key={category.value} className="flex flex-col gap-4 rounded-md bg-muted p-4">
+                <legend className="sr-only">{category.label}</legend>
+                <p className="font-mono text-[12px] font-medium uppercase tracking-[0.08em] text-ink-muted">{category.label}</p>
+                {category.followUps.map((followUp) =>
+                  followUp.kind === "choice" ? (
+                    <div key={followUp.id} className="flex flex-col gap-2">
+                      <p className="text-small font-semibold text-ink">{followUp.question}</p>
+                      <div className="flex flex-wrap gap-2">
+                        {followUp.options.map((option) => {
+                          const selected = p.answers[category.value]?.[followUp.id] === option.value;
+                          return (
+                            <button
+                              key={option.value}
+                              type="button"
+                              aria-pressed={selected}
+                              onClick={() => update("problem", "answers", { ...p.answers, [category.value]: { ...p.answers[category.value], [followUp.id]: option.value } })}
+                              className={
+                                selected
+                                  ? "rounded-full border border-accent bg-accent-soft px-3.5 py-1.5 text-small font-medium text-ink-accent"
+                                  : "rounded-full border border-line bg-surface px-3.5 py-1.5 text-small text-ink-secondary hover:border-line-strong"
+                              }
+                            >
+                              {option.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : (
+                    <Field key={followUp.id} label={followUp.question}>
+                      <Input
+                        value={p.answers[category.value]?.[followUp.id] ?? ""}
+                        placeholder={followUp.placeholder}
+                        onChange={(e) => update("problem", "answers", { ...p.answers, [category.value]: { ...p.answers[category.value], [followUp.id]: e.target.value } })}
+                      />
+                    </Field>
+                  ),
+                )}
+              </fieldset>
+            ))}
+
+            <ChoiceGroup legend="When did it start?" columns={2} error={error("problem.startedWhen")}>
+              {STARTED_WHEN.map((option) => (
+                <ChoiceCard key={option.value} name="startedWhen" label={option.label} checked={p.startedWhen === option.value} onChange={() => update("problem", "startedWhen", option.value)} />
+              ))}
+            </ChoiceGroup>
+
+            <ChoiceGroup legend="Did any of these happen?" columns={2}>
+              {RECENT_EVENTS.map((option) => (
+                <ChoiceCard
+                  key={option.value}
+                  type="checkbox"
+                  label={option.label}
+                  checked={p.recentEvents.includes(option.value)}
+                  onChange={(e) =>
+                    update(
+                      "problem",
+                      "recentEvents",
+                      option.value === "NONE"
+                        ? e.target.checked ? ["NONE"] : []
+                        : e.target.checked ? [...p.recentEvents.filter((v) => v !== "NONE"), option.value] : p.recentEvents.filter((v) => v !== option.value),
+                    )
+                  }
+                />
+              ))}
+            </ChoiceGroup>
+
+            <Field label="Error message" optional hint="Copy any message you see on screen.">
+              <Input value={p.errorMessage} onChange={(e) => update("problem", "errorMessage", e.target.value)} />
+            </Field>
+
+            <Field label="Describe the problem" hint="What happens? What have you tried?" error={error("problem.description")}>
+              <Textarea rows={4} value={p.description} onChange={(e) => update("problem", "description", e.target.value)} placeholder="It turns on but the screen stays black…" aria-invalid={Boolean(error("problem.description"))} />
+            </Field>
+
+            <div className="flex flex-col gap-2">
+              <p className="text-small font-semibold text-ink">
+                Photos <span className="font-normal text-ink-muted">optional, up to {MAX_PHOTOS}</span>
+              </p>
+              <p className="text-caption text-ink-muted">The problem, the error on screen, the model sticker. Only staff can see them.</p>
+              <PhotoUploader
+                photos={photos}
+                max={MAX_PHOTOS}
+                onChange={(next) => {
+                  setPhotos(next);
+                  update("problem", "photoTokens", next.map((photo) => photo.token));
+                }}
+              />
+            </div>
+          </>
         ) : null}
 
         {step === 3 ? (
@@ -343,8 +442,18 @@ export function RequestForm({ event, endpoint = "/api/public/repair-requests", o
               ))}
               <div className="sm:col-span-2">
                 <dt className="text-ink-muted">Problem</dt>
-                <dd className="text-ink">{values.problem.description}</dd>
+                <dd className="text-ink">
+                  <span className="font-medium">{p.categories.map((value) => PROBLEM_CATEGORIES.find((c) => c.value === value)?.label).join(", ")}</span>
+                  {" — "}
+                  {p.description}
+                </dd>
               </div>
+              {photos.length ? (
+                <div className="sm:col-span-2">
+                  <dt className="text-ink-muted">Photos</dt>
+                  <dd className="text-ink">{photos.length} attached</dd>
+                </div>
+              ) : null}
             </dl>
             <div className="flex flex-col gap-2 border-t border-line pt-5">
               <ChoiceCard type="checkbox" label="OK to reinstall Windows if needed" description="Files not backed up may be lost." checked={values.wipeAllowed} onChange={(e) => setValues((v) => ({ ...v, wipeAllowed: e.target.checked }))} />

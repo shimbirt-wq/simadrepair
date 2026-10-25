@@ -38,3 +38,4 @@ Thumbs.db
 # local agent/tooling (shared skills are committed)
 .claude/*
 !.claude/skills/
+.data/
