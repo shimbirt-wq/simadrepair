@@ -8,7 +8,7 @@ import { checkRateLimit, getRequestIp } from "@/lib/rate-limit";
 import { loginSchema } from "@/lib/validations/auth";
 
 export async function POST(request: Request) {
-  const rateLimit = checkRateLimit(`login:${getRequestIp(request)}`, 10, 60_000);
+  const rateLimit = await checkRateLimit(prisma, `login:${getRequestIp(request)}`, 10, 60_000);
 
   if (!rateLimit.allowed) {
     return apiErrorResponse(429, "RATE_LIMITED", "Too many login attempts. Try again shortly.", {

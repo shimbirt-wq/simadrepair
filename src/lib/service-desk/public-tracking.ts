@@ -1,59 +1,11 @@
-import type { RepairEventType, TicketStatus } from "@prisma/client";
-import { z } from "zod";
-import { prisma } from "@/lib/db/prisma";
+import type { PrismaClient, RepairEventType, TicketStatus } from "@prisma/client";
+import { prisma as defaultPrisma } from "@/lib/db/prisma";
+import { normalizeTrackingCode } from "@/lib/tickets/tracking-code";
 
-const publicTrackingCodeSchema = z
-  .string()
-  .trim()
-  .toUpperCase()
-  .regex(/^SIM-\d{4}-\d+$/, "Tracking code format is invalid");
-
-/** Events a requester may see; internal ones (proposals, notes, reassignments) stay hidden. */
-const PUBLIC_REPAIR_EVENT_TYPES = new Set<RepairEventType>([
-  "TICKET_CREATED",
-  "CHECKED_IN",
-  "TECHNICIAN_ASSIGNED",
-  "TICKET_CLAIMED",
-  "REPAIR_STARTED",
-  "REPAIR_BLOCKED",
-  "REPAIR_RESUMED",
-  "CANNOT_REPAIR_CONFIRMED",
-  "READY_FOR_PICKUP",
-  "PICKUP_CONFIRMED",
-  "TICKET_CANCELLED",
-]);
-
-export type PublicRepairTimelineEvent = {
-  eventType: RepairEventType;
-  occurredAt: Date;
-  statusFrom: string | null;
-  statusTo: string | null;
-};
-
-export type PublicTrackingInfo = {
-  trackingCode: string;
-  status: TicketStatus;
-  submittedAt: Date;
-  assignedAt: Date | null;
-  readyForPickupAt: Date | null;
-  requesterName: string;
-  device: {
-    deviceType: string;
-    brand: string;
-    model: string;
-  };
-  technician: {
-    fullName: string;
-    phone: string | null;
-  } | null;
-  custody: {
-    storageLocation: string | null;
-    receivedAt: Date | null;
-    readyForCollectionAt: Date | null;
-    collectedAt: Date | null;
-  } | null;
-  timeline: PublicRepairTimelineEvent[];
-};
+/**
+ * What anyone holding a tracking code may see. Never: full name, university
+ * ID, the requester's phone, storage location, photos or internal notes.
+ */
 
 export class PublicTrackingValidationError extends Error {
   constructor() {
@@ -62,124 +14,94 @@ export class PublicTrackingValidationError extends Error {
   }
 }
 
-type PublicRepairEventCandidate = {
-  eventType: RepairEventType;
+/** Events a requester may see; internal ones (proposals, notes, reassignments) stay hidden. */
+const PUBLIC_EVENT_LABELS: Partial<Record<RepairEventType, string>> = {
+  TICKET_CREATED: "Request submitted",
+  CHECKED_IN: "Device received at the desk",
+  TECHNICIAN_ASSIGNED: "Technician assigned",
+  TICKET_CLAIMED: "Technician assigned",
+  REPAIR_STARTED: "Repair started",
+  REPAIR_BLOCKED: "Repair paused",
+  REPAIR_RESUMED: "Repair resumed",
+  CANNOT_REPAIR_CONFIRMED: "Cannot be repaired",
+  READY_FOR_PICKUP: "Ready for pickup",
+  PICKUP_CONFIRMED: "Device collected",
+  TICKET_CANCELLED: "Request cancelled",
 };
 
-type PublicTrackingEventRecord = PublicRepairEventCandidate & {
-  createdAt: Date;
-  statusFrom: string | null;
-  statusTo: string | null;
+export function isPublicRepairEvent(event: { eventType: RepairEventType }) {
+  return event.eventType in PUBLIC_EVENT_LABELS;
+}
+
+/** A pending "cannot repair" proposal is not news for the requester until the lead confirms it. */
+export function toPublicStatus(status: TicketStatus): TicketStatus {
+  return status === "CANNOT_REPAIR_PROPOSED" ? "IN_REPAIR" : status;
+}
+
+const CONTACT_TECHNICIAN_STATUSES: readonly TicketStatus[] = ["RECEIVED", "IN_REPAIR", "WAITING_FOR_PARTS", "ACTION_NEEDED", "CANNOT_REPAIR_PROPOSED", "READY_FOR_PICKUP"];
+
+export type PublicTrackingInfo = {
+  trackingCode: string;
+  status: TicketStatus;
+  submittedAt: Date;
+  requesterFirstName: string;
+  device: { deviceType: string; brand: string; model: string };
+  /** What the requester must do or buy, or why it cannot be repaired. */
+  detail: string | null;
+  contact: { kind: "technician" | "desk"; name: string; whatsapp: string } | null;
+  event: { name: string; venue: string; hours: string; holdDays: number } | null;
+  timeline: Array<{ label: string; at: Date }>;
 };
 
-export function isPublicRepairEvent(event: PublicRepairEventCandidate) {
-  return PUBLIC_REPAIR_EVENT_TYPES.has(event.eventType);
+function firstName(fullName: string | null | undefined) {
+  return fullName?.trim().split(/\s+/)[0] || "there";
 }
 
-function getDisplaySafeName(fullName: string | null | undefined) {
-  const firstName = fullName?.trim().split(/\s+/)[0];
+export async function getPublicTrackingInfo(input: string, prisma: PrismaClient = defaultPrisma): Promise<PublicTrackingInfo | null> {
+  const trackingCode = normalizeTrackingCode(input);
+  if (!trackingCode) throw new PublicTrackingValidationError();
 
-  return firstName || "Requester";
-}
-
-function parseTrackingCode(trackingCode: string) {
-  const parsed = publicTrackingCodeSchema.safeParse(trackingCode);
-
-  if (!parsed.success) {
-    throw new PublicTrackingValidationError();
-  }
-
-  return parsed.data;
-}
-
-function toPublicTimelineEvent(event: PublicTrackingEventRecord): PublicRepairTimelineEvent {
-  return {
-    eventType: event.eventType,
-    occurredAt: event.createdAt,
-    statusFrom: event.statusFrom,
-    statusTo: event.statusTo,
-  };
-}
-
-export async function getPublicTrackingInfo(trackingCode: string): Promise<PublicTrackingInfo | null> {
-  const safeTrackingCode = parseTrackingCode(trackingCode);
-  const ticket = await prisma.repairTicket.findUnique({
-    where: { trackingCode: safeTrackingCode },
+  const ticket = await prisma.repairTicket.findFirst({
+    where: { OR: [{ trackingCode }, { ticketId: trackingCode }] },
     select: {
       trackingCode: true,
       ticketId: true,
       status: true,
       createdAt: true,
-      assignedAt: true,
-      readyForPickupAt: true,
-      requester: {
-        select: {
-          fullName: true,
-        },
-      },
-      device: {
-        select: {
-          deviceType: true,
-          brand: true,
-          model: true,
-        },
-      },
-      technician: {
-        select: {
-          fullName: true,
-          phone: true,
-        },
-      },
-      custody: {
-        select: {
-          storageLocation: true,
-          receivedAt: true,
-          readyForCollectionAt: true,
-          collectedAt: true,
-        },
-      },
-      events: {
-        orderBy: { createdAt: "asc" },
-        select: {
-          eventType: true,
-          createdAt: true,
-          statusFrom: true,
-          statusTo: true,
-        },
-      },
+      requester: { select: { fullName: true } },
+      device: { select: { deviceType: true, brand: true, model: true } },
+      technician: { select: { fullName: true, phone: true } },
+      event: { select: { id: true, name: true, venue: true, hours: true, deskWhatsapp: true, holdDays: true } },
+      events: { orderBy: { createdAt: "asc" }, select: { eventType: true, note: true, createdAt: true } },
     },
   });
 
-  if (!ticket) {
-    return null;
+  if (!ticket) return null;
+
+  const status = toPublicStatus(ticket.status);
+  const lastNote = (type: RepairEventType) => [...ticket.events].reverse().find((event) => event.eventType === type)?.note ?? null;
+
+  let detail: string | null = null;
+  if (status === "WAITING_FOR_PARTS" || status === "ACTION_NEEDED") detail = lastNote("REPAIR_BLOCKED");
+  if (status === "CANNOT_BE_REPAIRED") detail = lastNote("CANNOT_REPAIR_PROPOSED") ?? lastNote("CANNOT_REPAIR_CONFIRMED");
+
+  const legacy = ticket.event.id === "legacy";
+  let contact: PublicTrackingInfo["contact"] = null;
+  if (ticket.technician?.phone && CONTACT_TECHNICIAN_STATUSES.includes(ticket.status)) {
+    contact = { kind: "technician", name: firstName(ticket.technician.fullName), whatsapp: ticket.technician.phone };
+  } else if (!legacy && ticket.status !== "COLLECTED" && ticket.status !== "CANCELLED") {
+    contact = { kind: "desk", name: "IT service desk", whatsapp: ticket.event.deskWhatsapp };
   }
 
   return {
     trackingCode: ticket.trackingCode ?? ticket.ticketId,
-    status: ticket.status,
+    status,
     submittedAt: ticket.createdAt,
-    assignedAt: ticket.assignedAt,
-    readyForPickupAt: ticket.readyForPickupAt,
-    requesterName: getDisplaySafeName(ticket.requester?.fullName),
-    device: {
-      deviceType: ticket.device.deviceType,
-      brand: ticket.device.brand,
-      model: ticket.device.model,
-    },
-    technician: ticket.technician
-      ? {
-          fullName: ticket.technician.fullName,
-          phone: ticket.technician.phone,
-        }
-      : null,
-    custody: ticket.custody
-      ? {
-          storageLocation: ticket.custody.storageLocation,
-          receivedAt: ticket.custody.receivedAt,
-          readyForCollectionAt: ticket.custody.readyForCollectionAt,
-          collectedAt: ticket.custody.collectedAt,
-        }
-      : null,
-    timeline: ticket.events.filter(isPublicRepairEvent).map(toPublicTimelineEvent),
+    requesterFirstName: firstName(ticket.requester?.fullName),
+    device: ticket.device,
+    detail,
+    contact,
+    event: legacy ? null : { name: ticket.event.name, venue: ticket.event.venue, hours: ticket.event.hours, holdDays: ticket.event.holdDays },
+    timeline: ticket.events.filter(isPublicRepairEvent).map((event) => ({ label: PUBLIC_EVENT_LABELS[event.eventType]!, at: event.createdAt })),
   };
 }

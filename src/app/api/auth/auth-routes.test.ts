@@ -15,6 +15,11 @@ vi.mock("@/lib/db/prisma", () => ({
   prisma: mockPrisma,
 }));
 
+vi.mock("@/lib/rate-limit", () => ({
+  checkRateLimit: vi.fn(async () => ({ allowed: true, remaining: 9 })),
+  getRequestIp: () => "127.0.0.1",
+}));
+
 const now = new Date("2026-01-01T00:00:00.000Z");
 
 function buildUser(overrides: Partial<User> = {}): User {

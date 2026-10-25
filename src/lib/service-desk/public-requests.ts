@@ -2,6 +2,7 @@ import { Prisma, type TicketStatus } from "@prisma/client";
 import { ZodError } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { getRegistration } from "@/lib/events/event-service";
+import { generateTrackingCode } from "@/lib/tickets/tracking-code";
 import type { RegistrationState } from "@/lib/events/event-window";
 import { publicRepairRequestInputSchema, type PublicRepairRequestInput } from "@/lib/service-desk/validations";
 
@@ -36,26 +37,6 @@ export class PublicRepairRequestValidationError extends Error {
 
 function isRetryableCreateCollision(error: unknown) {
   return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
-}
-
-function isMissingCounter(error: unknown) {
-  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025";
-}
-
-function getYearSegment(date = new Date()) {
-  return date.getUTCFullYear().toString();
-}
-
-function parseTrackingSequence(value: string | null, scope: string) {
-  const prefix = `${scope}-`;
-
-  if (!value?.startsWith(prefix)) {
-    return 0;
-  }
-
-  const sequence = Number.parseInt(value.slice(prefix.length), 10);
-
-  return Number.isSafeInteger(sequence) && sequence > 0 ? sequence : 0;
 }
 
 async function findReusableRequester(
@@ -102,81 +83,11 @@ async function createOrReuseRequester(tx: Prisma.TransactionClient, requester: P
   });
 }
 
-async function findCurrentMaxTrackingSequence(tx: Prisma.TransactionClient, scope: string) {
-  const prefix = `${scope}-`;
-  const latestTrackingCodeTicket = await tx.repairTicket.findFirst({
-    where: {
-      trackingCode: { startsWith: prefix },
-    },
-    select: { trackingCode: true },
-    orderBy: { trackingCode: "desc" },
-  });
-
-  const latestTicketIdTicket = await tx.repairTicket.findFirst({
-    where: {
-      ticketId: { startsWith: prefix },
-    },
-    select: { ticketId: true },
-    orderBy: { ticketId: "desc" },
-  });
-
-  return Math.max(
-    parseTrackingSequence(latestTrackingCodeTicket?.trackingCode ?? null, scope),
-    parseTrackingSequence(latestTicketIdTicket?.ticketId ?? null, scope),
-  );
-}
-
-async function allocateTrackingSequence(tx: Prisma.TransactionClient, scope: string) {
-  try {
-    const counter = await tx.trackingCodeCounter.update({
-      where: { scope },
-      data: {
-        lastValue: {
-          increment: 1,
-        },
-      },
-      select: {
-        lastValue: true,
-      },
-    });
-
-    return counter.lastValue;
-  } catch (error) {
-    if (!isMissingCounter(error)) {
-      throw error;
-    }
-  }
-
-  const existingMaxSequence = await findCurrentMaxTrackingSequence(tx, scope);
-  const counter = await tx.trackingCodeCounter.create({
-    data: {
-      scope,
-      lastValue: existingMaxSequence + 1,
-    },
-    select: {
-      lastValue: true,
-    },
-  });
-
-  return counter.lastValue;
-}
-
 async function createTrackingCode(tx: Prisma.TransactionClient) {
-  const scope = `SIM-${getYearSegment()}`;
-
   for (let attempt = 1; attempt <= maxCreateAttempts; attempt += 1) {
-    const sequence = await allocateTrackingSequence(tx, scope);
-    const trackingCode = `${scope}-${sequence.toString().padStart(6, "0")}`;
-    const existingTicket = await tx.repairTicket.findFirst({
-      where: {
-        OR: [{ trackingCode }, { ticketId: trackingCode }],
-      },
-      select: { id: true },
-    });
-
-    if (!existingTicket) {
-      return trackingCode;
-    }
+    const trackingCode = generateTrackingCode();
+    const existingTicket = await tx.repairTicket.findFirst({ where: { OR: [{ trackingCode }, { ticketId: trackingCode }] }, select: { id: true } });
+    if (!existingTicket) return trackingCode;
   }
 
   throw new Error("Unable to generate a unique tracking code.");
