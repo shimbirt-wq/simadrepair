@@ -18,8 +18,9 @@ describe("staffTicketActionSchema", () => {
   });
 
   it("requires the collector's name at pickup", () => {
-    expect(staffTicketActionSchema.safeParse({ type: "PICKUP" }).success).toBe(false);
-    expect(staffTicketActionSchema.parse({ type: "PICKUP", collectedByName: "Amina Hassan" })).toMatchObject({ collectedByName: "Amina Hassan", collectedByPhone: null });
+    expect(staffTicketActionSchema.safeParse({ type: "PICKUP", idChecked: true }).success).toBe(false);
+    expect(staffTicketActionSchema.safeParse({ type: "PICKUP", collectedByName: "Amina Hassan" }).success).toBe(false);
+    expect(staffTicketActionSchema.parse({ type: "PICKUP", idChecked: true, collectedByName: "Amina Hassan", accessoriesReturned: ["CHARGER"] })).toMatchObject({ collectedByName: "Amina Hassan", collectedByPhone: null, accessoriesReturned: ["CHARGER"] });
   });
 
   it("requires detail when blocking a repair", () => {

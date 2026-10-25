@@ -1,6 +1,7 @@
 "use client";
 
-import { Clock, RefreshCw, Search, UserPlus } from "lucide-react";
+import { Clock, HandHelping, RefreshCw, Search, UserPlus } from "lucide-react";
+import { PickupSearch } from "@/components/staff/pickup-search";
 import { RequestForm } from "@/components/public/request-form";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DeskActions } from "@/components/staff/ticket-actions";
@@ -70,6 +71,7 @@ export function LeadBoard() {
   const [error, setError] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [walkIn, setWalkIn] = useState(false);
+  const [pickup, setPickup] = useState(false);
 
   const load = useCallback(async () => {
     const result = await sendJson<Board>("/api/lead/board", "GET");
@@ -108,6 +110,9 @@ export function LeadBoard() {
         <Button icon={<UserPlus className="h-4 w-4" strokeWidth={1.75} />} onClick={() => setWalkIn(true)} disabled={!board?.event}>
           Register walk-in
         </Button>
+        <Button variant="secondary" icon={<HandHelping className="h-4 w-4" strokeWidth={1.75} />} onClick={() => setPickup(true)}>
+          Pickup
+        </Button>
         {stuckCount ? <span className="rounded-full bg-warning-soft px-3 py-1 text-caption font-semibold text-warning-text">{stuckCount} stuck</span> : null}
         <button type="button" onClick={() => void load()} className="ml-auto flex items-center gap-1.5 text-caption text-ink-muted hover:text-ink" aria-label="Refresh">
           <RefreshCw className="h-3.5 w-3.5" strokeWidth={1.75} />
@@ -145,6 +150,10 @@ export function LeadBoard() {
           ) : null}
         </Dialog>
       ) : null}
+
+      <Dialog open={pickup} onClose={() => setPickup(false)} variant="sheet" title="Pickup">
+        {pickup ? <PickupSearch onChanged={() => void load()} /> : null}
+      </Dialog>
 
       <TicketSheet
         ticketId={selected}

@@ -102,6 +102,7 @@ export function TicketSheet({
                 <p>
                   Collected {formatDateTime(ticket.custody.collectedAt)} by {ticket.custody.collectedByName}
                   {ticket.custody.collectedByPhone ? ` (${whatsappDisplay(ticket.custody.collectedByPhone)})` : ""}
+                  {ticket.custody.releasedBy ? `, handed back by ${ticket.custody.releasedBy}` : ""}. Returned: {ticket.custody.accessoriesReturned.join(", ") || "device only"}
                 </p>
               ) : null}
             </section>

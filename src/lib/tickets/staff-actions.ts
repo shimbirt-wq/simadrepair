@@ -22,7 +22,7 @@ export function performStaffTicketAction(prisma: PrismaClient, user: PublicUser,
         },
       });
     case "PICKUP":
-      return performTicketAction(prisma, ticketRef, actor, { action: { type: "PICKUP" }, pickup: { collectedByName: body.collectedByName, collectedByPhone: body.collectedByPhone } });
+      return performTicketAction(prisma, ticketRef, actor, { action: { type: "PICKUP" }, pickup: { collectedByName: body.collectedByName, collectedByPhone: body.collectedByPhone, accessoriesReturned: body.accessoriesReturned } });
     case "CLAIM":
       return performTicketAction(prisma, ticketRef, actor, { action: { type: "CLAIM" } });
     default:

@@ -240,6 +240,7 @@ model DeviceCustody {
   readyForCollectionAt DateTime?     @map("ready_for_collection_at")
   collectedByName      String?       @map("collected_by_name")
   collectedByPhone     String?       @map("collected_by_phone")
+  accessoriesReturned  String[]      @default([]) @map("accessories_returned")
   collectedAt          DateTime?     @map("collected_at")
   createdAt            DateTime      @default(now()) @map("created_at")
   updatedAt            DateTime      @updatedAt @map("updated_at")

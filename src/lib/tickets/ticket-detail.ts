@@ -21,6 +21,8 @@ export type StaffTicketDetail = {
     idChecked: boolean;
     conditionChecks: string[];
     accessoriesReceived: string[];
+    accessoriesReceivedValues: string[];
+    accessoriesReturned: string[];
     receivedAt: string | null;
     receivedBy: string | null;
     condition: string | null;
@@ -59,6 +61,7 @@ export async function getStaffTicketDetail(prisma: PrismaClient, ref: string): P
           idChecked: true,
           conditionChecks: true,
           accessoriesReceived: true,
+          accessoriesReturned: true,
           receivedAt: true,
           condition: true,
           storageLocation: true,
@@ -97,6 +100,8 @@ export async function getStaffTicketDetail(prisma: PrismaClient, ref: string): P
       idChecked: ticket.custody?.idChecked ?? false,
       conditionChecks: (ticket.custody?.conditionChecks ?? []).map((value) => labelOf(CONDITION_CHECKS, value)),
       accessoriesReceived: (ticket.custody?.accessoriesReceived ?? []).map((value) => labelOf(ACCESSORIES, value)),
+      accessoriesReceivedValues: ticket.custody?.accessoriesReceived ?? [],
+      accessoriesReturned: (ticket.custody?.accessoriesReturned ?? []).map((value) => labelOf(ACCESSORIES, value)),
       receivedAt: iso(ticket.custody?.receivedAt),
       receivedBy: ticket.custody?.receivedBy?.fullName ?? null,
       condition: ticket.custody?.condition ?? null,
