@@ -818,3 +818,38 @@ a {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* Photo treatments: real photos never sit raw on the page; they are tinted
+   with the brand emerald so text stays readable (see docs/platform/website.md). */
+.photo-fade-hero {
+  /* Phones: the photo is a strip above the text, tinted and fading into mint. */
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--green-500) 14%, transparent) 0%,
+    color-mix(in srgb, var(--green-50) 55%, transparent) 60%,
+    var(--green-50) 100%
+  );
+}
+@media (min-width: 1024px) {
+  .photo-fade-hero {
+    background: linear-gradient(
+      90deg,
+      var(--green-50) 0%,
+      var(--green-50) 14%,
+      color-mix(in srgb, var(--green-50) 70%, transparent) 32%,
+      color-mix(in srgb, var(--green-100) 20%, transparent) 58%,
+      color-mix(in srgb, var(--green-500) 16%, transparent) 100%
+    );
+  }
+}
+.photo-overlay-deep {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--green-700) 95%, transparent) 0%,
+    color-mix(in srgb, var(--green-500) 88%, transparent) 55%,
+    color-mix(in srgb, var(--green-500) 60%, transparent) 100%
+  );
+}
+.photo-caption-fade {
+  background: linear-gradient(180deg, transparent 45%, color-mix(in srgb, var(--green-700) 85%, transparent) 100%);
+}

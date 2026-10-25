@@ -29,6 +29,7 @@ export function CardHeader({ eyebrow, title, action, className }: { eyebrow?: Re
   );
 }
 
-export function Eyebrow({ children, className }: { children: ReactNode; className?: string }) {
-  return <p className={cn("font-mono text-[12px] font-medium uppercase tracking-[0.08em] text-ink-muted", className)}>{children}</p>;
+/** `inverse` is for text on the deep-green photo bands. */
+export function Eyebrow({ children, className, tone = "default" }: { children: ReactNode; className?: string; tone?: "default" | "inverse" }) {
+  return <p className={cn("font-mono text-[12px] font-medium uppercase tracking-[0.08em]", tone === "inverse" ? "text-green-200" : "text-ink-muted", className)}>{children}</p>;
 }

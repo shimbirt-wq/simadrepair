@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import { PhotoBand } from "@/components/public/photo-band";
 import { PublicLayout } from "@/components/public/public-layout";
 import { Card, Eyebrow } from "@/components/ui";
 import { prisma } from "@/lib/db/prisma";
@@ -28,27 +29,21 @@ export default async function AboutPage() {
   return (
     <PublicLayout>
       <div className="flex flex-col gap-14">
-        <section className="grid gap-10 lg:grid-cols-[1fr_1fr] lg:items-center">
-          <div className="flex flex-col gap-4">
-            <Eyebrow>About</Eyebrow>
-            <h1 className="text-h1 text-ink">SIMAD University IT Service Desk</h1>
-            <p className="text-[17px] leading-relaxed text-ink-secondary">
+        <section>
+          <PhotoBand photo={teamPhoto} alt="Volunteers and Faculty of Computing staff working together at the desk" position="65% 40%" priority>
+            <Eyebrow tone="inverse">About</Eyebrow>
+            <h1 className="text-h1 text-white">SIMAD University IT Service Desk</h1>
+            <p className="text-body text-green-50">
               The Faculty of Computing&apos;s Computer Maintenance Program offers free repair and maintenance to SIMAD students and staff. SIMADRepair runs the program end to end: online registration, drop-off at the desk, repair by
               technicians, WhatsApp updates and pickup with a university ID card.
             </p>
-            <p className="text-[17px] leading-relaxed text-ink-secondary">
-              Each repair gets one tracking code, every handover of a device is recorded, and the university gets a report after every event.
-            </p>
+            <p className="text-body text-green-50">Each repair gets one tracking code, every handover of a device is recorded, and the university gets a report after every event.</p>
             {event && volunteers > 0 ? (
-              <p className="text-body font-semibold text-ink">
+              <p className="text-body font-semibold text-white">
                 {event.name} was delivered by {volunteers} student {volunteers === 1 ? "volunteer" : "volunteers"}.
               </p>
             ) : null}
-          </div>
-          <figure className="flex flex-col gap-2">
-            <Image src={teamPhoto} alt="Volunteers and Faculty of Computing staff working together at the desk" placeholder="blur" priority sizes="(min-width: 1024px) 580px, 100vw" className="aspect-[3/2] w-full rounded-xl object-cover shadow-md" />
-            <figcaption className="text-caption text-ink-muted">Volunteers and faculty at a previous program, Main Campus.</figcaption>
-          </figure>
+          </PhotoBand>
         </section>
 
         <section aria-labelledby="team-title" className="flex flex-col gap-4">

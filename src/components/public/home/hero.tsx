@@ -1,8 +1,7 @@
-import { CalendarDays, Clock, MapPin, MessageCircle, Search } from "lucide-react";
+import { MessageCircle, Search } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
 import heroPhoto from "../../../../public/images/program/volunteers-repairing.jpg";
-import { ButtonLink, Card, cn } from "@/components/ui";
+import { ButtonLink, cn } from "@/components/ui";
 import type { ActiveEvent } from "@/lib/events/event-service";
 import { formatDay, formatEventDates, isEventRunning, type RegistrationState } from "@/lib/events/event-window";
 import { whatsappDisplay, whatsappLink } from "@/lib/phone";
@@ -29,9 +28,14 @@ export function Hero({ state, event, now = new Date() }: { state: RegistrationSt
   const { badge, tone, lead } = heroState(state, event, now);
 
   return (
-    <section aria-labelledby="hero-title" className="border-b border-line bg-surface">
-      <div className="mx-auto grid max-w-content gap-10 px-4 py-14 sm:px-6 sm:py-20 lg:grid-cols-[7fr_5fr] lg:items-center">
-        <div className="flex flex-col items-start gap-6">
+    <section aria-labelledby="hero-title" className="relative overflow-hidden border-b border-line bg-green-50">
+      {/* Photo as background: a strip on phones, the right side on desktop, faded into mint. */}
+      <div className="absolute inset-x-0 top-0 h-56 sm:h-72 lg:inset-y-0 lg:left-[40%] lg:h-auto">
+        <Image src={heroPhoto} alt="Two student volunteers repairing laptops at a previous Computer Maintenance Program" fill priority placeholder="blur" sizes="(min-width: 1024px) 60vw, 100vw" className="object-cover object-[50%_35%]" />
+        <div className="photo-fade-hero absolute inset-0" />
+      </div>
+      <div className="relative mx-auto max-w-content px-4 pb-14 pt-48 sm:px-6 sm:pb-20 sm:pt-64 lg:py-24">
+        <div className="flex max-w-xl flex-col items-start gap-6">
           {badge ? (
             <span className={cn("inline-flex items-center gap-2 rounded-full px-3 py-1 text-small font-semibold", toneClasses[tone])}>
               <span className="h-2 w-2 rounded-full bg-current" aria-hidden />
@@ -60,61 +64,18 @@ export function Hero({ state, event, now = new Date() }: { state: RegistrationSt
             </ButtonLink>
           </div>
           <HeroTrack />
-        </div>
-
-        <div className="flex flex-col">
-          <Image
-            src={heroPhoto}
-            alt="Two student volunteers repairing laptops at a previous Computer Maintenance Program"
-            priority
-            placeholder="blur"
-            sizes="(min-width: 1024px) 480px, 100vw"
-            className="aspect-[4/3] w-full rounded-xl object-cover shadow-md"
-          />
           {event ? (
-            <Card className="relative z-10 mx-3 -mt-12 flex flex-col gap-4 p-5 shadow-lg sm:mx-6">
-              <p className="text-small font-semibold text-ink">Where to bring your device</p>
-              <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-small">
-                <Detail icon={<CalendarDays className="h-5 w-5" strokeWidth={1.75} />} label="Dates" value={formatEventDates(event.startsOn, event.endsOn)} />
-                <Detail icon={<Clock className="h-5 w-5" strokeWidth={1.75} />} label="Hours" value={event.hours} />
-                <Detail icon={<MapPin className="h-5 w-5" strokeWidth={1.75} />} label="Desk" value={event.venue} />
-                <Detail
-                  icon={<MessageCircle className="h-5 w-5" strokeWidth={1.75} />}
-                  label="Desk WhatsApp"
-                  value={
-                    <a className="font-mono text-ink-accent hover:underline" href={whatsappLink(event.deskWhatsapp, "Salaam, I have a question about the maintenance program.")} target="_blank" rel="noreferrer">
-                      {whatsappDisplay(event.deskWhatsapp)}
-                    </a>
-                  }
-                />
-              </dl>
-              {state === "OPEN" ? <p className="border-t border-line pt-3 text-caption text-ink-muted">Registration closes {formatDay(event.registrationClosesOn)}.</p> : null}
-            </Card>
-          ) : (
-            <Card className="relative z-10 mx-3 -mt-12 flex flex-col gap-2 p-5 shadow-lg sm:mx-6">
-              <p className="text-small font-semibold text-ink">Lost your tracking code?</p>
-              <p className="text-small text-ink-secondary">Find your request with your university ID and the last 4 digits of your phone.</p>
-              <Link href="/find" className="text-small font-semibold text-ink-accent hover:underline">
-                Find my request
-              </Link>
-            </Card>
-          )}
+            <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-small text-ink-secondary">
+              <MessageCircle className="h-4 w-4 text-accent" strokeWidth={1.75} aria-hidden />
+              Questions? WhatsApp the desk
+              <a className="font-mono font-medium text-ink-accent hover:underline" href={whatsappLink(event.deskWhatsapp, "Salaam, I have a question about the maintenance program.")} target="_blank" rel="noreferrer">
+                {whatsappDisplay(event.deskWhatsapp)}
+              </a>
+              {state === "OPEN" ? <span className="text-ink-muted">· Registration closes {formatDay(event.registrationClosesOn)}</span> : null}
+            </p>
+          ) : null}
         </div>
       </div>
     </section>
-  );
-}
-
-function Detail({ icon, label, value }: { icon: React.ReactNode; label: string; value: React.ReactNode }) {
-  return (
-    <div className="flex flex-col gap-0.5">
-      <dt className="flex items-center gap-3 text-caption text-ink-muted">
-        <span className="text-accent" aria-hidden>
-          {icon}
-        </span>
-        {label}
-      </dt>
-      <dd className="pl-8 font-medium text-ink">{value}</dd>
-    </div>
   );
 }

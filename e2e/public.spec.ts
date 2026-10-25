@@ -53,4 +53,16 @@ test.describe("public website", () => {
       expect(serious.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`)).toEqual([]);
     });
   }
+
+  // Text sits over tinted photos on these pages; check contrast where the photo and text overlap most.
+  for (const width of [390, 1024]) {
+    for (const path of ["/", "/about"]) {
+      test(`photo pages keep AA contrast at ${width}px on ${path}`, async ({ page }) => {
+        await page.setViewportSize({ width, height: 900 });
+        await page.goto(path);
+        const results = await new AxeBuilder({ page }).withRules(["color-contrast"]).analyze();
+        expect(results.violations.flatMap((v) => v.nodes.map((n) => n.target.join(" ")))).toEqual([]);
+      });
+    }
+  }
 });
