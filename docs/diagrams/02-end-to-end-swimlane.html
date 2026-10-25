@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Who does what, from registration to report · SIMADRepair</title>
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --paper: #FBFCFB; --ink: #131815; --muted: #515852; --soft: #646B65; --accent: #0F7A45; --rule: #E4E8E5;
+      --font-sans: 'Hanken Grotesk', system-ui, sans-serif; --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+    }
+    body { font-family: var(--font-sans); background: var(--paper); color: var(--ink);
+      min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 28px 32px; }
+    .frame { max-width: 1280px; width: 100%; }
+    .head { display: flex; align-items: baseline; justify-content: space-between; gap: 24px; margin-bottom: 10px; }
+    .eyebrow { font-family: var(--font-mono); font-size: 12px; font-weight: 500; letter-spacing: 0.16em;
+      text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+    h1 { font-size: 40px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; }
+    .lede { font-size: 17px; color: var(--muted); margin-top: 6px; max-width: 900px; }
+    .brand { font-family: var(--font-mono); font-size: 12px; color: var(--soft); white-space: nowrap; }
+    .diagram-container { width: 100%; overflow-x: auto; }
+    svg { width: 100%; min-width: 1280px; display: block; }
+    .foot { font-size: 14px; color: var(--soft); margin-top: 6px; }
+    @media print { .diagram-container { overflow-x: visible; } svg { min-width: 0; } }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <div class="head">
+      <div>
+        <p class="eyebrow">02 · The week, end to end</p>
+        <h1>Who does what, from registration to report</h1>
+        <p class="lede">Every handoff between the student, the desk, the technician and the admin happens in the platform, so nothing is lost between people.</p>
+      </div>
+      <p class="brand">SIMADRepair · Faculty of Computing</p>
+    </div>
+    <div class="diagram-container">
+      <svg viewBox="0 0 1280 696" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="end-to-end-swimlane-title end-to-end-swimlane-desc">
+        <title id="end-to-end-swimlane-title">Who does what, from registration to report</title>
+        <desc id="end-to-end-swimlane-desc">Swimlane of the Maintenance Week flow: the student registers, the lead desk checks the device in, a technician claims and repairs it, the desk hands it over against the university ID card, the student rates the service and the admin gets the event report.</desc>
+        <defs>
+  <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#515852"/></marker>
+  <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#0F7A45"/></marker>
+  <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2D6FB8"/></marker>
+  <marker id="arrow-start" markerWidth="8" markerHeight="6" refX="1" refY="3" orient="auto"><polygon points="8 0, 0 3, 8 6" fill="#515852"/></marker>
+</defs>
+        <rect width="100%" height="100%" fill="#FBFCFB"/>
+<rect x="40" y="24" width="1200" height="148" fill="#F5F7F5"/>
+<line x1="40" y1="24" x2="1240" y2="24" stroke="#E4E8E5" stroke-width="1"/>
+<text x="56" y="103.0" fill="#131815" font-size="14" font-weight="600" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="start">Student</text>
+<line x1="40" y1="172" x2="1240" y2="172" stroke="#E4E8E5" stroke-width="1"/>
+<text x="56" y="251.0" fill="#131815" font-size="14" font-weight="600" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="start">Lead desk</text>
+<rect x="40" y="320" width="1200" height="148" fill="#F5F7F5"/>
+<line x1="40" y1="320" x2="1240" y2="320" stroke="#E4E8E5" stroke-width="1"/>
+<text x="56" y="399.0" fill="#131815" font-size="14" font-weight="600" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="start">Technician</text>
+<line x1="40" y1="468" x2="1240" y2="468" stroke="#E4E8E5" stroke-width="1"/>
+<text x="56" y="547.0" fill="#131815" font-size="14" font-weight="600" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="start">Admin</text>
+<line x1="40" y1="616" x2="1240" y2="616" stroke="#E4E8E5" stroke-width="1"/>
+<line x1="160" y1="24" x2="160" y2="616" stroke="#E4E8E5" stroke-width="1"/>
+<path d="M296,90 H304 Q312,90 312,98 V230 Q312,238 320,238 H328" fill="none" stroke="#515852" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M448,238 H456 Q464,238 464,246 V378 Q464,386 472,386 H480" fill="none" stroke="#515852" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M600,386 H632" fill="none" stroke="#515852" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M752,386 H760 Q768,386 768,378 V246 Q768,238 776,238 H784" fill="none" stroke="#0F7A45" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+<path d="M904,238 H912 Q920,238 920,230 V98 Q920,90 928,90 H936" fill="none" stroke="#515852" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M1056,90 H1064 Q1072,90 1072,98 V526 Q1072,534 1080,534 H1088" fill="none" stroke="#515852" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+<rect x="176" y="44" width="120" height="92" rx="6" fill="#FBFCFB"/>
+<rect x="176" y="44" width="120" height="92" rx="6" fill="#FFFFFF" stroke="#131815" stroke-width="1"/>
+<rect x="184" y="52" width="16" height="12" rx="2" fill="none" stroke="#515852" stroke-opacity="0.5" stroke-width="0.8"/>
+<text x="192.0" y="61" fill="#646B65" font-size="8" font-weight="500" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">1</text>
+<text x="236.0" y="80.0" fill="#131815" font-size="16" font-weight="600" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="middle">Register</text>
+<text x="236.0" y="100.0" fill="#131815" font-size="16" font-weight="600" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="middle">online</text>
+<text x="236.0" y="122.0" fill="#646B65" font-size="12" font-weight="400" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle">code sent</text>
+<rect x="328" y="192" width="120" height="92" rx="6" fill="#FBFCFB"/>
+<rect x="328" y="192" width="120" height="92" rx="6" fill="#FFFFFF" stroke="#131815" stroke-width="1"/>
+<rect x="336" y="200" width="16" height="12" rx="2" fill="none" stroke="#515852" stroke-opacity="0.5" stroke-width="0.8"/>
+<text x="344.0" y="209" fill="#646B65" font-size="8" font-weight="500" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">2</text>
+<text x="388.0" y="228.0" fill="#131815" font-size="16" font-weight="600" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="middle">Drop-off &amp;</text>
+<text x="388.0" y="248.0" fill="#131815" font-size="16" font-weight="600" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="middle">check-in</text>
+<text x="388.0" y="270.0" fill="#646B65" font-size="12" font-weight="400" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle">tag #147</text>
+<rect x="480" y="340" width="120" height="92" rx="6" fill="#FBFCFB"/>
+<rect x="480" y="340" width="120" height="92" rx="6" fill="#FFFFFF" stroke="#131815" stroke-width="1"/>
+<rect x="488" y="348" width="16" height="12" rx="2" fill="none" stroke="#515852" stroke-opacity="0.5" stroke-width="0.8"/>
+<text x="496.0" y="357" fill="#646B65" font-size="8" font-weight="500" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">3</text>
+<text x="540.0" y="376.0" fill="#131815" font-size="16" font-weight="600" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="middle">Claim &amp;</text>
+<text x="540.0" y="396.0" fill="#131815" font-size="16" font-weight="600" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="middle">repair</text>
+<text x="540.0" y="418.0" fill="#646B65" font-size="12" font-weight="400" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle">max 3 each</text>
+<rect x="632" y="340" width="120" height="92" rx="6" fill="#FBFCFB"/>
+<rect x="632" y="340" width="120" height="92" rx="6" fill="#FFFFFF" stroke="#131815" stroke-width="1"/>
+<rect x="640" y="348" width="16" height="12" rx="2" fill="none" stroke="#515852" stroke-opacity="0.5" stroke-width="0.8"/>
+<text x="648.0" y="357" fill="#646B65" font-size="8" font-weight="500" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">4</text>
+<text x="692.0" y="376.0" fill="#131815" font-size="16" font-weight="600" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="middle">Ready +</text>
+<text x="692.0" y="396.0" fill="#131815" font-size="16" font-weight="600" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="middle">WhatsApp</text>
+<text x="692.0" y="418.0" fill="#646B65" font-size="12" font-weight="400" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle">tests passed</text>
+<rect x="784" y="192" width="120" height="92" rx="6" fill="#FBFCFB"/>
+<rect x="784" y="192" width="120" height="92" rx="6" fill="#E7F2EC" stroke="#0F7A45" stroke-width="1.2"/>
+<rect x="792" y="200" width="16" height="12" rx="2" fill="none" stroke="#0F7A45" stroke-opacity="0.5" stroke-width="0.8"/>
+<text x="800.0" y="209" fill="#0F7A45" font-size="8" font-weight="500" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">5</text>
+<text x="844.0" y="228.0" fill="#131815" font-size="16" font-weight="600" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="middle">Hand over</text>
+<text x="844.0" y="248.0" fill="#131815" font-size="16" font-weight="600" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="middle">by ID card</text>
+<text x="844.0" y="270.0" fill="#646B65" font-size="12" font-weight="400" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle">who collected</text>
+<rect x="936" y="44" width="120" height="92" rx="6" fill="#FBFCFB"/>
+<rect x="936" y="44" width="120" height="92" rx="6" fill="#FFFFFF" stroke="#131815" stroke-width="1"/>
+<rect x="944" y="52" width="16" height="12" rx="2" fill="none" stroke="#515852" stroke-opacity="0.5" stroke-width="0.8"/>
+<text x="952.0" y="61" fill="#646B65" font-size="8" font-weight="500" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">6</text>
+<text x="996.0" y="80.0" fill="#131815" font-size="16" font-weight="600" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="middle">Rate the</text>
+<text x="996.0" y="100.0" fill="#131815" font-size="16" font-weight="600" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="middle">service</text>
+<text x="996.0" y="122.0" fill="#646B65" font-size="12" font-weight="400" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle">1–5 stars</text>
+<rect x="1088" y="488" width="120" height="92" rx="6" fill="#FBFCFB"/>
+<rect x="1088" y="488" width="120" height="92" rx="6" fill="#FFFFFF" stroke="#131815" stroke-width="1"/>
+<rect x="1096" y="496" width="16" height="12" rx="2" fill="none" stroke="#515852" stroke-opacity="0.5" stroke-width="0.8"/>
+<text x="1104.0" y="505" fill="#646B65" font-size="8" font-weight="500" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">7</text>
+<text x="1148.0" y="524.0" fill="#131815" font-size="16" font-weight="600" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="middle">Event</text>
+<text x="1148.0" y="544.0" fill="#131815" font-size="16" font-weight="600" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="middle">report</text>
+<text x="1148.0" y="566.0" fill="#646B65" font-size="12" font-weight="400" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle">PDF · CSV</text>
+<rect x="460" y="438" width="312" height="22" rx="2" fill="none" stroke="#515852" stroke-opacity="0.6" stroke-dasharray="3,3"/>
+<text x="616" y="453" fill="#646B65" font-size="11" font-weight="400" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle">may pause: waiting for parts or the student</text>
+<line x1="40" y1="640" x2="1240" y2="640" stroke="#E4E8E5" stroke-width="1"/>
+<text x="40" y="660" fill="#646B65" font-size="8" font-weight="500" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="start" letter-spacing="0.14em">LEGEND</text>
+<rect x="120" y="650" width="24" height="14" rx="3" fill="#FFFFFF" stroke="#131815" stroke-width="1"/>
+<text x="154" y="660" fill="#515852" font-size="11" font-weight="400" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="start">Step</text>
+<rect x="350" y="650" width="24" height="14" rx="3" fill="#E7F2EC" stroke="#0F7A45" stroke-width="1.2"/>
+<text x="384" y="660" fill="#515852" font-size="11" font-weight="400" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="start">Verified handover</text>
+<line x1="580" y1="657" x2="604" y2="657" stroke="#515852" stroke-width="1.2" marker-end="url(#arrow)"/>
+<text x="614" y="660" fill="#515852" font-size="11" font-weight="400" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="start">Next step</text>
+<line x1="810" y1="657" x2="834" y2="657" stroke="#515852" stroke-width="1" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+<text x="844" y="660" fill="#515852" font-size="11" font-weight="400" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="start">Rolls up into the report</text>
+      </svg>
+    </div>
+    
+  </div>
+</body>
+</html>

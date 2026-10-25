@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Every repair ends with a clear outcome · SIMADRepair</title>
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --paper: #FBFCFB; --ink: #131815; --muted: #515852; --soft: #646B65; --accent: #0F7A45; --rule: #E4E8E5;
+      --font-sans: 'Hanken Grotesk', system-ui, sans-serif; --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+    }
+    body { font-family: var(--font-sans); background: var(--paper); color: var(--ink);
+      min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 28px 32px; }
+    .frame { max-width: 1280px; width: 100%; }
+    .head { display: flex; align-items: baseline; justify-content: space-between; gap: 24px; margin-bottom: 10px; }
+    .eyebrow { font-family: var(--font-mono); font-size: 12px; font-weight: 500; letter-spacing: 0.16em;
+      text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+    h1 { font-size: 40px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; }
+    .lede { font-size: 17px; color: var(--muted); margin-top: 6px; max-width: 900px; }
+    .brand { font-family: var(--font-mono); font-size: 12px; color: var(--soft); white-space: nowrap; }
+    .diagram-container { width: 100%; overflow-x: auto; }
+    svg { width: 100%; min-width: 1280px; display: block; }
+    .foot { font-size: 14px; color: var(--soft); margin-top: 6px; }
+    @media print { .diagram-container { overflow-x: visible; } svg { min-width: 0; } }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <div class="head">
+      <div>
+        <p class="eyebrow">03 · One repair, start to finish</p>
+        <h1>Every repair ends with a clear outcome</h1>
+        <p class="lede">One status system replaces two that were kept in sync by hand. Waits, cancellations and “cannot be repaired” are now visible to the student instead of hiding behind “in repair”.</p>
+      </div>
+      <p class="brand">SIMADRepair · Faculty of Computing</p>
+    </div>
+    <div class="diagram-container">
+      <svg viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ticket-lifecycle-title ticket-lifecycle-desc">
+        <title id="ticket-lifecycle-title">Every repair ends with a clear outcome</title>
+        <desc id="ticket-lifecycle-desc">State machine of one repair ticket: submitted, received, in repair, ready for pickup and collected, with waiting, cancelled and cannot-be-repaired side paths.</desc>
+        <defs>
+  <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#515852"/></marker>
+  <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#0F7A45"/></marker>
+  <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2D6FB8"/></marker>
+  <marker id="arrow-start" markerWidth="8" markerHeight="6" refX="1" refY="3" orient="auto"><polygon points="8 0, 0 3, 8 6" fill="#515852"/></marker>
+</defs>
+        <rect width="100%" height="100%" fill="#FBFCFB"/>
+<circle cx="48" cy="236" r="6" fill="#131815"/>
+<path d="M54,236 H80" fill="none" stroke="#515852" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M272,236 H384" fill="none" stroke="#515852" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M576,236 H688" fill="none" stroke="#515852" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M880,236 H992" fill="none" stroke="#515852" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="286.0" y="212" width="84" height="16" rx="2" fill="#FBFCFB"/><text x="328" y="224" fill="#646B65" font-size="12" font-weight="500" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">CHECKED IN</text>
+<rect x="596.0" y="212" width="72" height="16" rx="2" fill="#FBFCFB"/><text x="632" y="224" fill="#646B65" font-size="12" font-weight="500" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">ASSIGNED</text>
+<rect x="886.0" y="212" width="100" height="16" rx="2" fill="#FBFCFB"/><text x="936" y="224" fill="#646B65" font-size="12" font-weight="500" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">MARKED READY</text>
+<path d="M176,200 V112" fill="none" stroke="#515852" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+<rect x="183.92000000000002" y="148.0" width="92" height="16" rx="2" fill="#FBFCFB"/><text x="229.92000000000002" y="160.0" fill="#646B65" font-size="12" font-weight="500" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">NOT DROPPED</text>
+<path d="M752,272 V420" fill="none" stroke="#515852" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+<path d="M816,420 V272" fill="none" stroke="#515852" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+<rect x="680.96" y="338.0" width="64" height="16" rx="2" fill="#FBFCFB"/><text x="712.96" y="350.0" fill="#646B65" font-size="12" font-weight="500" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">BLOCKED</text>
+<rect x="823.04" y="338.0" width="64" height="16" rx="2" fill="#FBFCFB"/><text x="855.04" y="350.0" fill="#646B65" font-size="12" font-weight="500" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">RESUMED</text>
+<path d="M688,256 H640 Q632,256 632,264 V448 Q632,456 624,456 H576" fill="none" stroke="#515852" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="516.64" y="338.0" width="108" height="16" rx="2" fill="#FBFCFB"/><text x="570.64" y="350.0" fill="#646B65" font-size="12" font-weight="500" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">LEAD CONFIRMS</text>
+<path d="M1088,272 V420" fill="none" stroke="#0F7A45" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+<rect x="972.6400000000001" y="338.0" width="108" height="16" rx="2" fill="#FBFCFB"/><text x="1026.64" y="350.0" fill="#0F7A45" font-size="12" font-weight="500" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">ID CARD CHECK</text>
+<path d="M480,492 V552 Q480,560 488,560 H1080 Q1088,560 1088,552 V492" fill="none" stroke="#515852" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="748.0" y="536" width="72" height="16" rx="2" fill="#FBFCFB"/><text x="784" y="548" fill="#646B65" font-size="12" font-weight="500" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">RETURNED</text>
+<circle cx="1216" cy="456" r="8" fill="none" stroke="#131815" stroke-width="1.2"/><circle cx="1216" cy="456" r="5" fill="#131815"/>
+<circle cx="304" cy="76" r="8" fill="none" stroke="#131815" stroke-width="1.2"/><circle cx="304" cy="76" r="5" fill="#131815"/>
+<line x1="1184" y1="456" x2="1208" y2="456" stroke="#515852" stroke-width="1.2"/>
+<line x1="272" y1="76" x2="296" y2="76" stroke="#515852" stroke-width="1.2"/>
+<rect x="80" y="40" width="192" height="72" rx="8" fill="#FBFCFB"/>
+<rect x="80" y="40" width="192" height="72" rx="8" fill="rgba(19,24,21,0.02)" stroke="rgba(19,24,21,0.30)" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="176.0" y="72.0" fill="#131815" font-size="16" font-weight="600" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="middle">Cancelled</text>
+<text x="176.0" y="94.0" fill="#646B65" font-size="12" font-weight="400" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle">by the student</text>
+<rect x="80" y="200" width="192" height="72" rx="8" fill="#FBFCFB"/>
+<rect x="80" y="200" width="192" height="72" rx="8" fill="#FFFFFF" stroke="#131815" stroke-width="1"/>
+<text x="176.0" y="232.0" fill="#131815" font-size="16" font-weight="600" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="middle">Submitted</text>
+<text x="176.0" y="254.0" fill="#646B65" font-size="12" font-weight="400" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle">code sent</text>
+<rect x="384" y="200" width="192" height="72" rx="8" fill="#FBFCFB"/>
+<rect x="384" y="200" width="192" height="72" rx="8" fill="#FFFFFF" stroke="#131815" stroke-width="1"/>
+<text x="480.0" y="232.0" fill="#131815" font-size="16" font-weight="600" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="middle">Received</text>
+<text x="480.0" y="254.0" fill="#646B65" font-size="12" font-weight="400" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle">tag #147 on sticker</text>
+<rect x="688" y="200" width="192" height="72" rx="8" fill="#FBFCFB"/>
+<rect x="688" y="200" width="192" height="72" rx="8" fill="#FFFFFF" stroke="#131815" stroke-width="1"/>
+<text x="784.0" y="232.0" fill="#131815" font-size="16" font-weight="600" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="middle">In repair</text>
+<text x="784.0" y="254.0" fill="#646B65" font-size="12" font-weight="400" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle">technician working</text>
+<rect x="992" y="200" width="192" height="72" rx="8" fill="#FBFCFB"/>
+<rect x="992" y="200" width="192" height="72" rx="8" fill="#FFFFFF" stroke="#131815" stroke-width="1"/>
+<text x="1088.0" y="232.0" fill="#131815" font-size="16" font-weight="600" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="middle">Ready for pickup</text>
+<text x="1088.0" y="254.0" fill="#646B65" font-size="12" font-weight="400" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle">WhatsApp sent</text>
+<rect x="688" y="420" width="192" height="72" rx="8" fill="#FBFCFB"/>
+<rect x="688" y="420" width="192" height="72" rx="8" fill="rgba(19,24,21,0.02)" stroke="rgba(19,24,21,0.30)" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="784.0" y="452.0" fill="#131815" font-size="16" font-weight="600" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="middle">Waiting</text>
+<text x="784.0" y="474.0" fill="#646B65" font-size="12" font-weight="400" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle">for parts or student</text>
+<rect x="384" y="420" width="192" height="72" rx="8" fill="#FBFCFB"/>
+<rect x="384" y="420" width="192" height="72" rx="8" fill="#FFFFFF" stroke="#131815" stroke-width="1"/>
+<text x="480.0" y="452.0" fill="#131815" font-size="16" font-weight="600" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="middle">Cannot be repaired</text>
+<text x="480.0" y="474.0" fill="#646B65" font-size="12" font-weight="400" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle">proposed, confirmed</text>
+<rect x="992" y="420" width="192" height="72" rx="8" fill="#FBFCFB"/>
+<rect x="992" y="420" width="192" height="72" rx="8" fill="#E7F2EC" stroke="#0F7A45" stroke-width="1.2"/>
+<text x="1088.0" y="452.0" fill="#131815" font-size="16" font-weight="600" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="middle">Collected</text>
+<text x="1088.0" y="474.0" fill="#646B65" font-size="12" font-weight="400" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle">collector recorded</text>
+<line x1="40" y1="668" x2="1240" y2="668" stroke="#E4E8E5" stroke-width="1"/>
+<text x="40" y="688" fill="#646B65" font-size="8" font-weight="500" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="start" letter-spacing="0.14em">LEGEND</text>
+<rect x="120" y="678" width="24" height="14" rx="3" fill="#FFFFFF" stroke="#131815" stroke-width="1"/>
+<text x="154" y="688" fill="#515852" font-size="11" font-weight="400" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="start">Repair status</text>
+<rect x="330" y="678" width="24" height="14" rx="3" fill="rgba(19,24,21,0.02)" stroke="rgba(19,24,21,0.30)" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="364" y="688" fill="#515852" font-size="11" font-weight="400" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="start">Waiting or cancelled</text>
+<rect x="540" y="678" width="24" height="14" rx="3" fill="#E7F2EC" stroke="#0F7A45" stroke-width="1.2"/>
+<text x="574" y="688" fill="#515852" font-size="11" font-weight="400" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="start">Happy ending</text>
+<line x1="750" y1="685" x2="774" y2="685" stroke="#515852" stroke-width="1" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+<text x="784" y="688" fill="#515852" font-size="11" font-weight="400" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="start">Side path</text>
+<circle cx="972" cy="685" r="5" fill="#131815"/>
+<text x="994" y="688" fill="#515852" font-size="11" font-weight="400" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="start">Start</text>
+      </svg>
+    </div>
+    
+  </div>
+</body>
+</html>

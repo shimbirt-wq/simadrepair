@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>One event, from setup to report · SIMADRepair</title>
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --paper: #FBFCFB; --ink: #131815; --muted: #515852; --soft: #646B65; --accent: #0F7A45; --rule: #E4E8E5;
+      --font-sans: 'Hanken Grotesk', system-ui, sans-serif; --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+    }
+    body { font-family: var(--font-sans); background: var(--paper); color: var(--ink);
+      min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 28px 32px; }
+    .frame { max-width: 1280px; width: 100%; }
+    .head { display: flex; align-items: baseline; justify-content: space-between; gap: 24px; margin-bottom: 10px; }
+    .eyebrow { font-family: var(--font-mono); font-size: 12px; font-weight: 500; letter-spacing: 0.16em;
+      text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+    h1 { font-size: 40px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; }
+    .lede { font-size: 17px; color: var(--muted); margin-top: 6px; max-width: 900px; }
+    .brand { font-family: var(--font-mono); font-size: 12px; color: var(--soft); white-space: nowrap; }
+    .diagram-container { width: 100%; overflow-x: auto; }
+    svg { width: 100%; min-width: 1280px; display: block; }
+    .foot { font-size: 14px; color: var(--soft); margin-top: 6px; }
+    @media print { .diagram-container { overflow-x: visible; } svg { min-width: 0; } }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <div class="head">
+      <div>
+        <p class="eyebrow">07 · Admin</p>
+        <h1>One event, from setup to report</h1>
+        <p class="lede">The admin sets the week up once; registration, volunteer accounts, the report and data clean-up all follow the event’s dates automatically.</p>
+      </div>
+      <p class="brand">SIMADRepair · Faculty of Computing</p>
+    </div>
+    <div class="diagram-container">
+      <svg viewBox="0 0 1280 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="admin-event-cycle-title admin-event-cycle-desc">
+        <title id="admin-event-cycle-title">One event, from setup to report</title>
+        <desc id="admin-event-cycle-desc">Timeline of one Maintenance Week for the admin: create the event and add volunteers before, open registration, watch the live overview during the week, close out on the last day, publish the report after, and erase personal data twelve months later.</desc>
+        <defs>
+  <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#515852"/></marker>
+  <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#0F7A45"/></marker>
+  <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2D6FB8"/></marker>
+  <marker id="arrow-start" markerWidth="8" markerHeight="6" refX="1" refY="3" orient="auto"><polygon points="8 0, 0 3, 8 6" fill="#515852"/></marker>
+</defs>
+        <rect width="100%" height="100%" fill="#FBFCFB"/>
+<g transform="translate(0,-88)">
+<rect x="520" y="120" width="300" height="336" rx="8" fill="#F5F7F5" stroke="#E4E8E5" stroke-width="1"/>
+<text x="670" y="144" fill="#0F7A45" font-size="11" font-weight="500" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.14em">MAINTENANCE WEEK</text>
+<line x1="64" y1="288" x2="1000" y2="288" stroke="#131815" stroke-width="1"/>
+<line x1="1028" y1="288" x2="1216" y2="288" stroke="#131815" stroke-width="1"/>
+<line x1="1004" y1="296" x2="1012" y2="280" stroke="#131815" stroke-width="1"/>
+<line x1="1016" y1="296" x2="1024" y2="280" stroke="#131815" stroke-width="1"/>
+<text x="290" y="488" fill="#646B65" font-size="11" font-weight="500" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.1em">WEEKS BEFORE</text>
+<text x="670" y="488" fill="#646B65" font-size="11" font-weight="500" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.1em">MON – FRI</text>
+<text x="910" y="488" fill="#646B65" font-size="11" font-weight="500" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.1em">WEEK AFTER</text>
+<text x="1120" y="488" fill="#646B65" font-size="11" font-weight="500" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.1em">12 MONTHS LATER</text>
+<line x1="140" y1="288" x2="140" y2="236" stroke="#E4E8E5" stroke-width="1"/>
+<text x="140" y="200" fill="#131815" font-size="16" font-weight="600" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="middle">Create the event</text>
+<text x="140" y="220" fill="#646B65" font-size="12" font-weight="400" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle">dates · venue · hours</text>
+<line x1="380" y1="288" x2="380" y2="236" stroke="#E4E8E5" stroke-width="1"/>
+<text x="380" y="200" fill="#131815" font-size="16" font-weight="700" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="middle">Registration opens</text>
+<text x="380" y="220" fill="#646B65" font-size="12" font-weight="400" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle">form goes live</text>
+<line x1="670" y1="288" x2="670" y2="236" stroke="#E4E8E5" stroke-width="1"/>
+<text x="670" y="200" fill="#131815" font-size="16" font-weight="600" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="middle">Live overview</text>
+<text x="670" y="220" fill="#646B65" font-size="12" font-weight="400" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle">today · stuck · load</text>
+<line x1="910" y1="288" x2="910" y2="236" stroke="#E4E8E5" stroke-width="1"/>
+<text x="910" y="200" fill="#131815" font-size="16" font-weight="700" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="middle">Event report</text>
+<text x="910" y="220" fill="#646B65" font-size="12" font-weight="400" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle">PDF · CSV · ratings</text>
+<line x1="260" y1="288" x2="260" y2="340" stroke="#E4E8E5" stroke-width="1"/>
+<text x="260" y="368" fill="#131815" font-size="16" font-weight="600" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="middle">Add volunteers</text>
+<text x="260" y="388" fill="#646B65" font-size="12" font-weight="400" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle">paste a list · skills</text>
+<line x1="800" y1="288" x2="800" y2="340" stroke="#E4E8E5" stroke-width="1"/>
+<text x="800" y="368" fill="#131815" font-size="16" font-weight="600" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="middle">Event ends</text>
+<text x="800" y="388" fill="#646B65" font-size="12" font-weight="400" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle">bulk close · accounts off</text>
+<line x1="1120" y1="288" x2="1120" y2="340" stroke="#E4E8E5" stroke-width="1"/>
+<text x="1120" y="368" fill="#131815" font-size="16" font-weight="600" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="middle">Personal data erased</text>
+<text x="1120" y="388" fill="#646B65" font-size="12" font-weight="400" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle">stats are kept</text>
+<circle cx="140" cy="288" r="4" fill="#131815"/>
+<circle cx="380" cy="288" r="6" fill="#0F7A45"/>
+<circle cx="670" cy="288" r="4" fill="#131815"/>
+<circle cx="910" cy="288" r="6" fill="#0F7A45"/>
+<circle cx="260" cy="288" r="4" fill="#131815"/>
+<circle cx="800" cy="288" r="4" fill="#131815"/>
+<circle cx="1120" cy="288" r="4" fill="#131815"/>
+<line x1="40" y1="544" x2="1240" y2="544" stroke="#E4E8E5" stroke-width="1"/>
+<text x="40" y="564" fill="#646B65" font-size="8" font-weight="500" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="start" letter-spacing="0.14em">LEGEND</text>
+<circle cx="132" cy="561" r="5" fill="#131815"/>
+<text x="154" y="564" fill="#515852" font-size="11" font-weight="400" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="start">Admin action</text>
+<circle cx="352" cy="561" r="5" fill="#0F7A45"/>
+<text x="374" y="564" fill="#515852" font-size="11" font-weight="400" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="start">Milestone</text>
+<rect x="560" y="554" width="24" height="14" rx="2" fill="#F5F7F5" stroke="#E4E8E5"/>
+<text x="594" y="564" fill="#515852" font-size="11" font-weight="400" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="start">The event week</text>
+</g>
+      </svg>
+    </div>
+    
+  </div>
+</body>
+</html>

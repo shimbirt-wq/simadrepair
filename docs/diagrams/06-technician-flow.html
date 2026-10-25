@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>From claim to ready, on a phone · SIMADRepair</title>
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --paper: #FBFCFB; --ink: #131815; --muted: #515852; --soft: #646B65; --accent: #0F7A45; --rule: #E4E8E5;
+      --font-sans: 'Hanken Grotesk', system-ui, sans-serif; --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+    }
+    body { font-family: var(--font-sans); background: var(--paper); color: var(--ink);
+      min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 28px 32px; }
+    .frame { max-width: 1280px; width: 100%; }
+    .head { display: flex; align-items: baseline; justify-content: space-between; gap: 24px; margin-bottom: 10px; }
+    .eyebrow { font-family: var(--font-mono); font-size: 12px; font-weight: 500; letter-spacing: 0.16em;
+      text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+    h1 { font-size: 40px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; }
+    .lede { font-size: 17px; color: var(--muted); margin-top: 6px; max-width: 900px; }
+    .brand { font-family: var(--font-mono); font-size: 12px; color: var(--soft); white-space: nowrap; }
+    .diagram-container { width: 100%; overflow-x: auto; }
+    svg { width: 100%; min-width: 1280px; display: block; }
+    .foot { font-size: 14px; color: var(--soft); margin-top: 6px; }
+    @media print { .diagram-container { overflow-x: visible; } svg { min-width: 0; } }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <div class="head">
+      <div>
+        <p class="eyebrow">06 · Volunteer technician</p>
+        <h1>From claim to ready, on a phone</h1>
+        <p class="lede">Technicians pick work themselves, see everything the student and the desk recorded, and cannot mark a device ready without recording the fix and passing the tests.</p>
+      </div>
+      <p class="brand">SIMADRepair · Faculty of Computing</p>
+    </div>
+    <div class="diagram-container">
+      <svg viewBox="0 0 1280 456" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="technician-flow-title technician-flow-desc">
+        <title id="technician-flow-title">From claim to ready, on a phone</title>
+        <desc id="technician-flow-desc">Flowchart for a volunteer technician: claim a repair, read the intake, start, branch to waiting or cannot-be-fixed when needed, record the fault, actions and tests, then mark ready and send WhatsApp.</desc>
+        <defs>
+  <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#515852"/></marker>
+  <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#0F7A45"/></marker>
+  <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2D6FB8"/></marker>
+  <marker id="arrow-start" markerWidth="8" markerHeight="6" refX="1" refY="3" orient="auto"><polygon points="8 0, 0 3, 8 6" fill="#515852"/></marker>
+</defs>
+        <rect width="100%" height="100%" fill="#FBFCFB"/>
+<g transform="translate(0,-120)">
+<path d="M184,200 H216" fill="none" stroke="#515852" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M376,200 H408" fill="none" stroke="#515852" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M552,200 H584" fill="none" stroke="#515852" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M696,200 H728" fill="none" stroke="#515852" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="700.0" y="176" width="24" height="16" rx="2" fill="#FBFCFB"/><text x="712" y="188" fill="#646B65" font-size="12" font-weight="500" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">NO</text>
+<path d="M840,200 H872" fill="none" stroke="#515852" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="840.0" y="176" width="32" height="16" rx="2" fill="#FBFCFB"/><text x="856" y="188" fill="#646B65" font-size="12" font-weight="500" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">YES</text>
+<path d="M1048,200 H1080" fill="none" stroke="#0F7A45" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+<path d="M640,248 V360" fill="none" stroke="#515852" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+<rect x="648.16" y="296.0" width="32" height="16" rx="2" fill="#FBFCFB"/><text x="664.16" y="308.0" fill="#646B65" font-size="12" font-weight="500" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">YES</text>
+<path d="M560,400 H488 Q480,400 480,392 V236" fill="none" stroke="#515852" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+<rect x="408.96" y="310.0" width="64" height="16" rx="2" fill="#FBFCFB"/><text x="440.96" y="322.0" fill="#646B65" font-size="12" font-weight="500" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">RESUMED</text>
+<path d="M784,248 V360" fill="none" stroke="#515852" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="792.44" y="296.0" width="24" height="16" rx="2" fill="#FBFCFB"/><text x="804.44" y="308.0" fill="#646B65" font-size="12" font-weight="500" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">NO</text>
+<rect x="40" y="168" width="144" height="64" rx="32" fill="#FBFCFB"/>
+<rect x="40" y="168" width="144" height="64" rx="32" fill="#FFFFFF" stroke="#131815" stroke-width="1"/>
+<text x="112.0" y="196.0" fill="#131815" font-size="16" font-weight="600" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="middle">Claim a repair</text>
+<text x="112.0" y="218.0" fill="#646B65" font-size="12" font-weight="400" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle">max 3 at once</text>
+<rect x="216" y="164" width="160" height="72" rx="6" fill="#FBFCFB"/>
+<rect x="216" y="164" width="160" height="72" rx="6" fill="#FFFFFF" stroke="#131815" stroke-width="1"/>
+<text x="296.0" y="196.0" fill="#131815" font-size="16" font-weight="600" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="middle">Read the intake</text>
+<text x="296.0" y="218.0" fill="#646B65" font-size="12" font-weight="400" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle">specs · photos</text>
+<rect x="408" y="164" width="144" height="72" rx="6" fill="#FBFCFB"/>
+<rect x="408" y="164" width="144" height="72" rx="6" fill="#FFFFFF" stroke="#131815" stroke-width="1"/>
+<text x="480.0" y="196.0" fill="#131815" font-size="16" font-weight="600" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="middle">Start repair</text>
+<text x="480.0" y="218.0" fill="#646B65" font-size="12" font-weight="400" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle">one tap</text>
+<polygon points="640,152 696,200 640,248 584,200" fill="#FBFCFB"/><polygon points="640,152 696,200 640,248 584,200" fill="#FFFFFF" stroke="#131815" stroke-width="1"/><text x="640" y="206" fill="#131815" font-size="16" font-weight="600" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="middle">Blocked?</text>
+<polygon points="784,152 840,200 784,248 728,200" fill="#FBFCFB"/><polygon points="784,152 840,200 784,248 728,200" fill="#FFFFFF" stroke="#131815" stroke-width="1"/><text x="784" y="206" fill="#131815" font-size="16" font-weight="600" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="middle">Fixable?</text>
+<rect x="872" y="156" width="176" height="88" rx="6" fill="#FBFCFB"/>
+<rect x="872" y="156" width="176" height="88" rx="6" fill="#E7F2EC" stroke="#0F7A45" stroke-width="1.2"/>
+<text x="960.0" y="196.0" fill="#131815" font-size="16" font-weight="600" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="middle">Record the fix</text>
+<text x="960.0" y="218.0" fill="#646B65" font-size="12" font-weight="400" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle">fault · actions</text>
+<text x="960.0" y="234.0" fill="#646B65" font-size="12" font-weight="400" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle">test checklist</text>
+<rect x="1080" y="168" width="160" height="64" rx="32" fill="#FBFCFB"/>
+<rect x="1080" y="168" width="160" height="64" rx="32" fill="#FFFFFF" stroke="#131815" stroke-width="1"/>
+<text x="1160.0" y="196.0" fill="#131815" font-size="16" font-weight="600" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="middle">Ready</text>
+<text x="1160.0" y="218.0" fill="#646B65" font-size="12" font-weight="400" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle">WhatsApp sent</text>
+<rect x="560" y="360" width="160" height="80" rx="6" fill="#FBFCFB"/>
+<rect x="560" y="360" width="160" height="80" rx="6" fill="rgba(19,24,21,0.02)" stroke="rgba(19,24,21,0.30)" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="640.0" y="396.0" fill="#131815" font-size="16" font-weight="600" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="middle">Waiting</text>
+<text x="640.0" y="418.0" fill="#646B65" font-size="12" font-weight="400" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle">for parts or</text>
+<text x="640.0" y="434.0" fill="#646B65" font-size="12" font-weight="400" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle">the student</text>
+<rect x="744" y="360" width="176" height="80" rx="6" fill="#FBFCFB"/>
+<rect x="744" y="360" width="176" height="80" rx="6" fill="#FFFFFF" stroke="#131815" stroke-width="1"/>
+<text x="832.0" y="396.0" fill="#131815" font-size="16" font-weight="600" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="middle">Can&#x27;t be fixed</text>
+<text x="832.0" y="418.0" fill="#646B65" font-size="12" font-weight="400" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle">lead confirms</text>
+<text x="960" y="300" fill="#515852" font-size="14" font-weight="400" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="start" font-style="italic">Every fix is recorded, so the</text>
+<text x="960" y="320" fill="#515852" font-size="14" font-weight="400" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="start" font-style="italic">report shows what broke</text>
+<text x="960" y="340" fill="#515852" font-size="14" font-weight="400" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="start" font-style="italic">and what worked.</text>
+<line x1="40" y1="520" x2="1240" y2="520" stroke="#E4E8E5" stroke-width="1"/>
+<text x="40" y="540" fill="#646B65" font-size="8" font-weight="500" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="start" letter-spacing="0.14em">LEGEND</text>
+<rect x="120" y="530" width="24" height="14" rx="3" fill="#FFFFFF" stroke="#131815" stroke-width="1"/>
+<text x="154" y="540" fill="#515852" font-size="11" font-weight="400" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="start">Step</text>
+<rect x="330" y="530" width="24" height="14" rx="3" fill="#E7F2EC" stroke="#0F7A45" stroke-width="1.2"/>
+<text x="364" y="540" fill="#515852" font-size="11" font-weight="400" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="start">Knowledge captured</text>
+<rect x="540" y="530" width="24" height="14" rx="3" fill="rgba(19,24,21,0.02)" stroke="rgba(19,24,21,0.30)" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="574" y="540" fill="#515852" font-size="11" font-weight="400" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="start">Paused</text>
+<line x1="750" y1="537" x2="774" y2="537" stroke="#515852" stroke-width="1" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+<text x="784" y="540" fill="#515852" font-size="11" font-weight="400" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="start">Wait and resume</text>
+<line x1="960" y1="537" x2="984" y2="537" stroke="#0F7A45" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+<text x="994" y="540" fill="#515852" font-size="11" font-weight="400" font-family="'Hanken Grotesk', system-ui, sans-serif" text-anchor="start">Done</text>
+</g>
+      </svg>
+    </div>
+    
+  </div>
+</body>
+</html>
