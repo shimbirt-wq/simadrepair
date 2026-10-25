@@ -1,5 +1,6 @@
 "use client";
 
+import { EVENT_LABELS, personNote } from "@/lib/tickets/event-labels";
 import { ArrowLeft, Eye, EyeOff, KeyRound } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState, useTransition, type ReactNode } from "react";
@@ -264,7 +265,7 @@ export function TechnicianTicketView({
 
       <Card className="p-5">
         <Eyebrow className="mb-4">History</Eyebrow>
-        <Timeline items={[...ticket.timeline].reverse().map((event) => ({ id: event.id, title: event.note ?? event.type, detail: event.actor ?? "Requester", at: event.at }))} />
+        <Timeline items={[...ticket.timeline].reverse().map((event) => ({ id: event.id, title: EVENT_LABELS[event.type], detail: [personNote(event.note), event.actor ?? "Requester"].filter(Boolean).join(" · "), at: event.at }))} />
       </Card>
     </div>
   );

@@ -53,7 +53,7 @@ async function ensureEvent(prisma: PrismaClient) {
 export async function createSubmittedTicket(prisma: PrismaClient, code = `SIM-TEST-${++sequence}`) {
   const event = await ensureEvent(prisma);
   const requester = await prisma.requester.create({
-    data: { requesterType: "STUDENT", fullName: "Amina Hassan", universityId: `CS${100000 + sequence}`, phone: "+252611234567" },
+    data: { requesterType: "STUDENT", fullName: "Amina Hassan", universityId: `CS${100000 + ++sequence}`, phone: "+252611234567" },
   });
   const device = await prisma.device.create({ data: { requesterId: requester.id, deviceType: "Laptop", brand: "HP", model: "ProBook 450" } });
   return prisma.repairTicket.create({
