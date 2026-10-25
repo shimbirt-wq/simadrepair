@@ -7,7 +7,7 @@ Built by XeelTech Solutions.
 ## Documentation
 
 - [How the platform works, role by role](docs/platform/README.md)
-- [Spec](docs/platform/spec.md) — GitHub issue #6, tickets #7 onwards
+- [Spec](docs/platform/spec.md) — GitHub issue #6, tickets #7–#32
 - [Design system](docs/platform/design-system.md) and [UI principles](docs/platform/ui-principles.md)
 - [Faculty documentation](docs/SIMADRepair-Faculty-Documentation.md)
 
