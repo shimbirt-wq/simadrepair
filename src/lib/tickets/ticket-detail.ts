@@ -4,6 +4,7 @@ import { CONDITION_CHECKS } from "@/lib/tickets/check-in-options";
 import { FAULTS, REPAIR_ACTIONS, TEST_CHECKS } from "@/lib/tickets/repair-record";
 import { getIntakeDetail, type IntakeDetail } from "@/lib/tickets/intake-detail";
 import { ticketLookupWhere } from "@/lib/tickets/ticket-service";
+import { findUndoStep } from "@/lib/tickets/undo";
 
 /** Full ticket for staff screens (board sheet, technician workspace). */
 export type StaffTicketDetail = {
@@ -34,6 +35,8 @@ export type StaffTicketDetail = {
   };
   intake: IntakeDetail;
   repair: { faults: string[]; actions: string[]; note: string | null; tests: string[] } | null;
+  /** The step "Undo last step" would reverse, if any. */
+  undoable: { type: RepairEventType; note: string | null; adminOnly: boolean } | null;
   timeline: Array<{ id: string; type: RepairEventType; note: string | null; at: string; actor: string | null; actorRole: UserRole | null }>;
 };
 
@@ -72,7 +75,10 @@ export async function getStaffTicketDetail(prisma: PrismaClient, ref: string): P
           releasedBy: { select: { fullName: true } },
         },
       },
-      events: { orderBy: { createdAt: "desc" }, select: { id: true, eventType: true, note: true, createdAt: true, actorRole: true, actor: { select: { fullName: true } } } },
+      events: {
+        orderBy: { createdAt: "desc" },
+        select: { id: true, eventType: true, note: true, createdAt: true, actorRole: true, actorId: true, statusFrom: true, statusTo: true, metadata: true, actor: { select: { fullName: true } } },
+      },
     },
   });
   if (!ticket) return null;
@@ -120,6 +126,10 @@ export async function getStaffTicketDetail(prisma: PrismaClient, ref: string): P
           tests: ticket.testsPassed.map((value) => labelOf(TEST_CHECKS, value)),
         }
       : null,
+    undoable: (() => {
+      const step = findUndoStep(ticket.events);
+      return step && step.statusTo === ticket.status ? { type: step.eventType, note: step.note, adminOnly: step.eventType === "PICKUP_CONFIRMED" } : null;
+    })(),
     timeline: ticket.events.map((event) => ({ id: event.id, type: event.eventType, note: event.note, at: event.createdAt.toISOString(), actor: event.actor?.fullName ?? null, actorRole: event.actorRole })),
   };
 }
