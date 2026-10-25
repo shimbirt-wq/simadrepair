@@ -1,3 +1,4 @@
+import { READY_RECORD } from "@/test/fixtures";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { performTicketAction } from "@/lib/tickets/ticket-service";
 import { createStaff, createSubmittedTicket, createTestPrisma, hasTestDatabase, resetDatabase } from "@/test/db";
@@ -18,7 +19,7 @@ describe.skipIf(!hasTestDatabase)("ticket service (database)", () => {
     expect(await performTicketAction(prisma, ticket.trackingCode!, lead, { action: { type: "CHECK_IN" }, checkIn: { idChecked: true, zone: "A", condition: "Scratched lid", devicePassword: "Hodan#2026" } })).toMatchObject({ ok: true, status: "RECEIVED" });
     expect(await performTicketAction(prisma, ticket.id, lead, { action: { type: "ASSIGN", technicianId: tech.id } })).toMatchObject({ ok: true });
     expect(await performTicketAction(prisma, ticket.id, tech, { action: { type: "START" } })).toMatchObject({ ok: true, status: "IN_REPAIR" });
-    expect(await performTicketAction(prisma, ticket.id, tech, { action: { type: "MARK_READY" } })).toMatchObject({ ok: true, status: "READY_FOR_PICKUP" });
+    expect(await performTicketAction(prisma, ticket.id, tech, { action: { type: "MARK_READY", record: READY_RECORD } })).toMatchObject({ ok: true, status: "READY_FOR_PICKUP" });
     expect(await performTicketAction(prisma, ticket.id, lead, { action: { type: "PICKUP" }, pickup: { collectedByName: "Hodan Ali", collectedByPhone: "+252615550000" } })).toMatchObject({ ok: true, status: "COLLECTED" });
 
     const stored = await prisma.repairTicket.findUniqueOrThrow({ where: { id: ticket.id }, include: { custody: true, events: { orderBy: { createdAt: "asc" } } } });
@@ -28,6 +29,7 @@ describe.skipIf(!hasTestDatabase)("ticket service (database)", () => {
     expect(stored.closedAt).not.toBeNull();
     expect(stored.custody).toMatchObject({ receivedById: lead.id, storageLocation: "A", idChecked: true, condition: "Scratched lid", releasedById: lead.id, collectedByName: "Hodan Ali" });
     expect(stored.tagNumber).toBe(1);
+    expect(stored).toMatchObject({ repairFaults: ["SLOW_VIRUS"], repairActions: ["VIRUS_REMOVAL", "DRIVERS_UPDATES"], testsPassed: READY_RECORD.tests });
     expect(stored.devicePasswordEnc).toBeNull(); // deleted at pickup
     expect(stored.events.map((event) => event.eventType)).toEqual(["CHECKED_IN", "TECHNICIAN_ASSIGNED", "REPAIR_STARTED", "READY_FOR_PICKUP", "PICKUP_CONFIRMED"]);
   });
@@ -37,7 +39,7 @@ describe.skipIf(!hasTestDatabase)("ticket service (database)", () => {
     const ticket = await createSubmittedTicket(prisma);
 
     expect(await performTicketAction(prisma, ticket.id, tech, { action: { type: "CHECK_IN" } })).toMatchObject({ ok: false, status: 403 });
-    expect(await performTicketAction(prisma, ticket.id, tech, { action: { type: "MARK_READY" } })).toMatchObject({ ok: false });
+    expect(await performTicketAction(prisma, ticket.id, tech, { action: { type: "MARK_READY", record: READY_RECORD } })).toMatchObject({ ok: false });
     expect(await prisma.repairTicket.findUniqueOrThrow({ where: { id: ticket.id } })).toMatchObject({ status: "SUBMITTED" });
     expect(await prisma.repairEvent.count()).toBe(0);
   });

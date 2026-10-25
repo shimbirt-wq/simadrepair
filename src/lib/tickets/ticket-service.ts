@@ -1,6 +1,7 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { hasAccess } from "@/lib/auth/public-user";
 import { encryptDevicePassword } from "@/lib/secrets/device-password";
+import { repairRecordSchema } from "@/lib/tickets/repair-record";
 import { decide, OPEN_REPAIR_STATUSES, type WorkflowAction, type WorkflowActor } from "@/lib/tickets/workflow";
 
 /**
@@ -86,6 +87,10 @@ export async function performTicketAction(
     if (decision.event.type === "REPAIR_STARTED") ticketData.startedAt = now;
     // The device password is only needed while the device is with us.
     if (decision.status === "COLLECTED" || decision.status === "CANCELLED") ticketData.devicePasswordEnc = null;
+    if (action.type === "MARK_READY") {
+      const record = repairRecordSchema.parse(action.record);
+      Object.assign(ticketData, { repairFaults: record.faults, repairActions: record.actions, repairNote: record.note, testsPassed: record.tests });
+    }
     if (decision.status === "READY_FOR_PICKUP") {
       ticketData.readyForPickupAt = now;
       ticketData.completedAt = now;

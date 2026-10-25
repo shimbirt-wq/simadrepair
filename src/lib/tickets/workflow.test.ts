@@ -1,3 +1,4 @@
+import { READY_RECORD } from "@/test/fixtures";
 import type { TicketStatus } from "@prisma/client";
 import { describe, expect, it } from "vitest";
 import { CLAIM_CAP, decide, type WorkflowAction, type WorkflowActor, type WorkflowTicket } from "@/lib/tickets/workflow";
@@ -25,7 +26,7 @@ describe("ticket workflow — the happy path", () => {
       [lead, { type: "CHECK_IN" }, "RECEIVED"],
       [lead, { type: "ASSIGN", technicianId: "tech" }, "RECEIVED"],
       [tech, { type: "START" }, "IN_REPAIR"],
-      [tech, { type: "MARK_READY" }, "READY_FOR_PICKUP"],
+      [tech, { type: "MARK_READY", record: READY_RECORD }, "READY_FOR_PICKUP"],
       [lead, { type: "PICKUP" }, "COLLECTED"],
     ];
     for (const [actor, action, next] of steps) {
@@ -47,7 +48,7 @@ describe("ticket workflow — roles", () => {
     ["technician assigns", tech, ticket("RECEIVED"), { type: "ASSIGN", technicianId: "tech" }],
     ["requester assigns", requester, ticket("RECEIVED"), { type: "ASSIGN", technicianId: "tech" }],
     ["another technician starts", otherTech, ticket("RECEIVED", "tech"), { type: "START" }],
-    ["another technician marks ready", otherTech, ticket("IN_REPAIR", "tech"), { type: "MARK_READY" }],
+    ["another technician marks ready", otherTech, ticket("IN_REPAIR", "tech"), { type: "MARK_READY", record: READY_RECORD }],
     ["technician hands back", tech, ticket("READY_FOR_PICKUP", "tech"), { type: "PICKUP" }],
     ["technician confirms cannot repair", tech, ticket("CANNOT_REPAIR_PROPOSED", "tech"), { type: "CONFIRM_CANNOT_REPAIR" }],
     ["technician cancels", tech, ticket("SUBMITTED"), { type: "CANCEL" }],
@@ -60,7 +61,7 @@ describe("ticket workflow — roles", () => {
 
   it("lets the desk work on any ticket on a technician's behalf", () => {
     expectMove(decide(ticket("RECEIVED", "tech"), lead, { type: "START" }), "IN_REPAIR");
-    expectMove(decide(ticket("IN_REPAIR", "tech"), admin, { type: "MARK_READY" }), "READY_FOR_PICKUP");
+    expectMove(decide(ticket("IN_REPAIR", "tech"), admin, { type: "MARK_READY", record: READY_RECORD }), "READY_FOR_PICKUP");
   });
 });
 
@@ -77,7 +78,7 @@ describe("ticket workflow — allowed transitions", () => {
     ["PROPOSE_CANNOT_REPAIR", tech, { type: "PROPOSE_CANNOT_REPAIR", reason: "Motherboard failure" }, ["IN_REPAIR", "WAITING_FOR_PARTS", "ACTION_NEEDED"], (s) => ticket(s, "tech")],
     ["CONFIRM_CANNOT_REPAIR", lead, { type: "CONFIRM_CANNOT_REPAIR" }, ["CANNOT_REPAIR_PROPOSED"], (s) => ticket(s, "tech")],
     ["REJECT_CANNOT_REPAIR", lead, { type: "REJECT_CANNOT_REPAIR" }, ["CANNOT_REPAIR_PROPOSED"], (s) => ticket(s, "tech")],
-    ["MARK_READY", tech, { type: "MARK_READY" }, ["IN_REPAIR"], (s) => ticket(s, "tech")],
+    ["MARK_READY", tech, { type: "MARK_READY", record: READY_RECORD }, ["IN_REPAIR"], (s) => ticket(s, "tech")],
     ["PICKUP", lead, { type: "PICKUP" }, ["READY_FOR_PICKUP", "CANNOT_BE_REPAIRED"], (s) => ticket(s, "tech")],
     ["CANCEL", requester, { type: "CANCEL" }, ["SUBMITTED"], (s) => ticket(s)],
     ["ADD_NOTE", tech, { type: "ADD_NOTE", note: "Replaced thermal paste" }, ["SUBMITTED", "RECEIVED", "IN_REPAIR", "WAITING_FOR_PARTS", "ACTION_NEEDED", "CANNOT_REPAIR_PROPOSED", "CANNOT_BE_REPAIRED", "READY_FOR_PICKUP"], (s) => ticket(s, "tech")],
@@ -124,6 +125,13 @@ describe("ticket workflow — rules", () => {
   it("blocks into the requested state with the detail as the note", () => {
     const result = expectMove(decide(ticket("IN_REPAIR", "tech"), tech, { type: "BLOCK", kind: "ACTION_NEEDED", detail: "Bring the Windows password" }), "ACTION_NEEDED");
     expect(result.event.note).toBe("Bring the Windows password");
+  });
+
+  it("requires the repair record and every test before ready", () => {
+    const t = ticket("IN_REPAIR", "tech");
+    expect(decide(t, tech, { type: "MARK_READY", record: { ...READY_RECORD, faults: [] } })).toMatchObject({ ok: false, code: "INVALID_INPUT" });
+    expect(decide(t, tech, { type: "MARK_READY", record: { ...READY_RECORD, actions: [] } })).toMatchObject({ ok: false, code: "INVALID_INPUT" });
+    expect(decide(t, tech, { type: "MARK_READY", record: { ...READY_RECORD, tests: ["BOOTS"] } })).toMatchObject({ ok: false, code: "INVALID_INPUT", message: "Tick every test before marking ready." });
   });
 
   it("cannot start without a technician", () => {

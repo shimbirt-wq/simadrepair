@@ -3,6 +3,7 @@
 import { MessageCircle, Phone } from "lucide-react";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { IntakePanel } from "@/components/staff/intake-panel";
+import { RepairSummary } from "@/components/staff/repair-summary";
 import { Badge, Dialog, Eyebrow, StatusBadge, TagNumber, Timeline, UrgentBadge } from "@/components/ui";
 import { sendJson } from "@/lib/client/api";
 import { formatDateTime } from "@/lib/client/format";
@@ -105,6 +106,8 @@ export function TicketSheet({
               ) : null}
             </section>
           ) : null}
+
+          {ticket.repair ? <RepairSummary repair={ticket.repair} /> : null}
 
           <IntakePanel intake={ticket.intake} />
 

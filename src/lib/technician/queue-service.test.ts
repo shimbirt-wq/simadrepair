@@ -1,3 +1,4 @@
+import { READY_RECORD } from "@/test/fixtures";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { getTechnicianQueue } from "@/lib/technician/queue-service";
 import { performTicketAction } from "@/lib/tickets/ticket-service";
@@ -20,7 +21,7 @@ describe.skipIf(!hasTestDatabase)("technician queue (database)", () => {
       await performTicketAction(prisma, ticket.id, tech, { action: { type: "CLAIM" } });
     }
     await performTicketAction(prisma, done.id, tech, { action: { type: "START" } });
-    await performTicketAction(prisma, done.id, tech, { action: { type: "MARK_READY" } });
+    await performTicketAction(prisma, done.id, tech, { action: { type: "MARK_READY", record: READY_RECORD } });
 
     const queue = await getTechnicianQueue(prisma, techUser.id);
     expect(queue.mine.map((t) => t.id)).toEqual([mine.id]);

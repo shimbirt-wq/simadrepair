@@ -22,6 +22,7 @@ type IntakeRecord = Prisma.RepairTicketGetPayload<{ select: typeof intakeDetailS
 export type IntakeDetail = {
   device: { name: string; type: string; serialNumber: string | null; specs: string[]; age: string | null };
   categories: string[];
+  categoryValues: string[];
   answers: Array<{ category: string; question: string; answer: string }>;
   startedWhen: string | null;
   recentEvents: string[];
@@ -51,6 +52,7 @@ export function toIntakeDetail(ticket: IntakeRecord): IntakeDetail {
       age: device.ageBand ? labelOf(DEVICE_AGES, device.ageBand) : null,
     },
     categories: ticket.problemCategories.map((value) => PROBLEM_CATEGORIES.find((category) => category.value === value)?.label ?? value),
+    categoryValues: ticket.problemCategories,
     answers: describeAnswers(ticket.problemCategories, ticket.problemAnswers),
     startedWhen: ticket.startedWhen ? labelOf(STARTED_WHEN, ticket.startedWhen) : null,
     recentEvents: ticket.recentEvents.filter((value) => value !== "NONE").map((value) => labelOf(RECENT_EVENTS, value)),
