@@ -7,6 +7,7 @@ import { getRegistration } from "@/lib/events/event-service";
 import { formatEventDates } from "@/lib/events/event-window";
 
 export const dynamic = "force-dynamic";
+export const metadata = { title: "Request a repair", description: "Register your laptop or desktop for the free Computer Maintenance Week repair." };
 
 export default async function RequestRepairPage() {
   const { state, event } = await getRegistration(prisma);
