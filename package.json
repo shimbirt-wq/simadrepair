@@ -20,7 +20,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "prisma db seed",
     "prisma:studio": "prisma studio",
-    "test:db:prepare": "prisma migrate deploy"
+    "test:db:prepare": "node -e \"const u=process.env.TEST_DATABASE_URL||require('fs').readFileSync('.env','utf8').match(/^TEST_DATABASE_URL=\\\"?([^\\\"\\n]+)/m)?.[1];if(!u)throw new Error('Set TEST_DATABASE_URL');require('child_process').execSync('npx prisma migrate deploy',{stdio:'inherit',env:{...process.env,DATABASE_URL:u,DIRECT_URL:u}})\""
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

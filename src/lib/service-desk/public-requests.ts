@@ -1,6 +1,8 @@
 import { Prisma, type TicketStatus } from "@prisma/client";
 import { ZodError } from "zod";
 import { prisma } from "@/lib/db/prisma";
+import { getRegistration } from "@/lib/events/event-service";
+import type { RegistrationState } from "@/lib/events/event-window";
 import { publicRepairRequestInputSchema, type PublicRepairRequestInput } from "@/lib/service-desk/validations";
 
 export type PublicRepairRequestResponse = {
@@ -16,6 +18,14 @@ type RequesterCandidate = {
 };
 
 const maxCreateAttempts = 10;
+
+/** Thrown when there is no active event or its registration window is not open. */
+export class RegistrationClosedError extends Error {
+  constructor(readonly state: RegistrationState) {
+    super("Registration is closed.");
+    this.name = "RegistrationClosedError";
+  }
+}
 
 export class PublicRepairRequestValidationError extends Error {
   constructor(readonly validationError: ZodError) {
@@ -175,6 +185,9 @@ async function createTrackingCode(tx: Prisma.TransactionClient) {
 async function createPublicRepairRequestRecord(data: PublicRepairRequestInput) {
   return prisma.$transaction(
     async (tx) => {
+      const { state, event } = await getRegistration(tx);
+      if (state !== "OPEN" || !event) throw new RegistrationClosedError(state);
+
       const requester = await createOrReuseRequester(tx, data.requester);
       const device = await tx.device.create({
         data: {
@@ -190,6 +203,7 @@ async function createPublicRepairRequestRecord(data: PublicRepairRequestInput) {
       const trackingCode = await createTrackingCode(tx);
       const ticket = await tx.repairTicket.create({
         data: {
+          eventId: event.id,
           ticketId: trackingCode,
           trackingCode,
           requesterId: requester.id,
