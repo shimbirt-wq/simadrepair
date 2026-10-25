@@ -130,7 +130,9 @@ These are observations from reading the code, not confirmed bugs. We'll settle e
 | Lead Technician | [lead-technician.md](lead-technician.md) | agreed |
 | Technician | [technician.md](technician.md) | agreed |
 | Admin | [admin.md](admin.md) | agreed |
-| All screens | [ui-principles.md](ui-principles.md) | agreed |
+| Public website | [website.md](website.md) | in grilling |
+| All screens | [ui-principles.md](ui-principles.md), [design-system.md](design-system.md) | agreed |
+| Spec | [spec.md](spec.md) — GitHub issue #6, tickets #7–#28 | published |
 
 ## How we'll work
 
