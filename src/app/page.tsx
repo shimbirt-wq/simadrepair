@@ -1,23 +1,21 @@
-import { LandingFooter } from "@/components/landing/footer";
-import { LandingFeaturesSection } from "@/components/landing/features-section";
-import { LandingHowItWorksSection } from "@/components/landing/how-it-works-section";
-import { LandingHero } from "@/components/landing/hero";
-import { LandingNavbar } from "@/components/landing/navbar";
-import { LandingStatsStripSection } from "@/components/landing/stats-strip-section";
-import { LandingTeamSection } from "@/components/landing/team-section";
-import { LandingCtaBanner } from "@/components/landing/cta-banner";
+import { BeforeYouCome, Faq, HowItWorks, WhatWeFix } from "@/components/public/home/home-sections";
+import { Hero } from "@/components/public/home/hero";
+import { PublicLayout } from "@/components/public/public-layout";
+import { prisma } from "@/lib/db/prisma";
+import { getRegistration } from "@/lib/events/event-service";
 
-export default function HomePage() {
+export const dynamic = "force-dynamic";
+
+export default async function HomePage() {
+  const { state, event } = await getRegistration(prisma);
+
   return (
-    <main className="min-h-screen" style={{ background: "#050D1B" }}>
-      <LandingNavbar />
-      <LandingHero />
-      <LandingStatsStripSection />
-      <LandingHowItWorksSection />
-      <LandingFeaturesSection />
-      <LandingTeamSection />
-      <LandingCtaBanner />
-      <LandingFooter />
-    </main>
+    <PublicLayout width="full">
+      <Hero state={state} event={event} />
+      <HowItWorks />
+      <BeforeYouCome />
+      <WhatWeFix />
+      <Faq holdDays={event?.holdDays ?? 30} />
+    </PublicLayout>
   );
 }
