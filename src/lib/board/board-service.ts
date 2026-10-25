@@ -1,4 +1,6 @@
 import type { PrismaClient, TicketPriority, TicketStatus } from "@prisma/client";
+import { hasAccess } from "@/lib/auth/public-user";
+import { skillLabels } from "@/lib/staff/staff-service";
 import { boardColumn, isStuck, type BoardColumnKey } from "@/lib/board/board-rules";
 import { getActiveEvent } from "@/lib/events/event-service";
 import { formatEventDates } from "@/lib/events/event-window";
@@ -98,8 +100,10 @@ export async function getBoard(prisma: PrismaClient, now = new Date()): Promise<
 export async function listTechniciansWithLoad(prisma: PrismaClient): Promise<BoardTechnician[]> {
   const users = await prisma.user.findMany({
     where: { isActive: true, role: { in: ["TECHNICIAN", "LEAD_TECHNICIAN"] } },
-    select: { id: true, fullName: true, role: true, assignedTickets: { where: { status: { in: [...OPEN_REPAIR_STATUSES] } }, select: { id: true } } },
+    select: { id: true, fullName: true, role: true, skills: true, accessExpiresOn: true, isActive: true, assignedTickets: { where: { status: { in: [...OPEN_REPAIR_STATUSES] } }, select: { id: true } } },
     orderBy: { fullName: "asc" },
   });
-  return users.map((user) => ({ id: user.id, name: user.fullName, role: user.role, openCount: user.assignedTickets.length, skills: [] }));
+  return users
+    .filter((user) => hasAccess(user))
+    .map((user) => ({ id: user.id, name: user.fullName, role: user.role, openCount: user.assignedTickets.length, skills: skillLabels(user.skills) }));
 }

@@ -1,6 +1,6 @@
 import type { PrismaClient, UserRole } from "@prisma/client";
 import { NextResponse } from "next/server";
-import { publicUserSelect, toPublicUser, type PublicUser } from "@/lib/auth/public-user";
+import { hasAccess, publicUserSelect, toPublicUser, type PublicUser } from "@/lib/auth/public-user";
 import { isInternalUserRole } from "@/lib/auth/roles";
 import { readSessionTokenFromRequest, verifySessionToken } from "@/lib/auth/session";
 
@@ -79,7 +79,7 @@ export async function requireAuthenticatedUser(
 
   const publicUser = toPublicUser(user);
 
-  if (!publicUser.isActive) {
+  if (!hasAccess(publicUser)) {
     return AUTHORIZATION_ERRORS.unauthenticated;
   }
 

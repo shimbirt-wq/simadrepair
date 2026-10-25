@@ -1,4 +1,5 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
+import { hasAccess } from "@/lib/auth/public-user";
 import { encryptDevicePassword } from "@/lib/secrets/device-password";
 import { decide, OPEN_REPAIR_STATUSES, type WorkflowAction, type WorkflowActor } from "@/lib/tickets/workflow";
 
@@ -58,12 +59,13 @@ export async function performTicketAction(
         ? { type: "CLAIM", openRepairCount: await countOpenRepairs(tx, actor.id) }
         : (input.action as WorkflowAction);
 
+    const now0 = new Date();
     if (action.type === "ASSIGN") {
       const technician = await tx.user.findFirst({
         where: { id: action.technicianId, isActive: true, role: { in: ["TECHNICIAN", "LEAD_TECHNICIAN"] } },
-        select: { id: true },
+        select: { id: true, isActive: true, accessExpiresOn: true },
       });
-      if (!technician) return { ok: false, status: 409, message: "Choose an active technician." } as const;
+      if (!technician || !hasAccess(technician, now0)) return { ok: false, status: 409, message: "Choose an active technician." } as const;
     }
 
     const decision = decide({ status: ticket.status, technicianId: ticket.technicianId }, actor, action);

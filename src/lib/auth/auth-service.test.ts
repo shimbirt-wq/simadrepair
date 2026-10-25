@@ -17,6 +17,8 @@ function buildUser(overrides: Partial<User> = {}): User {
     passwordHash: "$2a$12$hash",
     role: "TECHNICIAN",
     isActive: true,
+    skills: [],
+    accessExpiresOn: null,
     createdAt: now,
     updatedAt: now,
     ...overrides,
