@@ -4,6 +4,8 @@ import { ArrowLeft, Eye, EyeOff, KeyRound } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState, useTransition, type ReactNode } from "react";
 import { IntakePanel } from "@/components/staff/intake-panel";
+import { RepairSummary } from "@/components/staff/repair-summary";
+import { ReadyForm } from "@/components/technician/ready-form";
 import { Badge, Button, Card, Eyebrow, Field, Input, StatusBadge, TagNumber, Textarea, Timeline, UrgentBadge, useToast } from "@/components/ui";
 import { sendJson } from "@/lib/client/api";
 import { formatDateTime } from "@/lib/client/format";
@@ -69,16 +71,14 @@ function ReasonForm({ label, placeholder, submitLabel, onSubmit, onCancel }: { l
 export function TechnicianTicketView({
   ticketId,
   userId,
-  renderInProgress,
 }: {
   ticketId: string;
   userId: string;
-  renderInProgress?: (ticket: StaffTicketDetail, run: ActionRunner) => ReactNode;
 }) {
   const toast = useToast();
   const [ticket, setTicket] = useState<StaffTicketDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [mode, setMode] = useState<"none" | "release" | "parts" | "action" | "cannot">("none");
+  const [mode, setMode] = useState<"none" | "release" | "parts" | "action" | "cannot" | "ready">("none");
   const [note, setNote] = useState("");
   const [pending, startTransition] = useTransition();
 
@@ -117,8 +117,8 @@ export function TechnicianTicketView({
   let primary: ReactNode = null;
   if (inPool) primary = <Button size="lg" className="w-full" loading={pending} onClick={() => run({ type: "CLAIM" }, "Claimed — it's yours")}>Claim this ticket</Button>;
   else if (mine && ticket.status === "RECEIVED") primary = <Button size="lg" className="w-full" loading={pending} onClick={() => run({ type: "START" }, "Repair started")}>Start repair</Button>;
-  else if (mine && ticket.status === "IN_REPAIR" && !renderInProgress)
-    primary = <Button size="lg" className="w-full" loading={pending} onClick={() => run({ type: "MARK_READY" }, "Marked ready")}>Mark ready</Button>;
+  else if (mine && ticket.status === "IN_REPAIR" && mode === "none")
+    primary = <Button size="lg" className="w-full" onClick={() => setMode("ready")}>Finish repair</Button>;
   else if (mine && (ticket.status === "WAITING_FOR_PARTS" || ticket.status === "ACTION_NEEDED"))
     primary = <Button size="lg" className="w-full" loading={pending} onClick={() => run({ type: "RESUME" }, "Repair resumed")}>Resume repair</Button>;
 
@@ -161,8 +161,15 @@ export function TechnicianTicketView({
           <p className="rounded-md bg-warning-soft px-4 py-3 text-small text-warning-text">Waiting for the lead to confirm: {proposal}</p>
         ) : null}
         {primary}
-        {mine && ticket.status === "IN_REPAIR" && renderInProgress ? renderInProgress(ticket, run) : null}
-        {mine && mode !== "none" && mode !== "release" ? (
+        {mine && ticket.status === "IN_REPAIR" && mode === "ready" ? (
+          <ReadyForm
+            defaultFaults={ticket.intake.categoryValues}
+            pending={pending}
+            onCancel={() => setMode("none")}
+            onSubmit={(record) => void run({ type: "MARK_READY", record }, "Marked ready for pickup")}
+          />
+        ) : null}
+        {mine && mode !== "none" && mode !== "release" && mode !== "ready" ? (
           <ReasonForm
             label={reasonForms[mode].label}
             placeholder={reasonForms[mode].placeholder}
@@ -210,6 +217,12 @@ export function TechnicianTicketView({
           <Eyebrow>Device password</Eyebrow>
           <PasswordReveal ticketId={ticket.id} />
         </section>
+      ) : null}
+
+      {ticket.repair ? (
+        <Card className="p-5">
+          <RepairSummary repair={ticket.repair} />
+        </Card>
       ) : null}
 
       <Card className="p-5">

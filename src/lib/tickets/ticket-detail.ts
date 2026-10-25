@@ -1,6 +1,7 @@
 import type { PrismaClient, RepairEventType, TicketPriority, TicketStatus, UserRole } from "@prisma/client";
 import { ACCESSORIES, labelOf } from "@/lib/intake/options";
 import { CONDITION_CHECKS } from "@/lib/tickets/check-in-options";
+import { FAULTS, REPAIR_ACTIONS, TEST_CHECKS } from "@/lib/tickets/repair-record";
 import { getIntakeDetail, type IntakeDetail } from "@/lib/tickets/intake-detail";
 import { ticketLookupWhere } from "@/lib/tickets/ticket-service";
 
@@ -30,6 +31,7 @@ export type StaffTicketDetail = {
     releasedBy: string | null;
   };
   intake: IntakeDetail;
+  repair: { faults: string[]; actions: string[]; note: string | null; tests: string[] } | null;
   timeline: Array<{ id: string; type: RepairEventType; note: string | null; at: string; actor: string | null; actorRole: UserRole | null }>;
 };
 
@@ -45,6 +47,10 @@ export async function getStaffTicketDetail(prisma: PrismaClient, ref: string): P
       status: true,
       createdAt: true,
       devicePasswordEnc: true,
+      repairFaults: true,
+      repairActions: true,
+      repairNote: true,
+      testsPassed: true,
       event: { select: { id: true, name: true, venue: true, hours: true, deskWhatsapp: true } },
       requester: { select: { fullName: true, universityId: true, phone: true, faculty: true, requesterType: true } },
       technician: { select: { id: true, fullName: true, phone: true } },
@@ -101,6 +107,14 @@ export async function getStaffTicketDetail(prisma: PrismaClient, ref: string): P
       releasedBy: ticket.custody?.releasedBy?.fullName ?? null,
     },
     intake: intake!,
+    repair: ticket.repairActions.length
+      ? {
+          faults: ticket.repairFaults.map((value) => labelOf(FAULTS, value)),
+          actions: ticket.repairActions.map((value) => labelOf(REPAIR_ACTIONS, value)),
+          note: ticket.repairNote,
+          tests: ticket.testsPassed.map((value) => labelOf(TEST_CHECKS, value)),
+        }
+      : null,
     timeline: ticket.events.map((event) => ({ id: event.id, type: event.eventType, note: event.note, at: event.createdAt.toISOString(), actor: event.actor?.fullName ?? null, actorRole: event.actorRole })),
   };
 }

@@ -1,4 +1,5 @@
 import type { RepairEventType, TicketStatus, UserRole } from "@prisma/client";
+import { repairRecordSchema, type RepairRecord } from "@/lib/tickets/repair-record";
 
 /**
  * The ticket workflow: the only place that decides whether an action is
@@ -30,7 +31,7 @@ export type WorkflowAction =
   | { type: "PROPOSE_CANNOT_REPAIR"; reason: string }
   | { type: "CONFIRM_CANNOT_REPAIR" }
   | { type: "REJECT_CANNOT_REPAIR"; reason?: string }
-  | { type: "MARK_READY" }
+  | { type: "MARK_READY"; record: RepairRecord }
   | { type: "PICKUP" }
   | { type: "CANCEL" }
   | { type: "CLOSE_EVENT_ENDED" }
@@ -197,6 +198,8 @@ export function decide(ticket: WorkflowTicket, actor: WorkflowActor, action: Wor
     case "MARK_READY": {
       if (!canWorkOn(actor, ticket)) return forbidden("Only the assigned technician can mark this ready.");
       if (status !== "IN_REPAIR") return invalid("Only repairs in progress can be marked ready.");
+      const record = repairRecordSchema.safeParse(action.record);
+      if (!record.success) return badInput(record.error.issues[0].message);
       return move(ticket, "READY_FOR_PICKUP", "READY_FOR_PICKUP", "Ready for pickup.");
     }
 

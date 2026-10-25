@@ -178,6 +178,11 @@ model RepairTicket {
   tagNumber             Int?           @map("tag_number")
   priority              TicketPriority @default(NORMAL)
   startedAt             DateTime?      @map("started_at")
+  /// Repair record (TA6/TA7), required before Ready for pickup.
+  repairFaults          String[]       @default([]) @map("repair_faults")
+  repairActions         String[]       @default([]) @map("repair_actions")
+  repairNote            String?        @map("repair_note")
+  testsPassed           String[]       @default([]) @map("tests_passed")
   /// AES-256-GCM ciphertext of the device password (src/lib/secrets). Deleted at pickup and event end.
   devicePasswordEnc     String?        @map("device_password_enc")
   accessoriesLeft       String[]       @default([]) @map("accessories_left")

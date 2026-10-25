@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { ACCESSORY_VALUES } from "@/lib/intake/options";
 import { CONDITION_VALUES } from "@/lib/tickets/check-in-options";
+import { repairRecordSchema } from "@/lib/tickets/repair-record";
 
 const text = (label: string, max = 500) => z.string().trim().min(3, `${label} is required.`).max(max);
 const optionalText = (max: number) =>
@@ -39,7 +40,7 @@ export const staffTicketActionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("PROPOSE_CANNOT_REPAIR"), reason: text("A reason", 500) }),
   z.object({ type: z.literal("CONFIRM_CANNOT_REPAIR") }),
   z.object({ type: z.literal("REJECT_CANNOT_REPAIR"), reason: optionalText(300).transform((v) => v ?? undefined) }),
-  z.object({ type: z.literal("MARK_READY") }),
+  z.object({ type: z.literal("MARK_READY"), record: repairRecordSchema }),
   z.object({ type: z.literal("PICKUP"), collectedByName: text("Collector name", 120), collectedByPhone: optionalText(30) }),
   z.object({ type: z.literal("CANCEL") }),
   z.object({ type: z.literal("ADD_NOTE"), note: text("A note", 1000) }),
