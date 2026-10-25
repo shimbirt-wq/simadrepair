@@ -1,39 +1,35 @@
 import { NextResponse } from "next/server";
-import { internalErrorResponse, validationErrorResponse } from "@/lib/api/responses";
-import {
-  createPublicRepairRequest,
-  PublicRepairRequestValidationError,
-  RegistrationClosedError,
-} from "@/lib/service-desk/public-requests";
-import { publicRepairRequestInputSchema } from "@/lib/service-desk/validations";
+import { apiErrorResponse, internalErrorResponse, validationErrorResponse } from "@/lib/api/responses";
+import { prisma } from "@/lib/db/prisma";
+import { intakeSchema } from "@/lib/intake/intake-schema";
+import { createRepairRequest, DAILY_LIMIT } from "@/lib/intake/intake-service";
+import { checkRateLimit, getRequestIp } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
-  const body: unknown = await request.json().catch(() => null);
-  const parsedBody = publicRepairRequestInputSchema.safeParse(body);
+  const parsed = intakeSchema.safeParse(await request.json().catch(() => null));
+  if (!parsed.success) return validationErrorResponse("Check the highlighted fields.", parsed.error);
 
-  if (!parsedBody.success) {
-    return validationErrorResponse("Invalid public repair request data.", parsedBody.error);
-  }
+  const rateLimit = await checkRateLimit(prisma, `intake:${getRequestIp(request)}`, 20, 60 * 60 * 1000);
+  if (!rateLimit.allowed) return apiErrorResponse(429, "RATE_LIMITED", "Too many requests from this network. Try again later.");
 
   try {
-    const result = await createPublicRepairRequest(parsedBody.data);
+    const result = await createRepairRequest(prisma, parsed.data);
+    if (result.ok) {
+      return NextResponse.json({ request: { trackingCode: result.trackingCode, firstName: result.firstName, eventName: result.eventName } }, { status: 201 });
+    }
 
-    return NextResponse.json({ request: result }, { status: 201 });
+    switch (result.reason) {
+      case "REGISTRATION_CLOSED":
+        return apiErrorResponse(409, "REGISTRATION_CLOSED", "Registration is closed.", { state: result.state });
+      case "DUPLICATE":
+        return apiErrorResponse(409, "DUPLICATE", `You already have an open request for this device: ${result.trackingCode}.`, { trackingCode: result.trackingCode });
+      case "DAILY_LIMIT":
+        return apiErrorResponse(429, "DAILY_LIMIT", `You can send up to ${DAILY_LIMIT} requests a day. Ask at the desk if you need more.`);
+      case "SPAM":
+        return apiErrorResponse(400, "BAD_REQUEST", "We couldn't accept this request.");
+    }
   } catch (error) {
-    if (error instanceof RegistrationClosedError) {
-      return NextResponse.json({ error: "Registration is closed.", code: "REGISTRATION_CLOSED", state: error.state }, { status: 409 });
-    }
-
-    if (error instanceof PublicRepairRequestValidationError) {
-      return validationErrorResponse("Invalid public repair request data.", error.validationError);
-    }
-
-    console.error("Public repair request submission failed.", {
-      name: error instanceof Error ? error.name : "UnknownError",
-      message: error instanceof Error ? error.message : "Unknown public repair request error.",
-      code: typeof error === "object" && error && "code" in error ? error.code : undefined,
-    });
-
+    console.error("Repair request failed.", error instanceof Error ? error.message : error);
     return internalErrorResponse();
   }
 }

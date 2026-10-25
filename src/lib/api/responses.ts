@@ -6,12 +6,16 @@ type ErrorCode =
   | "UNAUTHENTICATED"
   | "FORBIDDEN"
   | "NOT_FOUND"
+  | "CONFLICT"
+  | "REGISTRATION_CLOSED"
+  | "DUPLICATE"
+  | "DAILY_LIMIT"
   | "RATE_LIMITED"
   | "SERVICE_UNAVAILABLE"
   | "INTERNAL_ERROR";
 
 export function apiErrorResponse(
-  status: 400 | 401 | 403 | 404 | 429 | 500 | 502 | 503,
+  status: 400 | 401 | 403 | 404 | 409 | 429 | 500 | 502 | 503,
   code: ErrorCode,
   message: string,
   details?: Record<string, unknown>,
@@ -26,9 +30,19 @@ export function apiErrorResponse(
   );
 }
 
+/** Field errors keyed by dotted path, e.g. { "requester.phone": ["Enter a Somali mobile number…"] }. */
+export function issuesByPath(error: ZodError) {
+  const issues: Record<string, string[]> = {};
+  for (const issue of error.issues) {
+    const key = issue.path.join(".") || "_form";
+    (issues[key] ??= []).push(issue.message);
+  }
+  return issues;
+}
+
 export function validationErrorResponse(message: string, error: ZodError) {
   return apiErrorResponse(400, "BAD_REQUEST", message, {
-    issues: error.flatten().fieldErrors,
+    issues: issuesByPath(error),
   });
 }
 

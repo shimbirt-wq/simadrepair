@@ -1,4 +1,6 @@
-import type { ComponentProps, ReactNode } from "react";
+"use client";
+
+import { cloneElement, isValidElement, useId, type ComponentProps, type ReactElement, type ReactNode } from "react";
 import { cn } from "./cn";
 
 const control =
@@ -16,21 +18,33 @@ type FieldProps = {
 };
 
 export function Field({ label, hint, error, optional, className, children }: FieldProps) {
+  const id = useId();
+  const messageId = `${id}-message`;
+  const control = isValidElement(children)
+    ? cloneElement(children as ReactElement<{ id?: string; "aria-describedby"?: string }>, {
+        id: (children as ReactElement<{ id?: string }>).props.id ?? id,
+        "aria-describedby": error || hint ? messageId : undefined,
+      })
+    : children;
+  const controlId = isValidElement(children) ? ((children as ReactElement<{ id?: string }>).props.id ?? id) : undefined;
+
   return (
-    <label className={cn("flex flex-col gap-1.5", className)}>
-      <span className="text-small font-semibold text-ink">
+    <div className={cn("flex flex-col gap-1.5", className)}>
+      <label htmlFor={controlId} className="text-small font-semibold text-ink">
         {label}
         {optional ? <span className="ml-1 font-normal text-ink-muted">optional</span> : null}
-      </span>
-      {children}
+      </label>
+      {control}
       {error ? (
-        <span className="text-caption text-error-text" role="alert">
+        <span id={messageId} className="text-caption text-error-text" role="alert">
           {error}
         </span>
       ) : hint ? (
-        <span className="text-caption text-ink-muted">{hint}</span>
+        <span id={messageId} className="text-caption text-ink-muted">
+          {hint}
+        </span>
       ) : null}
-    </label>
+    </div>
   );
 }
 

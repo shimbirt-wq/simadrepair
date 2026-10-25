@@ -32,7 +32,6 @@ enum RequesterType {
   STUDENT
   LECTURER
   STAFF
-  OTHER
 }
 
 enum RepairEventType {
@@ -89,9 +88,11 @@ model Requester {
   id            String         @id @default(cuid())
   requesterType RequesterType  @map("requester_type")
   fullName      String         @map("full_name")
-  universityId  String?        @map("university_id")
+  /// Normalised, e.g. CS383833. Returning requesters are matched on this only.
+  universityId  String         @unique @map("university_id")
   faculty       String?
   department    String?
+  /// +2526XXXXXXXX
   phone         String
   email         String?
   devices       Device[]
@@ -100,7 +101,6 @@ model Requester {
   updatedAt     DateTime       @updatedAt @map("updated_at")
 
   @@index([requesterType])
-  @@index([universityId])
   @@index([phone])
   @@index([email])
   @@index([createdAt])
@@ -114,6 +114,10 @@ model Device {
   deviceType   String          @map("device_type")
   brand        String
   model        String
+  operatingSystem String?      @map("operating_system")
+  ram          String?
+  storageType  String?         @map("storage_type")
+  ageBand      String?         @map("age_band")
   serialNumber String?         @map("serial_number")
   assetTag     String?         @map("asset_tag")
   description  String?
@@ -166,6 +170,10 @@ model RepairTicket {
   technicianId          String?        @map("technician_id")
   technician            User?          @relation("TechnicianTickets", fields: [technicianId], references: [id], onDelete: SetNull)
   issueDescription      String         @map("issue_description")
+  accessoriesLeft       String[]       @default([]) @map("accessories_left")
+  wipeAllowed           Boolean        @default(false) @map("wipe_allowed")
+  needsPassword         Boolean        @default(false) @map("needs_password")
+  consentAt             DateTime?      @map("consent_at")
   photoUrl              String?        @map("photo_url")
   status                TicketStatus   @default(SUBMITTED)
   events                RepairEvent[]
