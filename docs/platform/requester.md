@@ -138,3 +138,12 @@ Suggested order: **A → B → C** (security first, small), then **E** (unlocks 
 | D2 | **Public tracking shows the assigned technician's phone number.** | 1 |
 | D3 | **Pickup = the requester's registered university ID.** No pickup codes. Staff check the ID card against the ID on the ticket. | 1 |
 | D4 | **Main focus is Computer Maintenance Week only.** Year-round walk-in is not a goal for now. | 1 |
+| D5 | **University ID is required** for every requester; everyone has one. Requester types: Student, Lecturer, Staff ("Other" removed). | 2 |
+| D6 | **No requester accounts.** Tracking code + university ID is enough. | 2 |
+| D7 | **New outcomes:** Waiting for parts, Action needed from you, Cannot be repaired, Cancelled. | 2 |
+| D8 | **Contact number shown:** assigned technician's WhatsApp once assigned; the event desk number before that. | 2 |
+| D9 | **Ready-made WhatsApp messages v1:** Registered (lead sends), Action needed and Ready for pickup (technician sends). Every send is logged on the ticket. | 2 |
+| D10 | **Pickup by anyone carrying the owner's ID card.** Collector's name and phone are recorded. | 2 |
+| D11 | **End of week:** fixed-but-uncollected → IT office for 30 days + WhatsApp reminder, then abandoned-property policy. Unfinished → returned as "Cannot be repaired – event ended". Requester agrees on the form. | 2 |
+| D12 | **Random tracking codes** that can't be guessed (e.g. `SIM-26-K7P3QX`). | 2 |
+| D13 | **Event settings** (admin, once per event): name, dates, venue/pickup point, hours, desk WhatsApp number. The form is open only during the event window; otherwise a "closed — next event soon" page. | 2 |
