@@ -1,30 +1,28 @@
-# FarsamoTech Repair Hub
+# SIMADRepair
 
-FarsamoTech Repair Hub is a web-based computer repair and maintenance management platform for SIMAD University's Computer Maintenance Week and long-term campus repair operations.
+SIMAD University IT Service Desk for Computer Maintenance Week: students and staff register a device online, drop it off at the event, follow the repair, and collect it with their university ID card. Lead technicians run the desk, volunteer technicians repair, admins run the event and its report.
 
-The platform replaces paper and Excel-based tracking with centralized repair requests, device tracking, technician workflows, admin reporting, analytics, notifications, and repair history.
-
-## Project Identity
-
-- Platform name: FarsamoTech Repair Hub
-- Team name: XeelTech Solutions
-- Project type: University computer repair and maintenance management platform
-- Version: 1.0 planning baseline
+Built by the Faculty of Computing engineering team, SIMAD University.
 
 ## Documentation
 
-- [Project Definition](docs/PROJECT_DEFINITION.md)
-- [Project Setup](docs/PROJECT_SETUP.md)
-- [Architecture](docs/ARCHITECTURE.md)
-- [Constraints](docs/CONSTRAINTS.md)
-- [Development Plan](docs/DEVELOPMENT_PLAN.md)
+- [How the platform works, role by role](docs/platform/README.md)
+- [Spec](docs/platform/spec.md) — GitHub issue #6, tickets #7–#32
+- [Design system](docs/platform/design-system.md) and [UI principles](docs/platform/ui-principles.md)
+- [Faculty documentation](docs/SIMADRepair-Faculty-Documentation.md)
 
-## MVP Focus
+## Stack
 
-The first version should focus on online registration, repair request management, repair journey tracking, technician assignment, admin oversight, core analytics, and notification readiness.
+Next.js 15 (App Router) + TypeScript, Prisma, PostgreSQL on Supabase, Vitest and Playwright.
 
-Phase 2 ideas such as mobile apps, AI classification, WhatsApp notifications, inventory management, and student portal integration are intentionally treated as future expansion.
+## Development
 
-## Technical Direction
+```bash
+cp .env.example .env    # fill in database and JWT settings
+npm install
+npm run prisma:migrate
+npm run prisma:seed     # creates the first admin
+npm run dev
+```
 
-This project is set up as a Next.js full-stack TypeScript application. Frontend screens, backend route handlers, server modules, and Prisma database access live in one codebase. Supabase PostgreSQL is the target database.
+Checks before pushing: `npm run lint`, `npm run typecheck`, `npm test`.

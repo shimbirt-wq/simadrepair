@@ -35,5 +35,6 @@ pnpm-debug.log*
 .DS_Store
 Thumbs.db
 
-# local agent/tooling
-.claude/
+# local agent/tooling (shared skills are committed)
+.claude/*
+!.claude/skills/
