@@ -80,6 +80,7 @@ describe("ticket workflow — allowed transitions", () => {
     ["MARK_READY", tech, { type: "MARK_READY" }, ["IN_REPAIR"], (s) => ticket(s, "tech")],
     ["PICKUP", lead, { type: "PICKUP" }, ["READY_FOR_PICKUP", "CANNOT_BE_REPAIRED"], (s) => ticket(s, "tech")],
     ["CANCEL", requester, { type: "CANCEL" }, ["SUBMITTED"], (s) => ticket(s)],
+    ["ADD_NOTE", tech, { type: "ADD_NOTE", note: "Replaced thermal paste" }, ["SUBMITTED", "RECEIVED", "IN_REPAIR", "WAITING_FOR_PARTS", "ACTION_NEEDED", "CANNOT_REPAIR_PROPOSED", "CANNOT_BE_REPAIRED", "READY_FOR_PICKUP"], (s) => ticket(s, "tech")],
     ["CLOSE_EVENT_ENDED", system, { type: "CLOSE_EVENT_ENDED" }, ["SUBMITTED", "RECEIVED", "IN_REPAIR", "WAITING_FOR_PARTS", "ACTION_NEEDED", "CANNOT_REPAIR_PROPOSED"], (s) => ticket(s, "tech")],
   ];
 

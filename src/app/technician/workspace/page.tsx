@@ -1,21 +1,12 @@
-import { redirect } from "next/navigation";
 import { AppShell } from "@/app/app-shell";
-import { TechnicianWorkspace } from "@/components/service-desk/technician-workspace";
-import { getCurrentServerUser } from "@/lib/auth/server-user";
+import { TechnicianWorkspace } from "@/components/technician/workspace";
+import { requirePageRole } from "@/lib/auth/require-page-role";
 
 export default async function TechnicianWorkspacePage() {
-  const user = await getCurrentServerUser();
-
-  if (!user) {
-    redirect("/auth/login?next=/technician/workspace");
-  }
-
-  if (user.role !== "TECHNICIAN" && user.role !== "LEAD_TECHNICIAN" && user.role !== "ADMIN") {
-    redirect("/profile?denied=technician-workspace");
-  }
+  const user = await requirePageRole("/technician/workspace", ["TECHNICIAN", "LEAD_TECHNICIAN"]);
 
   return (
-    <AppShell active="technician" eyebrow="Technician workspace" title="Assigned repair work" user={user}>
+    <AppShell active="technician" eyebrow="Repairs" title={`Salaam, ${user.fullName.split(" ")[0]}`} user={user}>
       <TechnicianWorkspace />
     </AppShell>
   );

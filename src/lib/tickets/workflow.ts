@@ -33,7 +33,8 @@ export type WorkflowAction =
   | { type: "MARK_READY" }
   | { type: "PICKUP" }
   | { type: "CANCEL" }
-  | { type: "CLOSE_EVENT_ENDED" };
+  | { type: "CLOSE_EVENT_ENDED" }
+  | { type: "ADD_NOTE"; note: string };
 
 export type WorkflowEvent = {
   type: RepairEventType;
@@ -209,6 +210,14 @@ export function decide(ticket: WorkflowTicket, actor: WorkflowActor, action: Wor
       if (actor.kind !== "requester" && !isDesk(actor)) return forbidden("Only the requester or the desk can cancel.");
       if (status !== "SUBMITTED") return invalid("Requests can only be cancelled before drop-off.");
       return move(ticket, "CANCELLED", "TICKET_CANCELLED", "Request cancelled.", { technicianId: null });
+    }
+
+    case "ADD_NOTE": {
+      if (!canWorkOn(actor, ticket)) return forbidden("Only the assigned technician or the desk can add notes.");
+      if (TERMINAL_STATUSES.includes(status)) return invalid("This ticket is closed.");
+      const noteError = requireText(action.note, "A note");
+      if (noteError) return noteError;
+      return move(ticket, status, "NOTE_ADDED", action.note.trim(), { metadata: { kind: "note" } });
     }
 
     case "CLOSE_EVENT_ENDED": {

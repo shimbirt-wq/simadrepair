@@ -1,4 +1,4 @@
-import type { PrismaClient, TicketPriority, TicketStatus } from "@prisma/client";
+import { Prisma, type PrismaClient, type TicketPriority, type TicketStatus } from "@prisma/client";
 import { hasAccess } from "@/lib/auth/public-user";
 import { skillLabels } from "@/lib/staff/staff-service";
 import { boardColumn, isStuck, type BoardColumnKey } from "@/lib/board/board-rules";
@@ -32,6 +32,51 @@ export type BoardEvent = { id: string; name: string; venue: string; hours: strin
 
 export type Board = { event: BoardEvent | null; tickets: BoardTicket[]; technicians: BoardTechnician[]; generatedAt: string };
 
+export const boardTicketSelect = Prisma.validator<Prisma.RepairTicketSelect>()({
+  id: true,
+  trackingCode: true,
+  ticketId: true,
+  tagNumber: true,
+  priority: true,
+  status: true,
+  technicianId: true,
+  createdAt: true,
+  startedAt: true,
+  readyForPickupAt: true,
+  closedAt: true,
+  problemCategories: true,
+  technician: { select: { id: true, fullName: true } },
+  requester: { select: { fullName: true, universityId: true, phone: true } },
+  device: { select: { deviceType: true, brand: true, model: true } },
+  custody: { select: { receivedAt: true, storageLocation: true } },
+});
+
+type BoardTicketRecord = Prisma.RepairTicketGetPayload<{ select: typeof boardTicketSelect }>;
+
+export function toBoardTicket(ticket: BoardTicketRecord, now: Date): BoardTicket | null {
+  const facts = { status: ticket.status, technicianId: ticket.technicianId, receivedAt: ticket.custody?.receivedAt ?? null, startedAt: ticket.startedAt, closedAt: ticket.closedAt };
+  const column = boardColumn(facts, now);
+  if (!column) return null;
+  const since = ticket.closedAt ?? ticket.readyForPickupAt ?? ticket.startedAt ?? ticket.custody?.receivedAt ?? ticket.createdAt;
+  return {
+    id: ticket.id,
+    trackingCode: ticket.trackingCode ?? ticket.ticketId,
+    tagNumber: ticket.tagNumber,
+    priority: ticket.priority,
+    status: ticket.status,
+    column,
+    stuck: isStuck(facts, now),
+    requesterName: ticket.requester?.fullName ?? "Requester",
+    universityId: ticket.requester?.universityId ?? null,
+    phone: ticket.requester?.phone ?? null,
+    device: `${ticket.device.brand} ${ticket.device.model}`,
+    categories: ticket.problemCategories.map((value) => PROBLEM_CATEGORIES.find((category) => category.value === value)?.label ?? value),
+    technician: ticket.technician ? { id: ticket.technician.id, name: ticket.technician.fullName } : null,
+    zone: ticket.custody?.storageLocation ?? null,
+    since: since.toISOString(),
+  };
+}
+
 export async function getBoard(prisma: PrismaClient, now = new Date()): Promise<Board> {
   const event = await getActiveEvent(prisma);
   const technicians = await listTechniciansWithLoad(prisma);
@@ -43,51 +88,11 @@ export async function getBoard(prisma: PrismaClient, now = new Date()): Promise<
       status: { not: "CANCELLED" },
       OR: [{ status: { not: "COLLECTED" } }, { closedAt: { gte: new Date(now.getTime() - 36 * 60 * 60 * 1000) } }],
     },
-    select: {
-      id: true,
-      trackingCode: true,
-      ticketId: true,
-      tagNumber: true,
-      priority: true,
-      status: true,
-      technicianId: true,
-      createdAt: true,
-      startedAt: true,
-      readyForPickupAt: true,
-      closedAt: true,
-      problemCategories: true,
-      technician: { select: { id: true, fullName: true } },
-      requester: { select: { fullName: true, universityId: true, phone: true } },
-      device: { select: { deviceType: true, brand: true, model: true } },
-      custody: { select: { receivedAt: true, storageLocation: true } },
-    },
+    select: boardTicketSelect,
     orderBy: [{ priority: "desc" }, { createdAt: "asc" }],
   });
 
-  const tickets: BoardTicket[] = [];
-  for (const ticket of records) {
-    const facts = { status: ticket.status, technicianId: ticket.technicianId, receivedAt: ticket.custody?.receivedAt ?? null, startedAt: ticket.startedAt, closedAt: ticket.closedAt };
-    const column = boardColumn(facts, now);
-    if (!column) continue;
-    const since = ticket.closedAt ?? ticket.readyForPickupAt ?? ticket.startedAt ?? ticket.custody?.receivedAt ?? ticket.createdAt;
-    tickets.push({
-      id: ticket.id,
-      trackingCode: ticket.trackingCode ?? ticket.ticketId,
-      tagNumber: ticket.tagNumber,
-      priority: ticket.priority,
-      status: ticket.status,
-      column,
-      stuck: isStuck(facts, now),
-      requesterName: ticket.requester?.fullName ?? "Requester",
-      universityId: ticket.requester?.universityId ?? null,
-      phone: ticket.requester?.phone ?? null,
-      device: `${ticket.device.brand} ${ticket.device.model}`,
-      categories: ticket.problemCategories.map((value) => PROBLEM_CATEGORIES.find((category) => category.value === value)?.label ?? value),
-      technician: ticket.technician ? { id: ticket.technician.id, name: ticket.technician.fullName } : null,
-      zone: ticket.custody?.storageLocation ?? null,
-      since: since.toISOString(),
-    });
-  }
+  const tickets = records.map((record) => toBoardTicket(record, now)).filter((ticket): ticket is BoardTicket => ticket !== null);
 
   return {
     event: { id: event.id, name: event.name, venue: event.venue, hours: event.hours, dates: formatEventDates(event.startsOn, event.endsOn), holdDays: event.holdDays },

@@ -42,6 +42,7 @@ export const staffTicketActionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("MARK_READY") }),
   z.object({ type: z.literal("PICKUP"), collectedByName: text("Collector name", 120), collectedByPhone: optionalText(30) }),
   z.object({ type: z.literal("CANCEL") }),
+  z.object({ type: z.literal("ADD_NOTE"), note: text("A note", 1000) }),
 ]);
 
 export type StaffTicketAction = z.infer<typeof staffTicketActionSchema>;
