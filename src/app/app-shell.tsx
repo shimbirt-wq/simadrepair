@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { BarChart2, LayoutDashboard, Menu, Shield, UserCircle, Users, Wrench } from "lucide-react";
+import { BarChart2, CalendarDays, LayoutDashboard, Menu, Shield, UserCircle, Users, Wrench } from "lucide-react";
 import { SimadRepairLogo } from "@/components/brand/simad-repair-logo";
 import { Eyebrow, ToastProvider, cn } from "@/components/ui";
 import type { PublicUser } from "@/lib/auth/public-user";
@@ -76,6 +76,7 @@ function getNavGroups(user: PublicUser): NavGroup[] {
     {
       label: "Manage",
       items: [
+        { key: "events", href: "/admin/events", label: "Events", icon: <CalendarDays {...icon} /> },
         { key: "users", href: "/admin/users", label: "Staff", icon: <Users {...icon} /> },
       ],
     },

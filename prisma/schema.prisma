@@ -130,8 +130,33 @@ model Device {
   @@map("devices")
 }
 
+/// One Computer Maintenance Week. Its settings drive the request window,
+/// public text, WhatsApp messages, tag numbers and the report.
+model Event {
+  id                   String         @id @default(cuid())
+  name                 String
+  startsOn             DateTime       @map("starts_on") @db.Date
+  endsOn               DateTime       @map("ends_on") @db.Date
+  registrationOpensOn  DateTime       @map("registration_opens_on") @db.Date
+  registrationClosesOn DateTime       @map("registration_closes_on") @db.Date
+  venue                String
+  hours                String
+  deskWhatsapp         String         @map("desk_whatsapp")
+  holdDays             Int            @default(30) @map("hold_days")
+  isActive             Boolean        @default(false) @map("is_active")
+  lastTagNumber        Int            @default(0) @map("last_tag_number")
+  tickets              RepairTicket[]
+  createdAt            DateTime       @default(now()) @map("created_at")
+  updatedAt            DateTime       @updatedAt @map("updated_at")
+
+  @@index([isActive])
+  @@map("events")
+}
+
 model RepairTicket {
   id                    String         @id @default(cuid())
+  eventId               String         @map("event_id")
+  event                 Event          @relation(fields: [eventId], references: [id], onDelete: Restrict)
   ticketId              String         @unique @map("ticket_id")
   trackingCode          String?        @unique @map("tracking_code")
   deviceId              String         @map("device_id")
@@ -153,6 +178,7 @@ model RepairTicket {
   createdAt             DateTime       @default(now()) @map("created_at")
   updatedAt             DateTime       @updatedAt @map("updated_at")
 
+  @@index([eventId])
   @@index([deviceId])
   @@index([requesterId])
   @@index([technicianId])

@@ -3,6 +3,7 @@ import { internalErrorResponse, validationErrorResponse } from "@/lib/api/respon
 import {
   createPublicRepairRequest,
   PublicRepairRequestValidationError,
+  RegistrationClosedError,
 } from "@/lib/service-desk/public-requests";
 import { publicRepairRequestInputSchema } from "@/lib/service-desk/validations";
 
@@ -19,6 +20,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ request: result }, { status: 201 });
   } catch (error) {
+    if (error instanceof RegistrationClosedError) {
+      return NextResponse.json({ error: "Registration is closed.", code: "REGISTRATION_CLOSED", state: error.state }, { status: 409 });
+    }
+
     if (error instanceof PublicRepairRequestValidationError) {
       return validationErrorResponse("Invalid public repair request data.", error.validationError);
     }
