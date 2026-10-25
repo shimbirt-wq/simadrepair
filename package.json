@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:unit": "vitest run src/lib prisma src/app/auth/login/redirects.test.ts",
-    "test:integration": "vitest run src/app/api src/lib/dashboard",
+    "test:integration": "vitest run src/app/api",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:install": "playwright install chromium",
