@@ -4,7 +4,9 @@ import { ArrowLeft, Eye, EyeOff, KeyRound } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState, useTransition, type ReactNode } from "react";
 import { IntakePanel } from "@/components/staff/intake-panel";
+import { MessageButton } from "@/components/staff/message-button";
 import { RepairSummary } from "@/components/staff/repair-summary";
+import { suggestedTemplate } from "@/lib/messaging/templates";
 import { ReadyForm } from "@/components/technician/ready-form";
 import { Badge, Button, Card, Eyebrow, Field, Input, StatusBadge, TagNumber, Textarea, Timeline, UrgentBadge, useToast } from "@/components/ui";
 import { sendJson } from "@/lib/client/api";
@@ -161,6 +163,9 @@ export function TechnicianTicketView({
           <p className="rounded-md bg-warning-soft px-4 py-3 text-small text-warning-text">Waiting for the lead to confirm: {proposal}</p>
         ) : null}
         {primary}
+        {mine && suggestedTemplate(ticket.status) && ticket.status !== "SUBMITTED" ? (
+          <MessageButton ticketId={ticket.id} template={suggestedTemplate(ticket.status)!} sent={ticket.messagesSent} onSent={() => void load()} />
+        ) : null}
         {mine && ticket.status === "IN_REPAIR" && mode === "ready" ? (
           <ReadyForm
             defaultFaults={ticket.intake.categoryValues}

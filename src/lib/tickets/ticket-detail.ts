@@ -35,6 +35,7 @@ export type StaffTicketDetail = {
   };
   intake: IntakeDetail;
   repair: { faults: string[]; actions: string[]; note: string | null; tests: string[] } | null;
+  messagesSent: Array<{ template: string; at: string; by: string | null }>;
   /** The step "Undo last step" would reverse, if any. */
   undoable: { type: RepairEventType; note: string | null; adminOnly: boolean } | null;
   timeline: Array<{ id: string; type: RepairEventType; note: string | null; at: string; actor: string | null; actorRole: UserRole | null }>;
@@ -126,6 +127,9 @@ export async function getStaffTicketDetail(prisma: PrismaClient, ref: string): P
           tests: ticket.testsPassed.map((value) => labelOf(TEST_CHECKS, value)),
         }
       : null,
+    messagesSent: ticket.events
+      .filter((event) => event.eventType === "MESSAGE_SENT")
+      .map((event) => ({ template: String((event.metadata as Record<string, unknown> | null)?.template ?? ""), at: event.createdAt.toISOString(), by: event.actor?.fullName ?? null })),
     undoable: (() => {
       const step = findUndoStep(ticket.events);
       return step && step.statusTo === ticket.status ? { type: step.eventType, note: step.note, adminOnly: step.eventType === "PICKUP_CONFIRMED" } : null;
