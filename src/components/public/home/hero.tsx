@@ -10,7 +10,7 @@ type Tone = "success" | "info" | "neutral";
 
 /** What the hero says for each registration state (WA4: all from Event settings). */
 function heroState(state: RegistrationState, event: ActiveEvent | null, now: Date): { badge: string | null; tone: Tone; lead: string } {
-  if (!event || state === "NO_EVENT") return { badge: null, tone: "neutral", lead: "No Maintenance Week is scheduled right now. You can still track a repair or find your request." };
+  if (!event || state === "NO_EVENT") return { badge: null, tone: "neutral", lead: "No maintenance program is scheduled right now. You can still track a repair or find your request." };
   if (state === "OPEN") return { badge: "Registration open", tone: "success", lead: "Free repair and maintenance for SIMAD students and staff. Register online, then bring your device to the desk." };
   if (state === "NOT_YET_OPEN") return { badge: `Registration opens ${formatDay(event.registrationOpensOn)}`, tone: "info", lead: "Free repair and maintenance for SIMAD students and staff. Come back when registration opens." };
   if (isEventRunning(event, now)) return { badge: "Event running · registration closed", tone: "info", lead: "Registration is closed. If you already registered, track your repair below." };
@@ -71,7 +71,7 @@ export function Hero({ state, event, now = new Date() }: { state: RegistrationSt
                 icon={<MessageCircle className="h-5 w-5" strokeWidth={1.75} />}
                 label="Desk WhatsApp"
                 value={
-                  <a className="font-mono text-ink-accent hover:underline" href={whatsappLink(event.deskWhatsapp, "Salaam, I have a question about the Maintenance Week.")} target="_blank" rel="noreferrer">
+                  <a className="font-mono text-ink-accent hover:underline" href={whatsappLink(event.deskWhatsapp, "Salaam, I have a question about the maintenance program.")} target="_blank" rel="noreferrer">
                     {whatsappDisplay(event.deskWhatsapp)}
                   </a>
                 }

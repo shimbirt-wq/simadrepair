@@ -48,7 +48,7 @@ export function EventForm({ eventId, initial }: { eventId?: string; initial: Eve
     <form onSubmit={submit} className="flex max-w-form flex-col gap-6" noValidate>
       <Card className="flex flex-col gap-5 p-6">
         <Field label="Name" error={issue("name")}>
-          <Input value={values.name} onChange={set("name")} placeholder="Computer Maintenance Week 2026" aria-invalid={Boolean(issue("name"))} />
+          <Input value={values.name} onChange={set("name")} placeholder="Computer Maintenance Program 2026" aria-invalid={Boolean(issue("name"))} />
         </Field>
         <div className="grid gap-5 sm:grid-cols-2">
           <Field label="First day" error={issue("startsOn")}>

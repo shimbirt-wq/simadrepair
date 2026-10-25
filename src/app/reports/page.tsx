@@ -22,7 +22,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   if (!report) {
     return (
       <AppShell active="reports" eyebrow="Reports" title="Event report" user={user}>
-        <EmptyState icon={<BarChart3 className="h-8 w-8" strokeWidth={1.5} />} title="No Maintenance Week yet. The report appears once an event has requests." />
+        <EmptyState icon={<BarChart3 className="h-8 w-8" strokeWidth={1.5} />} title="No maintenance program yet. The report appears once an event has requests." />
       </AppShell>
     );
   }

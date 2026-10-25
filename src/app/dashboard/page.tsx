@@ -21,7 +21,7 @@ export default async function OverviewPage() {
       <AppShell active="dashboard" eyebrow="Overview" title="No active event" user={user}>
         <EmptyState
           icon={<CalendarDays className="h-8 w-8" strokeWidth={1.5} />}
-          title="Activate a Maintenance Week to see live numbers."
+          title="Activate a maintenance program to see live numbers."
           action={user.role === "ADMIN" ? <ButtonLink href="/admin/events">Events</ButtonLink> : undefined}
         />
       </AppShell>

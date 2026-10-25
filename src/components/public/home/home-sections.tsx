@@ -1,4 +1,4 @@
-import { BatteryCharging, ClipboardCheck, IdCard, Keyboard, KeyRound, Laptop, MonitorSmartphone, PackageCheck, Power, ShieldCheck, Snail, Wifi, Wrench, X } from "lucide-react";
+import { BatteryCharging, ClipboardCheck, HardDrive, IdCard, KeyRound, Laptop, PackageCheck, ShieldCheck, Wifi, Wrench, X } from "lucide-react";
 import type { ReactNode } from "react";
 import { Eyebrow } from "@/components/ui";
 
@@ -47,7 +47,7 @@ export function HowItWorks() {
 
 export function BeforeYouCome() {
   const items = [
-    { icon: <ShieldCheck {...icon} />, title: "Back up your files", body: "Copy anything important to a flash drive or the cloud first." },
+    { icon: <ShieldCheck {...icon} />, title: "Back up your files", body: "Copy anything important first if you can. If not, we can help at the desk." },
     { icon: <BatteryCharging {...icon} />, title: "Bring the charger", body: "We need it to test the device." },
     { icon: <IdCard {...icon} />, title: "Bring your university ID card", body: "We check it at drop-off and at pickup." },
     { icon: <KeyRound {...icon} />, title: "Know your password", body: "Technicians may need to sign in. It's stored encrypted and deleted at pickup." },
@@ -70,32 +70,33 @@ export function BeforeYouCome() {
 }
 
 export function WhatWeFix() {
+  // The five services on the official programme poster.
   const fix = [
-    { icon: <Snail {...icon} />, label: "Slow computer or viruses" },
-    { icon: <Power {...icon} />, label: "Won't turn on or charge" },
-    { icon: <MonitorSmartphone {...icon} />, label: "Screen problems" },
-    { icon: <Keyboard {...icon} />, label: "Keyboard and touchpad" },
-    { icon: <BatteryCharging {...icon} />, label: "Battery and charger port" },
-    { icon: <Laptop {...icon} />, label: "Windows reinstall and updates" },
-    { icon: <Wifi {...icon} />, label: "Wi-Fi and network" },
-    { icon: <Wrench {...icon} />, label: "Cleaning, RAM and SSD upgrades" },
+    { icon: <Wrench {...icon} />, label: "Hardware check and cleaning" },
+    { icon: <Laptop {...icon} />, label: "Windows installation and software updates" },
+    { icon: <ShieldCheck {...icon} />, label: "Virus and malware scanning" },
+    { icon: <HardDrive {...icon} />, label: "Data backup assistance" },
+    { icon: <Wifi {...icon} />, label: "Network connectivity testing" },
   ];
   const dont = [
     "Pirated or cracked software: we install free or university-licensed software only",
     "Buying parts: if a part is needed, we tell you exactly what to buy",
-    "Promising your files survive a failing drive, so back up first",
+    "Promising your files survive a failing drive",
   ];
   return (
-    <HomeSection id="fix" eyebrow="What we fix" title="Laptops and desktops, hardware and software">
+    <HomeSection id="fix" eyebrow="What we do" title="A free tune-up for your laptop">
       <div className="grid gap-8 lg:grid-cols-[3fr_2fr]">
-        <ul className="grid gap-3 sm:grid-cols-2">
-          {fix.map((item) => (
-            <li key={item.label} className="flex items-center gap-3 rounded-md border border-line bg-surface px-4 py-3 text-small font-medium text-ink">
-              <span className="text-accent">{item.icon}</span>
-              {item.label}
-            </li>
-          ))}
-        </ul>
+        <div className="flex flex-col gap-4">
+          <ul className="grid gap-3 sm:grid-cols-2">
+            {fix.map((item) => (
+              <li key={item.label} className="flex items-center gap-3 rounded-md border border-line bg-surface px-4 py-3 text-small font-medium text-ink">
+                <span className="text-accent">{item.icon}</span>
+                {item.label}
+              </li>
+            ))}
+          </ul>
+          <p className="text-small text-ink-secondary">We also look at devices that won&apos;t turn on, screens, keyboards, batteries and charging.</p>
+        </div>
         <div className="flex flex-col gap-3 rounded-lg border border-line bg-surface p-5">
           <h3 className="text-h3 text-ink">What we don&apos;t do</h3>
           <ul className="flex flex-col gap-2.5">
@@ -118,7 +119,7 @@ export function Faq({ holdDays }: { holdDays: number }) {
     { q: "How long does a repair take?", a: "Most devices are done during the event. Track the status any time with your code. We message you on WhatsApp when it's ready." },
     { q: "I lost my tracking code", a: "Use Find my request with your university ID and the last 4 digits of your phone number." },
     { q: "Can someone else collect my device?", a: "Yes. Anyone carrying your university ID card can collect it. We record the name and phone number of whoever collects." },
-    { q: "What about my files and privacy?", a: "Back up first. We only reinstall Windows if you allowed it on the form. Device passwords are stored encrypted and deleted at pickup, and personal details are erased 12 months after the event." },
+    { q: "What about my files and privacy?", a: "Back up what you can before you come; we can help with backup at the desk. We only reinstall Windows if you allowed it on the form. Device passwords are stored encrypted and deleted at pickup, and personal details are erased 12 months after the event." },
     { q: "What if I can't collect during the event?", a: `Uncollected devices move to the IT office after the event. Collect yours there within ${holdDays} days with your university ID card.` },
   ];
   return (
