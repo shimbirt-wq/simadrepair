@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { PickupForm } from "@/components/staff/pickup-form";
 import { PhotoUploader, type UploadedPhoto } from "@/components/public/photo-uploader";
 import { Badge, Button, ChoiceCard, ChoiceGroup, Field, Input, TagNumber, useToast } from "@/components/ui";
 import { neededSkills, rankTechnicians } from "@/lib/staff/skill-match";
@@ -17,7 +18,6 @@ export function DeskActions({ ticket, technicians, onDone }: { ticket: StaffTick
   const [pending, startTransition] = useTransition();
   const [technicianId, setTechnicianId] = useState("");
   const [reason, setReason] = useState("");
-  const [collector, setCollector] = useState({ name: "", phone: "" });
   const [error, setError] = useState<string | null>(null);
 
   function run(body: Record<string, unknown>, success: string) {
@@ -117,19 +117,16 @@ export function DeskActions({ ticket, technicians, onDone }: { ticket: StaffTick
       ) : null}
 
       {pickup ? (
-        <div className="flex flex-col gap-3">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Collected by">
-              <Input value={collector.name} onChange={(e) => setCollector((c) => ({ ...c, name: e.target.value }))} placeholder="Full name" />
-            </Field>
-            <Field label="Their phone" optional>
-              <Input type="tel" value={collector.phone} onChange={(e) => setCollector((c) => ({ ...c, phone: e.target.value }))} />
-            </Field>
-          </div>
-          <Button loading={pending} onClick={() => run({ type: "PICKUP", collectedByName: collector.name, collectedByPhone: collector.phone || null }, "Device handed back")}>
-            Hand back device
-          </Button>
-        </div>
+        <PickupForm
+          ticket={{
+            id: ticket.id,
+            tagNumber: ticket.tagNumber,
+            device: ticket.intake.device.name,
+            universityId: ticket.requester.universityId,
+            accessoriesReceived: ticket.custody.accessoriesReceivedValues.map((value, index) => ({ value, label: ticket.custody.accessoriesReceived[index] })),
+          }}
+          onDone={onDone}
+        />
       ) : null}
 
       {errorLine}

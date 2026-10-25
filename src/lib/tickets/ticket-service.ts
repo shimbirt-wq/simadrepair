@@ -19,7 +19,7 @@ export type CheckInData = {
   priority?: "NORMAL" | "URGENT";
   devicePassword?: string | null;
 };
-export type PickupData = { collectedByName: string; collectedByPhone?: string | null };
+export type PickupData = { collectedByName: string; collectedByPhone?: string | null; accessoriesReturned?: string[] };
 
 export type TicketActionInput =
   | { action: Exclude<WorkflowAction, { type: "CHECK_IN" } | { type: "PICKUP" } | { type: "CLAIM" }> }
@@ -139,6 +139,7 @@ export async function performTicketAction(
         releasedById: actor.kind === "staff" ? actor.id : null,
         collectedByName: input.pickup.collectedByName.trim(),
         collectedByPhone: input.pickup.collectedByPhone?.trim() || null,
+        accessoriesReturned: input.pickup.accessoriesReturned ?? [],
         collectedAt: now,
       };
       if (ticket.custody) await tx.deviceCustody.update({ where: { id: ticket.custody.id }, data: custodyData });
