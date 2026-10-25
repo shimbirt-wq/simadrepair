@@ -44,26 +44,26 @@ export default async function AboutPage() {
           ) : null}
         </section>
 
-        <section aria-labelledby="team-title" className="flex flex-col gap-6">
-          <div className="flex flex-col gap-2">
+        <section aria-labelledby="team-title" className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1">
             <Eyebrow>Built by</Eyebrow>
-            <h2 id="team-title" className="text-h2 text-ink">
+            <h2 id="team-title" className="text-h3 text-ink">
               Faculty of Computing Engineering Team
             </h2>
           </div>
-          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {TEAM.map((member) => (
-              <li key={member.name}>
-                <Card className="overflow-hidden">
-                  <Image src={member.photo} alt={`Portrait of ${member.name}`} placeholder="blur" sizes="(min-width: 1024px) 280px, (min-width: 640px) 45vw, 90vw" className="aspect-square w-full object-cover" />
-                  <div className="flex flex-col gap-0.5 p-4">
-                    <p className="text-body font-semibold text-ink">{member.name}</p>
-                    <p className="text-small text-ink-secondary">{member.title}</p>
+          <Card className="p-2">
+            <ul className="grid divide-y divide-line sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4">
+              {TEAM.map((member) => (
+                <li key={member.name} className="flex items-center gap-3 p-3">
+                  <Image src={member.photo} alt={`Portrait of ${member.name}`} width={48} height={48} className="h-12 w-12 shrink-0 rounded-full object-cover ring-1 ring-line" />
+                  <div className="min-w-0">
+                    <p className="truncate text-small font-semibold text-ink">{member.name}</p>
+                    <p className="truncate text-caption text-ink-secondary">{member.title}</p>
                   </div>
-                </Card>
-              </li>
-            ))}
-          </ul>
+                </li>
+              ))}
+            </ul>
+          </Card>
         </section>
 
         {event ? (
