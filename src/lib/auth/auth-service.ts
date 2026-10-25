@@ -1,3 +1,4 @@
+import { hasAccess } from "@/lib/auth/public-user";
 import type { PrismaClient } from "@prisma/client";
 import { verifyPassword } from "@/lib/auth/password";
 import { requireAuthenticatedUser } from "@/lib/auth/authorization";
@@ -30,11 +31,11 @@ export async function loginUser(prisma: PrismaClient, input: LoginInput): Promis
     };
   }
 
-  if (!user.isActive) {
+  if (!hasAccess(user)) {
     return {
       ok: false,
       status: 403,
-      message: "This account is inactive. Contact an administrator for access.",
+      message: user.isActive ? "Your volunteer access ended with the event. Ask an admin to renew it." : "This account is inactive. Contact an administrator for access.",
     };
   }
 

@@ -24,6 +24,8 @@ function buildPublicUser(overrides: Partial<PublicUser> = {}): PublicUser {
     email: "tech@example.invalid",
     role: "TECHNICIAN",
     isActive: true,
+    skills: [],
+    accessExpiresOn: null,
     createdAt: now,
     updatedAt: now,
     ...overrides,

@@ -70,6 +70,10 @@ model User {
   passwordHash       String               @map("password_hash")
   role               UserRole             @default(TECHNICIAN)
   isActive           Boolean              @default(true) @map("is_active")
+  /// Hardware, Software/OS, Network (LD6).
+  skills             String[]             @default([])
+  /// Volunteer access ends after this day (the event's last day). Null = no expiry.
+  accessExpiresOn    DateTime?            @map("access_expires_on") @db.Date
   assignedTickets    RepairTicket[]       @relation("TechnicianTickets")
   repairEvents       RepairEvent[]        @relation("RepairEventActor")
   custodyReceived    DeviceCustody[]      @relation("CustodyReceivedBy")

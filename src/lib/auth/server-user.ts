@@ -1,7 +1,8 @@
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/db/prisma";
 import { readSessionTokenFromRequest, verifySessionToken } from "@/lib/auth/session";
-import { getUserById } from "@/lib/users/user-service";
+import { hasAccess } from "@/lib/auth/public-user";
+import { getStaffById } from "@/lib/staff/staff-service";
 
 function buildRequestFromCookieHeader(cookieHeader: string): Request {
   return new Request("http://localhost", {
@@ -25,9 +26,9 @@ export async function getCurrentServerUser() {
     return null;
   }
 
-  const user = await getUserById(prisma, session.id);
+  const user = await getStaffById(prisma, session.id);
 
-  if (!user?.isActive) {
+  if (!user || !hasAccess(user)) {
     return null;
   }
 
