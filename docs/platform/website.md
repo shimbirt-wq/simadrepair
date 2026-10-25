@@ -1,6 +1,6 @@
 # Public website
 
-Status: **draft — assumed decisions + open questions**. Covers the public pages around the requester flow (home, about, login, errors). The request form, tracking, find-my-request and closed page are specified in `requester.md` and tickets 03–06, 18.
+Status: **agreed**. Covers the public pages around the requester flow (home, about, login, errors). The request form, tracking, find-my-request and closed page are specified in `requester.md` and tickets 03–06, 18.
 
 ---
 
@@ -92,4 +92,9 @@ Status: **draft — assumed decisions + open questions**. Covers the public page
 
 ## 4. Decisions log
 
-_Filled in as we grill._
+| # | Decision | Round |
+| --- | --- | --- |
+| WD1 | Assumed decisions WA1–WA8 accepted. | 1 |
+| WD2 | **Product name: SIMADRepair** everywhere (tagline "SIMAD University IT Service Desk"). "FarsamoTech Repair Hub" retired; XeelTech Solutions credited on the About page. | 1 |
+| WD3 | **Real photography, not illustrations:** use free-licence stock photos of computers and repair work (e.g. Unsplash/Pexels licence — commercial use, no attribution required), self-hosted in the repo and optimised. Only devices, hands, workbenches and generic campus/student scenes — never stock faces presented as SIMAD staff or students. Replace with real Maintenance Week photos when available. | 1 |
+| WD4 | **About page:** the 4 developers with photos and titles, plus a count of volunteer technicians ("delivered by N student volunteers", from Event data), not their names. | 1 |
