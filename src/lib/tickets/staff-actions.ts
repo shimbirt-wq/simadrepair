@@ -9,7 +9,18 @@ export function performStaffTicketAction(prisma: PrismaClient, user: PublicUser,
 
   switch (body.type) {
     case "CHECK_IN":
-      return performTicketAction(prisma, ticketRef, actor, { action: { type: "CHECK_IN" }, checkIn: { condition: body.condition, storageLocation: body.storageLocation } });
+      return performTicketAction(prisma, ticketRef, actor, {
+        action: { type: "CHECK_IN" },
+        checkIn: {
+          idChecked: body.idChecked,
+          conditionChecks: body.conditionChecks,
+          condition: body.condition,
+          accessoriesReceived: body.accessoriesReceived,
+          zone: body.zone,
+          priority: body.priority,
+          devicePassword: body.devicePassword,
+        },
+      });
     case "PICKUP":
       return performTicketAction(prisma, ticketRef, actor, { action: { type: "PICKUP" }, pickup: { collectedByName: body.collectedByName, collectedByPhone: body.collectedByPhone } });
     case "CLAIM":

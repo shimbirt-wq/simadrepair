@@ -90,7 +90,13 @@ export function TicketSheet({
                 Received {formatDateTime(ticket.custody.receivedAt)}
                 {ticket.custody.receivedBy ? ` by ${ticket.custody.receivedBy}` : ""}
               </p>
-              {ticket.custody.condition ? <p>Condition: {ticket.custody.condition}</p> : null}
+              <p>{ticket.custody.idChecked ? "ID card checked." : "ID card not recorded."}</p>
+              {ticket.custody.conditionChecks.length || ticket.custody.condition ? (
+                <p>Condition: {[...ticket.custody.conditionChecks, ticket.custody.condition].filter(Boolean).join(" · ")}</p>
+              ) : (
+                <p>No damage noted.</p>
+              )}
+              <p>Received with: {ticket.custody.accessoriesReceived.length ? ticket.custody.accessoriesReceived.join(", ") : "device only"}</p>
               {ticket.custody.collectedAt ? (
                 <p>
                   Collected {formatDateTime(ticket.custody.collectedAt)} by {ticket.custody.collectedByName}

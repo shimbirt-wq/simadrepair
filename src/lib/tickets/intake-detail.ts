@@ -28,6 +28,7 @@ export type IntakeDetail = {
   errorMessage: string | null;
   description: string;
   accessories: string[];
+  accessoryValues: string[];
   wipeAllowed: boolean;
   needsPassword: boolean;
   photos: Array<{ id: string; kind: "REQUESTER" | "DAMAGE"; url: string }>;
@@ -56,6 +57,7 @@ export function toIntakeDetail(ticket: IntakeRecord): IntakeDetail {
     errorMessage: ticket.errorMessage,
     description: ticket.issueDescription,
     accessories: ticket.accessoriesLeft.map((value) => labelOf(ACCESSORIES, value)),
+    accessoryValues: ticket.accessoriesLeft,
     wipeAllowed: ticket.wipeAllowed,
     needsPassword: ticket.needsPassword,
     photos: ticket.photos.map((photo) => ({ id: photo.id, kind: photo.kind, url: `/api/staff/photos/${photo.id}` })),

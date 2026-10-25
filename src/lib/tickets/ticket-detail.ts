@@ -1,4 +1,6 @@
 import type { PrismaClient, RepairEventType, TicketPriority, TicketStatus, UserRole } from "@prisma/client";
+import { ACCESSORIES, labelOf } from "@/lib/intake/options";
+import { CONDITION_CHECKS } from "@/lib/tickets/check-in-options";
 import { getIntakeDetail, type IntakeDetail } from "@/lib/tickets/intake-detail";
 import { ticketLookupWhere } from "@/lib/tickets/ticket-service";
 
@@ -13,7 +15,11 @@ export type StaffTicketDetail = {
   event: { id: string; name: string; venue: string; hours: string; deskWhatsapp: string };
   requester: { fullName: string; universityId: string; phone: string; faculty: string | null; requesterType: string };
   technician: { id: string; name: string; phone: string | null } | null;
+  hasPassword: boolean;
   custody: {
+    idChecked: boolean;
+    conditionChecks: string[];
+    accessoriesReceived: string[];
     receivedAt: string | null;
     receivedBy: string | null;
     condition: string | null;
@@ -38,11 +44,15 @@ export async function getStaffTicketDetail(prisma: PrismaClient, ref: string): P
       priority: true,
       status: true,
       createdAt: true,
+      devicePasswordEnc: true,
       event: { select: { id: true, name: true, venue: true, hours: true, deskWhatsapp: true } },
       requester: { select: { fullName: true, universityId: true, phone: true, faculty: true, requesterType: true } },
       technician: { select: { id: true, fullName: true, phone: true } },
       custody: {
         select: {
+          idChecked: true,
+          conditionChecks: true,
+          accessoriesReceived: true,
           receivedAt: true,
           condition: true,
           storageLocation: true,
@@ -76,7 +86,11 @@ export async function getStaffTicketDetail(prisma: PrismaClient, ref: string): P
       requesterType: ticket.requester?.requesterType ?? "STUDENT",
     },
     technician: ticket.technician ? { id: ticket.technician.id, name: ticket.technician.fullName, phone: ticket.technician.phone } : null,
+    hasPassword: Boolean(ticket.devicePasswordEnc),
     custody: {
+      idChecked: ticket.custody?.idChecked ?? false,
+      conditionChecks: (ticket.custody?.conditionChecks ?? []).map((value) => labelOf(CONDITION_CHECKS, value)),
+      accessoriesReceived: (ticket.custody?.accessoriesReceived ?? []).map((value) => labelOf(ACCESSORIES, value)),
       receivedAt: iso(ticket.custody?.receivedAt),
       receivedBy: ticket.custody?.receivedBy?.fullName ?? null,
       condition: ticket.custody?.condition ?? null,

@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 export type TimelineItem = { id: string; title: ReactNode; detail?: ReactNode; at: Date | string };
 
-const formatter = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+const formatter = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Africa/Mogadishu" });
 
 export function Timeline({ items }: { items: TimelineItem[] }) {
   return (

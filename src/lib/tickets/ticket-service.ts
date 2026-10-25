@@ -1,4 +1,5 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
+import { encryptDevicePassword } from "@/lib/secrets/device-password";
 import { decide, OPEN_REPAIR_STATUSES, type WorkflowAction, type WorkflowActor } from "@/lib/tickets/workflow";
 
 /**
@@ -7,7 +8,15 @@ import { decide, OPEN_REPAIR_STATUSES, type WorkflowAction, type WorkflowActor }
  * in one transaction. Callers never set `status` themselves.
  */
 
-export type CheckInData = { condition?: string | null; storageLocation?: string | null };
+export type CheckInData = {
+  idChecked?: boolean;
+  conditionChecks?: string[];
+  condition?: string | null;
+  accessoriesReceived?: string[];
+  zone?: string | null;
+  priority?: "NORMAL" | "URGENT";
+  devicePassword?: string | null;
+};
 export type PickupData = { collectedByName: string; collectedByPhone?: string | null };
 
 export type TicketActionInput =
@@ -17,7 +26,7 @@ export type TicketActionInput =
   | { action: { type: "CLAIM" } };
 
 export type TicketActionResult =
-  | { ok: true; ticketId: string; status: string }
+  | { ok: true; ticketId: string; status: string; tagNumber?: number | null }
   | { ok: false; status: 400 | 403 | 404 | 409; message: string };
 
 type Db = PrismaClient | Prisma.TransactionClient;
@@ -39,7 +48,7 @@ export async function performTicketAction(
   return prisma.$transaction(async (tx) => {
     const ticket = await tx.repairTicket.findFirst({
       where: ticketLookupWhere(ticketRef),
-      select: { id: true, deviceId: true, status: true, technicianId: true, custody: { select: { id: true } } },
+      select: { id: true, eventId: true, deviceId: true, status: true, technicianId: true, custody: { select: { id: true } } },
     });
 
     if (!ticket) return { ok: false, status: 404, message: "Repair ticket not found." } as const;
@@ -73,6 +82,8 @@ export async function performTicketAction(
     if (decision.technicianId && decision.technicianId !== ticket.technicianId) ticketData.assignedAt = now;
     if (!decision.technicianId) ticketData.assignedAt = null;
     if (decision.event.type === "REPAIR_STARTED") ticketData.startedAt = now;
+    // The device password is only needed while the device is with us.
+    if (decision.status === "COLLECTED" || decision.status === "CANCELLED") ticketData.devicePasswordEnc = null;
     if (decision.status === "READY_FOR_PICKUP") {
       ticketData.readyForPickupAt = now;
       ticketData.completedAt = now;
@@ -85,13 +96,28 @@ export async function performTicketAction(
     const updated = await tx.repairTicket.updateMany({ where: { id: ticket.id, status: ticket.status }, data: ticketData });
     if (updated.count !== 1) return { ok: false, status: 409, message: "This ticket just changed. Refresh and try again." } as const;
 
-    if ("checkIn" in input || action.type === "CHECK_IN") {
+    let tagNumber: number | null = null;
+    if (action.type === "CHECK_IN") {
       const checkIn = ("checkIn" in input ? input.checkIn : undefined) ?? {};
+      // Row lock on the event serialises tag allocation across simultaneous check-ins.
+      const event = await tx.event.update({ where: { id: ticket.eventId }, data: { lastTagNumber: { increment: 1 } }, select: { lastTagNumber: true } });
+      tagNumber = event.lastTagNumber;
+      await tx.repairTicket.update({
+        where: { id: ticket.id },
+        data: {
+          tagNumber,
+          priority: checkIn.priority ?? "NORMAL",
+          devicePasswordEnc: checkIn.devicePassword ? encryptDevicePassword(checkIn.devicePassword) : null,
+        },
+      });
       const custodyData = {
         receivedById: actor.kind === "staff" ? actor.id : null,
         receivedAt: now,
+        idChecked: Boolean(checkIn.idChecked),
+        conditionChecks: checkIn.conditionChecks ?? [],
         condition: checkIn.condition ?? null,
-        storageLocation: checkIn.storageLocation ?? null,
+        accessoriesReceived: checkIn.accessoriesReceived ?? [],
+        storageLocation: checkIn.zone ?? null,
       };
       if (ticket.custody) await tx.deviceCustody.update({ where: { id: ticket.custody.id }, data: custodyData });
       else await tx.deviceCustody.create({ data: { ticketId: ticket.id, deviceId: ticket.deviceId, ...custodyData } });
@@ -124,11 +150,13 @@ export async function performTicketAction(
         metadata: {
           ...(decision.event.metadata ?? {}),
           ...("pickup" in input ? { collectedByName: input.pickup.collectedByName, collectedByPhone: input.pickup.collectedByPhone ?? null } : {}),
-          ...("checkIn" in input && input.checkIn?.storageLocation ? { storageLocation: input.checkIn.storageLocation } : {}),
+          ...(tagNumber !== null ? { tagNumber } : {}),
+          ...("checkIn" in input && input.checkIn?.zone ? { zone: input.checkIn.zone } : {}),
+          ...("checkIn" in input && input.checkIn?.priority === "URGENT" ? { priority: "URGENT" } : {}),
         },
       },
     });
 
-    return { ok: true, ticketId: ticket.id, status: decision.status } as const;
+    return { ok: true, ticketId: ticket.id, status: decision.status, tagNumber } as const;
   });
 }

@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Button, Field, Input, Select, useToast } from "@/components/ui";
+import { PhotoUploader, type UploadedPhoto } from "@/components/public/photo-uploader";
+import { Button, ChoiceCard, ChoiceGroup, Field, Input, Select, TagNumber, useToast } from "@/components/ui";
+import { ACCESSORIES } from "@/lib/intake/options";
+import { CONDITION_CHECKS, MAX_DAMAGE_PHOTOS } from "@/lib/tickets/check-in-options";
 import { sendJson } from "@/lib/client/api";
 import type { StaffTicketDetail } from "@/lib/tickets/ticket-detail";
 
@@ -13,8 +16,6 @@ export function DeskActions({ ticket, technicians, onDone }: { ticket: StaffTick
   const [pending, startTransition] = useTransition();
   const [technicianId, setTechnicianId] = useState("");
   const [reason, setReason] = useState("");
-  const [zone, setZone] = useState("");
-  const [condition, setCondition] = useState("");
   const [collector, setCollector] = useState({ name: "", phone: "" });
   const [error, setError] = useState<string | null>(null);
 
@@ -37,30 +38,22 @@ export function DeskActions({ ticket, technicians, onDone }: { ticket: StaffTick
     </p>
   ) : null;
 
-  if (ticket.status === "SUBMITTED") {
-    return (
-      <div className="flex flex-col gap-3">
-        <div className="grid gap-3 sm:grid-cols-[120px_1fr]">
-          <Field label="Zone" optional>
-            <Input value={zone} onChange={(e) => setZone(e.target.value.toUpperCase().slice(0, 1))} placeholder="A" className="font-mono uppercase" />
-          </Field>
-          <Field label="Condition" optional>
-            <Input value={condition} onChange={(e) => setCondition(e.target.value)} placeholder="Scratches, cracked corner…" />
-          </Field>
-        </div>
-        {errorLine}
-        <Button loading={pending} onClick={() => run({ type: "CHECK_IN", storageLocation: zone || null, condition: condition || null }, "Device checked in")}>
-          Check in device
-        </Button>
-      </div>
-    );
-  }
+  if (ticket.status === "SUBMITTED") return <CheckInForm ticket={ticket} onDone={onDone} />;
 
   const assignable = ["RECEIVED", "IN_REPAIR", "WAITING_FOR_PARTS", "ACTION_NEEDED"].includes(ticket.status);
   const pickup = ticket.status === "READY_FOR_PICKUP" || ticket.status === "CANNOT_BE_REPAIRED";
 
   return (
     <div className="flex flex-col gap-4">
+      {ticket.tagNumber && ticket.status === "RECEIVED" && !ticket.technician ? (
+        <div className="flex items-center justify-between gap-3 rounded-md bg-accent-soft px-4 py-3">
+          <span className="text-small text-ink-secondary">Sticker</span>
+          <span className="flex items-baseline gap-3">
+            <TagNumber tag={ticket.tagNumber} size="lg" />
+            <span className="text-h3 text-ink">{ticket.requester.fullName.split(" ")[0]}</span>
+          </span>
+        </div>
+      ) : null}
       {ticket.status === "CANNOT_REPAIR_PROPOSED" ? (
         <div className="flex flex-col gap-3 rounded-md bg-warning-soft p-4">
           <p className="text-small font-semibold text-warning-text">Technician says this cannot be repaired.</p>
@@ -123,6 +116,112 @@ export function DeskActions({ ticket, technicians, onDone }: { ticket: StaffTick
       ) : null}
 
       {errorLine}
+    </div>
+  );
+}
+
+/** Check-in at the desk (LD4, LD7, LD14, LD15, TD2). */
+function CheckInForm({ ticket, onDone }: { ticket: StaffTicketDetail; onDone: () => void }) {
+  const toast = useToast();
+  const [pending, startTransition] = useTransition();
+  const [idChecked, setIdChecked] = useState(false);
+  const [checks, setChecks] = useState<string[]>([]);
+  const [condition, setCondition] = useState("");
+  const [accessories, setAccessories] = useState<string[]>(ticket.intake.accessoryValues);
+  const [zone, setZone] = useState("");
+  const [urgent, setUrgent] = useState(false);
+  const [password, setPassword] = useState("");
+  const [photos, setPhotos] = useState<UploadedPhoto[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  const toggle = (list: string[], value: string, on: boolean) => (on ? [...list, value] : list.filter((item) => item !== value));
+
+  function submit() {
+    if (!idChecked) {
+      setError("Check the university ID card first.");
+      return;
+    }
+    setError(null);
+    startTransition(async () => {
+      const result = await sendJson<{ ticket: { tagNumber?: number } }>(`/api/staff/tickets/${ticket.id}/actions`, "POST", {
+        type: "CHECK_IN",
+        idChecked,
+        conditionChecks: checks,
+        condition: condition || null,
+        accessoriesReceived: accessories,
+        zone,
+        priority: urgent ? "URGENT" : "NORMAL",
+        devicePassword: password || undefined,
+      });
+      if (!result.ok) {
+        setError(Object.values(result.issues)[0]?.[0] ?? result.error);
+        return;
+      }
+      toast.success("Checked in — write the sticker");
+      onDone();
+    });
+  }
+
+  return (
+    <div className="flex flex-col gap-5">
+      <ChoiceCard
+        type="checkbox"
+        label="University ID card checked"
+        description={
+          <>
+            Card must show <span className="font-mono font-semibold text-ink">{ticket.requester.universityId}</span>
+          </>
+        }
+        checked={idChecked}
+        onChange={(e) => setIdChecked(e.target.checked)}
+      />
+
+      <ChoiceGroup legend="Condition" columns={2}>
+        {CONDITION_CHECKS.map((option) => (
+          <ChoiceCard key={option.value} type="checkbox" label={option.label} checked={checks.includes(option.value)} onChange={(e) => setChecks((list) => toggle(list, option.value, e.target.checked))} />
+        ))}
+      </ChoiceGroup>
+      <Field label="Condition note" optional>
+        <Input value={condition} onChange={(e) => setCondition(e.target.value)} placeholder="Crack on the lower-left corner" />
+      </Field>
+
+      <ChoiceGroup legend="Received with the device" columns={2}>
+        {ACCESSORIES.map((option) => (
+          <ChoiceCard key={option.value} type="checkbox" label={option.label} checked={accessories.includes(option.value)} onChange={(e) => setAccessories((list) => toggle(list, option.value, e.target.checked))} />
+        ))}
+      </ChoiceGroup>
+
+      <div className="flex flex-col gap-2">
+        <p className="text-small font-semibold text-ink">
+          Damage photos <span className="font-normal text-ink-muted">optional</span>
+        </p>
+        <PhotoUploader photos={photos} onChange={setPhotos} max={MAX_DAMAGE_PHOTOS} endpoint={`/api/staff/tickets/${ticket.id}/photos`} />
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-[120px_1fr]">
+        <Field label="Zone" optional>
+          <Input value={zone} onChange={(e) => setZone(e.target.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 1))} placeholder="A" className="font-mono uppercase" />
+        </Field>
+        <ChoiceGroup legend="Priority" columns={2}>
+          <ChoiceCard name={`priority-${ticket.id}`} label="Normal" checked={!urgent} onChange={() => setUrgent(false)} />
+          <ChoiceCard name={`priority-${ticket.id}`} label="Urgent" description="Thesis, exam" checked={urgent} onChange={() => setUrgent(true)} />
+        </ChoiceGroup>
+      </div>
+
+      {ticket.intake.needsPassword ? (
+        <Field label="Device password" hint="Encrypted. Only the assigned technician can see it; deleted at pickup.">
+          <Input value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="off" spellCheck={false} />
+        </Field>
+      ) : null}
+
+      {error ? (
+        <p className="text-caption text-error-text" role="alert">
+          {error}
+        </p>
+      ) : null}
+      <Button size="lg" loading={pending} onClick={submit}>
+        Check in and get tag number
+      </Button>
     </div>
   );
 }
