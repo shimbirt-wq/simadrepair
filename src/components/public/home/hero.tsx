@@ -97,14 +97,14 @@ export function Hero({ state, event, now = new Date() }: { state: RegistrationSt
 
 function Detail({ icon, label, value }: { icon: React.ReactNode; label: string; value: React.ReactNode }) {
   return (
-    <div className="flex items-start gap-3">
-      <span className="mt-0.5 text-accent" aria-hidden>
-        {icon}
-      </span>
-      <div>
-        <dt className="text-caption text-ink-muted">{label}</dt>
-        <dd className="font-medium text-ink">{value}</dd>
-      </div>
+    <div className="flex flex-col gap-0.5">
+      <dt className="flex items-center gap-3 text-caption text-ink-muted">
+        <span className="text-accent" aria-hidden>
+          {icon}
+        </span>
+        {label}
+      </dt>
+      <dd className="pl-8 font-medium text-ink">{value}</dd>
     </div>
   );
 }

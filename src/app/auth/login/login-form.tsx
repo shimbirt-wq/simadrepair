@@ -1,128 +1,50 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { getPostLoginRedirectPath } from "@/app/auth/login/redirects";
+import { Button, Field, Input } from "@/components/ui";
 
-type LoginState = { error: string | null };
-const initialState: LoginState = { error: null };
-
-type LoginFormProps = { nextPath: string | null };
-
-export function LoginForm({ nextPath }: LoginFormProps) {
+export function LoginForm({ nextPath }: { nextPath: string | null }) {
   const router = useRouter();
-  const [state, setState] = useState(initialState);
+  const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setState(initialState);
-
+    setError(null);
     const formData = new FormData(event.currentTarget);
     const email = String(formData.get("email") ?? "").trim();
     const password = String(formData.get("password") ?? "");
 
     startTransition(async () => {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
+      const response = await fetch("/api/auth/login", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email, password }) });
       const body = (await response.json().catch(() => null)) as { error?: string; user?: { role?: string } } | null;
-
       if (!response.ok) {
-        setState({ error: body?.error ?? "Unable to sign in." });
+        setError(body?.error ?? "Unable to sign in.");
         return;
       }
-
       router.push(getPostLoginRedirectPath(nextPath, body?.user?.role));
       router.refresh();
     });
   }
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-      <p
-        style={{
-          fontSize: 11,
-          fontWeight: 700,
-          letterSpacing: "0.10em",
-          textTransform: "uppercase",
-          color: "var(--blue-600)",
-          marginBottom: 10,
-        }}
-      >
-        Staff access
-      </p>
-      <h1 style={{ fontSize: 26, fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-0.02em", lineHeight: 1.2 }}>
-        Sign in to your workspace
-      </h1>
-      <p style={{ marginTop: 8, fontSize: 13, lineHeight: 1.7, color: "var(--text-tertiary)" }}>
-        For admin, lead technician, and technician accounts only.
-      </p>
-
-      <div style={{ marginTop: 28, display: "flex", flexDirection: "column", gap: 16 }}>
-        <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>
-          Email address
-          <input
-            type="email"
-            name="email"
-            required
-            autoComplete="email"
-            placeholder="you@simad.edu.so"
-            className="field-control"
-          />
-        </label>
-        <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>
-          Password
-          <input
-            type="password"
-            name="password"
-            required
-            autoComplete="current-password"
-            placeholder="••••••••"
-            className="field-control"
-          />
-        </label>
-      </div>
-
-      {state.error ? (
-        <div
-          style={{
-            marginTop: 16,
-            borderRadius: 8,
-            background: "var(--danger-bg)",
-            border: "1px solid var(--fill-danger-soft-border)",
-            padding: "10px 14px",
-            fontSize: 13,
-            color: "var(--danger)",
-            fontWeight: 500,
-          }}
-        >
-          {state.error}
-        </div>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <Field label="Email">
+        <Input type="email" name="email" required autoComplete="email" placeholder="you@simad.edu.so" />
+      </Field>
+      <Field label="Password">
+        <Input type="password" name="password" required autoComplete="current-password" />
+      </Field>
+      {error ? (
+        <p role="alert" className="rounded-md bg-error-soft px-3 py-2 text-small font-medium text-error-text">
+          {error}
+        </p>
       ) : null}
-
-      <button
-        type="submit"
-        disabled={isPending}
-        className="btn-primary"
-        style={{ marginTop: 24, width: "100%", minHeight: 44, fontSize: 14, fontWeight: 700 }}
-      >
-        {isPending ? "Signing in..." : "Sign in"}
-      </button>
-
-      <div style={{ marginTop: 20, display: "flex", gap: 16, justifyContent: "center" }}>
-        <Link href="/request-repair" style={{ fontSize: 13, color: "var(--text-accent)" }}>
-          Submit a repair
-        </Link>
-        <span style={{ color: "var(--border-strong)" }}>·</span>
-        <Link href="/track" style={{ fontSize: 13, color: "var(--text-accent)" }}>
-          Track a repair
-        </Link>
-      </div>
+      <Button type="submit" size="lg" loading={isPending} className="mt-2 w-full">
+        Sign in
+      </Button>
     </form>
   );
 }

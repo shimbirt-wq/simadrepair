@@ -1,7 +1,7 @@
 import { FindRequests } from "@/components/public/find-requests";
 import { PublicLayout } from "@/components/public/public-layout";
 
-export const metadata = { title: "Find my request · SIMADRepair" };
+export const metadata = { title: "Find my request", description: "Lost your tracking code? Find your repair requests with your university ID." };
 
 export default function FindPage() {
   return (

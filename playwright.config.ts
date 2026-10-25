@@ -15,6 +15,8 @@ export default defineConfig({
   use: {
     baseURL,
     trace: "retain-on-failure",
+    // Lets a machine with a preinstalled Chromium run the suite without `playwright install`.
+    launchOptions: process.env.PLAYWRIGHT_CHROMIUM_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH } : undefined,
     screenshot: "only-on-failure",
   },
   webServer: process.env.PLAYWRIGHT_SKIP_WEB_SERVER

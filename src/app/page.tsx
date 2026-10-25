@@ -5,9 +5,18 @@ import { PublicLayout } from "@/components/public/public-layout";
 import { unstable_cache } from "next/cache";
 import { getHomeNumbers } from "@/lib/site/home-numbers";
 import { prisma } from "@/lib/db/prisma";
-import { getRegistration } from "@/lib/events/event-service";
+import type { Metadata } from "next";
+import { getActiveEvent, getRegistration } from "@/lib/events/event-service";
+import { formatEventDates } from "@/lib/events/event-window";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const event = await getActiveEvent(prisma).catch(() => null);
+  if (!event) return {};
+  const title = `${event.name} · ${formatEventDates(event.startsOn, event.endsOn)}`;
+  return { title: { absolute: `${title} · SIMADRepair` }, openGraph: { title, description: `Free repair and maintenance at ${event.venue}, ${event.hours}.` } };
+}
 
 // Briefly cached: the home page is the busiest public page during registration.
 const cachedHomeNumbers = unstable_cache(() => getHomeNumbers(prisma), ["home-numbers"], { revalidate: 60 });

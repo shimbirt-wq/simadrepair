@@ -2,20 +2,17 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "SIMADRepair IT Service Desk",
-  description: "Computer repair and maintenance management for SIMAD University.",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
+  title: { default: "SIMADRepair · SIMAD University IT Service Desk", template: "%s · SIMADRepair" },
+  description: "Free computer repair and maintenance for SIMAD University students and staff during the Computer Maintenance Week.",
+  applicationName: "SIMADRepair",
+  openGraph: { type: "website", siteName: "SIMADRepair", locale: "en" },
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body>
-        {children}
-      </body>
+      <body>{children}</body>
     </html>
   );
 }
