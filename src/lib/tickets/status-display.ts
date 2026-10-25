@@ -52,3 +52,7 @@ export const STATUS_DISPLAY: Record<TicketStatusName, StatusDisplay> = {
 export function getStatusDisplay(status: string): StatusDisplay {
   return STATUS_DISPLAY[status as TicketStatusName] ?? { label: status, publicLabel: status, tone: "neutral", icon: "inbox" };
 }
+
+export const TICKET_STATUS_LABELS: Record<TicketStatusName, string> = Object.fromEntries(
+  TICKET_STATUSES.map((status) => [status, STATUS_DISPLAY[status].label]),
+) as Record<TicketStatusName, string>;

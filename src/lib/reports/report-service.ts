@@ -1,5 +1,5 @@
-import type { PrismaClient, RepairStatus } from "@prisma/client";
-import { REPAIR_STATUS_LABELS } from "@/lib/constants/repair-status";
+import type { PrismaClient, TicketStatus } from "@prisma/client";
+import { TICKET_STATUS_LABELS as REPAIR_STATUS_LABELS } from "@/lib/tickets/status-display";
 import type { ReportDateRange } from "@/lib/validations/reports";
 import { toCreatedAtRange } from "@/lib/validations/reports";
 
@@ -10,7 +10,7 @@ export type ReportsOverview = {
     completed: number;
     active: number;
   };
-  byStatus: Array<{ status: RepairStatus; label: string; count: number }>;
+  byStatus: Array<{ status: TicketStatus; label: string; count: number }>;
   byFaculty: Array<{ faculty: string; count: number }>;
   byDeviceType: Array<{ deviceType: string; count: number }>;
   monthlyTrend: Array<{ month: string; count: number }>;
@@ -82,11 +82,11 @@ export async function getReportsOverview(prisma: PrismaClient, input: ReportDate
         device: {
           select: {
             deviceType: true,
-            owner: {
-              select: {
-                faculty: true,
-              },
-            },
+          },
+        },
+        requester: {
+          select: {
+            faculty: true,
           },
         },
         technician: {
@@ -122,7 +122,7 @@ export async function getReportsOverview(prisma: PrismaClient, input: ReportDate
   >();
 
   for (const ticket of tickets) {
-    increment(facultyCounts, ticket.device.owner?.faculty ?? "Unspecified");
+    increment(facultyCounts, ticket.requester?.faculty ?? "Unspecified");
     increment(deviceTypeCounts, ticket.device.deviceType);
     increment(monthlyCounts, monthKey(ticket.createdAt));
 
@@ -143,7 +143,7 @@ export async function getReportsOverview(prisma: PrismaClient, input: ReportDate
 
       technician.assignedTickets += 1;
 
-      if (ticket.status === "DEVICE_COLLECTED") {
+      if (ticket.status === "COLLECTED") {
         technician.completedTickets += 1;
         technician.repairHours.push((ticket.updatedAt.getTime() - ticket.createdAt.getTime()) / 36e5);
       }
@@ -152,7 +152,7 @@ export async function getReportsOverview(prisma: PrismaClient, input: ReportDate
     }
   }
 
-  const completed = tickets.filter((ticket) => ticket.status === "DEVICE_COLLECTED").length;
+  const completed = tickets.filter((ticket) => ticket.status === "COLLECTED").length;
 
   return {
     dateRange: input,

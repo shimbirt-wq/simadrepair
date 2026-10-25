@@ -1,10 +1,7 @@
-import { Prisma, type CustodyStatus, type RepairEventType, type RepairStatus, type UserRole } from "@prisma/client";
-import { ZodError } from "zod";
+import { Prisma, type RepairEventType, type TicketStatus, type UserRole } from "@prisma/client";
 import type { PublicUser } from "@/lib/auth/public-user";
-import { REPAIR_STATUS_LABELS } from "@/lib/constants/repair-status";
+
 import { prisma } from "@/lib/db/prisma";
-import { canTechnicianWorkOnTicket } from "@/lib/service-desk/workflow";
-import { technicianStatusUpdateInputSchema, type TechnicianStatusUpdateInput } from "@/lib/service-desk/validations";
 
 type TechnicianWorkspaceErrorStatus = 403 | 404 | 409;
 
@@ -12,7 +9,7 @@ export type TechnicianQueueTicket = {
   id: string;
   ticketId: string;
   trackingCode: string | null;
-  status: RepairStatus;
+  status: TicketStatus;
   createdAt: Date;
   assignedAt: Date | null;
   requester: {
@@ -30,7 +27,6 @@ export type TechnicianQueueTicket = {
     serialNumber: string | null;
   };
   custody: {
-    status: CustodyStatus;
     receivedAt: Date | null;
     storageLocation: string | null;
     readyForCollectionAt: Date | null;
@@ -54,8 +50,6 @@ export type TechnicianTicketDetail = TechnicianQueueTicket & {
     actorRole: UserRole | null;
     statusFrom: string | null;
     statusTo: string | null;
-    custodyFrom: CustodyStatus | null;
-    custodyTo: CustodyStatus | null;
     note: string | null;
     metadata: Prisma.JsonValue;
     createdAt: Date;
@@ -80,13 +74,6 @@ export type TechnicianWorkspaceResult<T> =
     };
 
 type TechnicianWorkspaceError = Extract<TechnicianWorkspaceResult<never>, { ok: false }>;
-
-export class TechnicianWorkspaceValidationError extends Error {
-  constructor(readonly validationError: ZodError) {
-    super("Invalid technician workspace data.");
-    this.name = "TechnicianWorkspaceValidationError";
-  }
-}
 
 const staffUserSummarySelect = Prisma.validator<Prisma.UserSelect>()({
   id: true,
@@ -122,7 +109,6 @@ const technicianQueueTicketSelect = Prisma.validator<Prisma.RepairTicketSelect>(
   },
   custody: {
     select: {
-      status: true,
       receivedAt: true,
       storageLocation: true,
       readyForCollectionAt: true,
@@ -165,8 +151,6 @@ const technicianTicketDetailSelect = Prisma.validator<Prisma.RepairTicketSelect>
       actorRole: true,
       statusFrom: true,
       statusTo: true,
-      custodyFrom: true,
-      custodyTo: true,
       note: true,
       metadata: true,
       createdAt: true,
@@ -225,25 +209,8 @@ function toTicketDetail(ticket: TechnicianTicketDetailRecord): TechnicianTicketD
   };
 }
 
-async function findTicketForMutation(tx: Prisma.TransactionClient, ticketIdOrTrackingCode: string) {
-  return tx.repairTicket.findFirst({
-    where: buildTicketLookupFilter(ticketIdOrTrackingCode),
-    select: {
-      id: true,
-      status: true,
-      technicianId: true,
-      custody: {
-        select: {
-          id: true,
-          status: true,
-        },
-      },
-    },
-  });
-}
-
 function ensureTicketAccess(user: PublicUser, ticket: { technicianId: string | null }): TechnicianWorkspaceError | null {
-  if (canTechnicianWorkOnTicket(user, ticket)) {
+  if (user.role === "ADMIN" || user.role === "LEAD_TECHNICIAN" || ticket.technicianId === user.id) {
     return null;
   }
 
@@ -254,35 +221,11 @@ function ensureTicketAccess(user: PublicUser, ticket: { technicianId: string | n
   };
 }
 
-function validateStatusTransition(ticket: { status: RepairStatus; custody: { status: CustodyStatus } | null }, next: RepairStatus) {
-  if (next === "REPAIR_IN_PROGRESS") {
-    if (ticket.status !== "DEVICE_RECEIVED" && ticket.status !== "REPAIR_IN_PROGRESS") {
-      return "Work can start only after the lead has received the device.";
-    }
-
-    if (!ticket.custody || (ticket.custody.status !== "RECEIVED" && ticket.custody.status !== "IN_REPAIR_ROOM")) {
-      return "Device custody must be received before repair starts.";
-    }
-
-    return null;
-  }
-
-  if (next === "READY_FOR_COLLECTION") {
-    if (ticket.status !== "REPAIR_IN_PROGRESS" && ticket.status !== "READY_FOR_COLLECTION") {
-      return "A ticket must be in repair before it can be marked ready for pickup.";
-    }
-
-    return null;
-  }
-
-  return "Unsupported technician status.";
-}
-
 export async function listTechnicianQueue(userId: string): Promise<TechnicianQueueTicket[]> {
   const tickets = await prisma.repairTicket.findMany({
     where: {
       technicianId: userId,
-      status: { not: "DEVICE_COLLECTED" },
+      status: { notIn: ["COLLECTED", "CANCELLED"] },
     },
     select: technicianQueueTicketSelect,
     orderBy: [{ assignedAt: "asc" }, { createdAt: "asc" }, { id: "asc" }],
@@ -318,134 +261,5 @@ export async function getTechnicianTicket(
   return {
     ok: true,
     data: toTicketDetail(ticket),
-  };
-}
-
-export async function updateTechnicianRepairStatus(input: {
-  actor: PublicUser;
-  ticketIdOrTrackingCode: string;
-  data: unknown;
-}): Promise<TechnicianWorkspaceResult<TechnicianTicketDetail>> {
-  const parsedInput = technicianStatusUpdateInputSchema.safeParse(input.data);
-
-  if (!parsedInput.success) {
-    throw new TechnicianWorkspaceValidationError(parsedInput.error);
-  }
-
-  const statusData: TechnicianStatusUpdateInput = parsedInput.data;
-  const nextStatus = statusData.status as RepairStatus;
-  const updatedTicket = await prisma.$transaction(async (tx) => {
-    const ticket = await findTicketForMutation(tx, input.ticketIdOrTrackingCode);
-
-    if (!ticket) {
-      return { kind: "not-found" as const };
-    }
-
-    const accessError = ensureTicketAccess(input.actor, ticket);
-
-    if (accessError) {
-      return { kind: "forbidden" as const, error: accessError };
-    }
-
-    const validationMessage = validateStatusTransition(ticket, nextStatus);
-
-    if (validationMessage) {
-      return {
-        kind: "transition-error" as const,
-        error: {
-          ok: false,
-          status: 409,
-          message: validationMessage,
-        } satisfies TechnicianWorkspaceError,
-      };
-    }
-
-    const now = new Date();
-    const custodyTo: CustodyStatus = nextStatus === "READY_FOR_COLLECTION" ? "READY_FOR_COLLECTION" : "IN_REPAIR_ROOM";
-
-    if (ticket.custody) {
-      await tx.deviceCustody.update({
-        where: { id: ticket.custody.id },
-        data: {
-          status: custodyTo,
-          ...(custodyTo === "READY_FOR_COLLECTION" ? { readyForCollectionAt: now } : {}),
-        },
-      });
-    }
-
-    await tx.repairTicket.update({
-      where: { id: ticket.id },
-      data: {
-        status: nextStatus,
-        ...(nextStatus === "READY_FOR_COLLECTION"
-          ? {
-              completedAt: now,
-              readyForPickupAt: now,
-            }
-          : {}),
-      },
-    });
-
-    await tx.repairEvent.create({
-      data: {
-        ticketId: ticket.id,
-        actorId: input.actor.id,
-        actorRole: input.actor.role,
-        eventType: nextStatus === "READY_FOR_COLLECTION" ? "READY_FOR_PICKUP" : "STATUS_CHANGED",
-        statusFrom: ticket.status,
-        statusTo: nextStatus,
-        custodyFrom: ticket.custody?.status ?? null,
-        custodyTo,
-        note:
-          statusData.note ??
-          `Status changed from ${REPAIR_STATUS_LABELS[ticket.status]} to ${REPAIR_STATUS_LABELS[nextStatus]}.`,
-        metadata: {
-          source: "technician_workspace",
-        },
-      },
-    });
-
-    return {
-      kind: "updated" as const,
-      ticket: await tx.repairTicket.findUnique({
-        where: { id: ticket.id },
-        select: technicianTicketDetailSelect,
-      }),
-    };
-  });
-
-  return toMutationResult(updatedTicket);
-}
-
-function toMutationResult(
-  result:
-    | { kind: "not-found" }
-    | { kind: "forbidden"; error: TechnicianWorkspaceError }
-    | { kind: "transition-error"; error: TechnicianWorkspaceError }
-    | { kind: "updated"; ticket: TechnicianTicketDetailRecord | null },
-): TechnicianWorkspaceResult<TechnicianTicketDetail> {
-  if (result.kind === "not-found") {
-    return {
-      ok: false,
-      status: 404,
-      message: "Repair ticket not found.",
-    };
-  }
-
-  if (result.kind === "forbidden" || result.kind === "transition-error") {
-    return result.error;
-  }
-
-  if (!result.ticket) {
-    return {
-      ok: false,
-      status: 404,
-      message: "Repair ticket not found.",
-    };
-  }
-
-  return {
-    ok: true,
-    data: toTicketDetail(result.ticket),
   };
 }

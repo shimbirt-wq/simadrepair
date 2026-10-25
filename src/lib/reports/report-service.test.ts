@@ -22,16 +22,16 @@ describe("report service", () => {
     vi.mocked(prisma.repairTicket.findMany).mockResolvedValue([
       {
         id: "ticket_1",
-        status: "DEVICE_COLLECTED",
+        status: "COLLECTED",
         issueDescription: "Battery drains quickly and laptop overheats.",
         technicianId: "tech_1",
         createdAt: janOne,
         updatedAt: janTwo,
         device: {
           deviceType: "Laptop",
-          owner: {
-            faculty: "Computing",
-          },
+        },
+        requester: {
+          faculty: "Computing",
         },
         technician: {
           id: "tech_1",
@@ -40,23 +40,23 @@ describe("report service", () => {
       },
       {
         id: "ticket_2",
-        status: "REPAIR_IN_PROGRESS",
+        status: "IN_REPAIR",
         issueDescription: "Display flickers during lectures.",
         technicianId: null,
         createdAt: janThree,
         updatedAt: janThree,
         device: {
           deviceType: "Desktop",
-          owner: {
-            faculty: "Engineering",
-          },
+        },
+        requester: {
+          faculty: "Engineering",
         },
         technician: null,
       },
     ] as never);
     vi.mocked(prisma.repairTicket.groupBy).mockResolvedValue([
-      { status: "DEVICE_COLLECTED", _count: { _all: 1 } },
-      { status: "REPAIR_IN_PROGRESS", _count: { _all: 1 } },
+      { status: "COLLECTED", _count: { _all: 1 } },
+      { status: "IN_REPAIR", _count: { _all: 1 } },
     ] as never);
 
     const overview = await getReportsOverview(prisma, { dateFrom: "2026-01-01", dateTo: "2026-01-31" });

@@ -21,12 +21,6 @@ export type AuthorizationSuccess<T> = {
 
 export type AuthorizationResult<T = PublicUser> = AuthorizationSuccess<T> | AuthorizationError;
 
-export type AuthorizedTicketAccess = {
-  id: string;
-  ownerId: string | null;
-  technicianId: string | null;
-};
-
 export const AUTHORIZATION_ERRORS = {
   unauthenticated: {
     ok: false,
@@ -128,51 +122,4 @@ export async function requireAuthenticatedRole(
   }
 
   return requireAnyRole(authResult.user, allowedRoles);
-}
-
-export async function requireTicketAccess(
-  prisma: PrismaClient,
-  user: PublicUser,
-  ticketId: string,
-): Promise<AuthorizationResult<AuthorizedTicketAccess>> {
-  const ticket = await prisma.repairTicket.findUnique({
-    where: { id: ticketId },
-    select: {
-      id: true,
-      technicianId: true,
-      device: {
-        select: {
-          ownerId: true,
-        },
-      },
-    },
-  });
-
-  if (!ticket) {
-    return AUTHORIZATION_ERRORS.notFound;
-  }
-
-  const accessData: AuthorizedTicketAccess = {
-    id: ticket.id,
-    ownerId: ticket.device.ownerId,
-    technicianId: ticket.technicianId,
-  };
-
-  if (user.role === "ADMIN") {
-    return {
-      ok: true,
-      user,
-      data: accessData,
-    };
-  }
-
-  if (user.role === "TECHNICIAN" && ticket.technicianId === user.id) {
-    return {
-      ok: true,
-      user,
-      data: accessData,
-    };
-  }
-
-  return AUTHORIZATION_ERRORS.forbidden;
 }

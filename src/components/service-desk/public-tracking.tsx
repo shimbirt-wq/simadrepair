@@ -1,10 +1,9 @@
 "use client";
 
+import { StatusBadge } from "@/components/ui";
 import Link from "next/link";
 import { useEffect, useMemo, useState, useTransition } from "react";
-import type { CustodyStatus, RepairEventType, RepairStatus } from "@prisma/client";
-import { REPAIR_STATUS_LABELS } from "@/lib/constants/repair-status";
-import { CUSTODY_STATUS_LABELS } from "@/lib/service-desk/constants";
+import type { RepairEventType, TicketStatus } from "@prisma/client";
 
 type TrackingState = "idle" | "loading" | "success" | "invalid" | "not-found" | "error";
 
@@ -13,13 +12,11 @@ type PublicTimelineEvent = {
   occurredAt: string;
   statusFrom: string | null;
   statusTo: string | null;
-  custodyFrom: CustodyStatus | null;
-  custodyTo: CustodyStatus | null;
 };
 
 type PublicTrackingInfo = {
   trackingCode: string;
-  status: RepairStatus;
+  status: TicketStatus;
   submittedAt: string;
   assignedAt: string | null;
   readyForPickupAt: string | null;
@@ -34,7 +31,6 @@ type PublicTrackingInfo = {
     phone: string | null;
   } | null;
   custody: {
-    status: CustodyStatus;
     storageLocation: string | null;
     receivedAt: string | null;
     readyForCollectionAt: string | null;
@@ -58,32 +54,27 @@ type DisplayStatus =
 
 const trackingCodePattern = /^SIM-\d{4}-\d+$/;
 
-const eventTypeLabels: Record<RepairEventType, string> = {
+const eventTypeLabels: Partial<Record<RepairEventType, string>> = {
   TICKET_CREATED: "Request submitted",
-  STATUS_CHANGED: "Status updated",
-  CUSTODY_CHANGED: "Device custody updated",
+  CHECKED_IN: "Device received",
   TECHNICIAN_ASSIGNED: "Technician assigned",
+  TICKET_CLAIMED: "Technician assigned",
+  REPAIR_STARTED: "Repair started",
+  REPAIR_BLOCKED: "Repair paused",
+  REPAIR_RESUMED: "Repair resumed",
+  CANNOT_REPAIR_CONFIRMED: "Cannot be repaired",
   READY_FOR_PICKUP: "Ready for pickup",
-  PICKUP_CONFIRMED: "Pickup confirmed",
-  TICKET_CLOSED: "Ticket closed",
-  TICKET_CANCELLED: "Ticket cancelled",
-};
-
-const repairStatusClassName: Record<RepairStatus, string> = {
-  REGISTRATION_COMPLETED: "status-registration",
-  DEVICE_RECEIVED: "status-received",
-  REPAIR_IN_PROGRESS: "status-repair",
-  READY_FOR_COLLECTION: "status-ready",
-  DEVICE_COLLECTED: "status-collected",
+  PICKUP_CONFIRMED: "Device collected",
+  TICKET_CANCELLED: "Request cancelled",
 };
 
 function getDisplayStatus(info: PublicTrackingInfo): DisplayStatus {
-  if (info.status === "DEVICE_COLLECTED") return "COLLECTED";
-  if (info.status === "READY_FOR_COLLECTION") return "READY_FOR_PICKUP";
-  if (info.status === "REPAIR_IN_PROGRESS") return "IN_REPAIR";
-  if (info.status === "DEVICE_RECEIVED" && info.technician) return "ASSIGNED";
-  if (info.status === "DEVICE_RECEIVED") return "RECEIVED";
-  if (info.custody && info.custody.status === "NOT_RECEIVED") return "NOT_RECEIVED";
+  if (info.status === "COLLECTED") return "COLLECTED";
+  if (info.status === "READY_FOR_PICKUP") return "READY_FOR_PICKUP";
+  if (info.status === "IN_REPAIR") return "IN_REPAIR";
+  if (info.status === "RECEIVED" && info.technician) return "ASSIGNED";
+  if (info.status === "RECEIVED") return "RECEIVED";
+  if (info.status === "SUBMITTED") return "NOT_RECEIVED";
   return "SUBMITTED";
 }
 
@@ -334,8 +325,7 @@ function PublicTimeline({ events }: { events: PublicTimelineEvent[] }) {
     <ol className="grid gap-0">
       {events.map((event, index) => {
         const isLast = index === events.length - 1;
-        const statusTo = event.statusTo ? (REPAIR_STATUS_LABELS[event.statusTo as RepairStatus] ?? event.statusTo.replaceAll("_", " ")) : null;
-        const custodyTo = event.custodyTo ? (CUSTODY_STATUS_LABELS[event.custodyTo] ?? event.custodyTo.replaceAll("_", " ")) : null;
+        const custodyTo: string | null = null;
 
         return (
           <li key={`${event.eventType}-${event.occurredAt}`} className="grid grid-cols-[20px_1fr] gap-4">
@@ -346,9 +336,7 @@ function PublicTimeline({ events }: { events: PublicTimelineEvent[] }) {
             <div className={isLast ? "pt-3" : "pb-6 pt-3"}>
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <p className="text-sm font-semibold text-[var(--foreground)]">{eventTypeLabels[event.eventType] ?? event.eventType.replaceAll("_", " ")}</p>
-                {event.statusTo ? (
-                  <span className={`status-badge ${repairStatusClassName[event.statusTo as RepairStatus] ?? "status-registration"}`}>{statusTo}</span>
-                ) : null}
+                {event.statusTo ? <StatusBadge status={event.statusTo} audience="public" /> : null}
               </div>
               <p className="mt-1 text-xs font-medium text-[var(--muted)]">
                 {new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" }).format(new Date(event.occurredAt))}

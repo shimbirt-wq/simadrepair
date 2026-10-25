@@ -1,12 +1,4 @@
-import type { CustodyStatus, RequesterType, UserRole } from "@prisma/client";
-
-export const CUSTODY_STATUS_LABELS: Record<CustodyStatus, string> = {
-  NOT_RECEIVED: "Not received",
-  RECEIVED: "Received",
-  IN_REPAIR_ROOM: "In repair room",
-  READY_FOR_COLLECTION: "Ready for collection",
-  COLLECTED: "Collected",
-};
+import type { RequesterType, UserRole } from "@prisma/client";
 
 export const REQUESTER_TYPE_LABELS: Record<RequesterType, string> = {
   STUDENT: "Student",

@@ -19,7 +19,8 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "prisma db seed",
-    "prisma:studio": "prisma studio"
+    "prisma:studio": "prisma studio",
+    "test:db:prepare": "prisma migrate deploy"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

@@ -1,4 +1,5 @@
 import path from "node:path";
+import { loadEnv } from "vite";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
@@ -11,6 +12,9 @@ export default defineConfig({
     environment: "node",
     globals: false,
     include: ["src/**/*.test.ts", "prisma/**/*.test.ts"],
+    // Only TEST_DATABASE_URL is taken from .env; database suites skip without it.
+    env: { TEST_DATABASE_URL: loadEnv("test", process.cwd(), "TEST_").TEST_DATABASE_URL ?? "" },
+    fileParallelism: false,
     coverage: {
       provider: "v8",
       reporter: ["text", "lcov"],
