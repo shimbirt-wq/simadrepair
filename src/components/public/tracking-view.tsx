@@ -32,7 +32,9 @@ function headline(info: Info): { title: string; body: string } {
     case "ACTION_NEEDED":
       return { title: "We need something from you", body: "Please do this so we can continue:" };
     case "READY_FOR_PICKUP":
-      return { title: "Ready for pickup", body: `Collect it at ${venue}. Bring your university ID card.` };
+      return info.atItOffice
+        ? { title: "Ready — now at the IT office", body: `Collect it from the IT office within ${info.event?.holdDays ?? 30} days. Bring your university ID card.` }
+        : { title: "Ready for pickup", body: `Collect it at ${venue}. Bring your university ID card.` };
     case "CANNOT_BE_REPAIRED":
       return { title: "We couldn't repair this device", body: "Reason:" };
     case "COLLECTED":

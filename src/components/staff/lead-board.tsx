@@ -1,6 +1,7 @@
 "use client";
 
-import { Clock, HandHelping, RefreshCw, Search, UserPlus } from "lucide-react";
+import { CalendarCheck, Clock, HandHelping, RefreshCw, Search, UserPlus } from "lucide-react";
+import { EndOfEventPanel } from "@/components/staff/end-of-event";
 import { PickupSearch } from "@/components/staff/pickup-search";
 import { RequestForm } from "@/components/public/request-form";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -52,10 +53,10 @@ function TicketCard({ ticket, onOpen, now }: { ticket: BoardTicket; onOpen: () =
             </span>
           ))}
         </div>
-        {ticket.technician || ticket.zone ? (
+        {ticket.technician || ticket.zone || ticket.atItOffice ? (
           <p className="flex justify-between text-caption text-ink-muted">
             <span className="truncate">{ticket.technician?.name ?? ""}</span>
-            {ticket.zone ? <span className="font-mono">Zone {ticket.zone}</span> : null}
+            {ticket.atItOffice ? <span className="font-semibold text-ink-secondary">IT office</span> : ticket.zone ? <span className="font-mono">Zone {ticket.zone}</span> : null}
           </p>
         ) : null}
         {ticket.stuck ? <p className="text-caption font-semibold text-warning-text">Stuck — check on it</p> : null}
@@ -72,6 +73,7 @@ export function LeadBoard({ isAdmin = false }: { isAdmin?: boolean }) {
   const [now, setNow] = useState(() => Date.now());
   const [walkIn, setWalkIn] = useState(false);
   const [pickup, setPickup] = useState(false);
+  const [ending, setEnding] = useState(false);
 
   const load = useCallback(async () => {
     const result = await sendJson<Board>("/api/lead/board", "GET");
@@ -113,6 +115,9 @@ export function LeadBoard({ isAdmin = false }: { isAdmin?: boolean }) {
         <Button variant="secondary" icon={<HandHelping className="h-4 w-4" strokeWidth={1.75} />} onClick={() => setPickup(true)}>
           Pickup
         </Button>
+        <Button variant="ghost" icon={<CalendarCheck className="h-4 w-4" strokeWidth={1.75} />} onClick={() => setEnding(true)} disabled={!board?.event}>
+          End of event
+        </Button>
         {stuckCount ? <span className="rounded-full bg-warning-soft px-3 py-1 text-caption font-semibold text-warning-text">{stuckCount} stuck</span> : null}
         <button type="button" onClick={() => void load()} className="ml-auto flex items-center gap-1.5 text-caption text-ink-muted hover:text-ink" aria-label="Refresh">
           <RefreshCw className="h-3.5 w-3.5" strokeWidth={1.75} />
@@ -148,6 +153,12 @@ export function LeadBoard({ isAdmin = false }: { isAdmin?: boolean }) {
               }}
             />
           ) : null}
+        </Dialog>
+      ) : null}
+
+      {board?.event ? (
+        <Dialog open={ending} onClose={() => setEnding(false)} variant="sheet" title="End of event">
+          {ending ? <EndOfEventPanel eventId={board.event.id} holdDays={board.event.holdDays} onChanged={() => void load()} /> : null}
         </Dialog>
       ) : null}
 

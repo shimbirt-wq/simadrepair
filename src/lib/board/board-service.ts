@@ -22,6 +22,7 @@ export type BoardTicket = {
   categories: string[];
   technician: { id: string; name: string } | null;
   zone: string | null;
+  atItOffice: boolean;
   /** When the ticket entered its current phase; drives "age" on the card. */
   since: string;
 };
@@ -48,7 +49,7 @@ export const boardTicketSelect = Prisma.validator<Prisma.RepairTicketSelect>()({
   technician: { select: { id: true, fullName: true } },
   requester: { select: { fullName: true, universityId: true, phone: true } },
   device: { select: { deviceType: true, brand: true, model: true } },
-  custody: { select: { receivedAt: true, storageLocation: true } },
+  custody: { select: { receivedAt: true, storageLocation: true, location: true } },
 });
 
 type BoardTicketRecord = Prisma.RepairTicketGetPayload<{ select: typeof boardTicketSelect }>;
@@ -73,6 +74,7 @@ export function toBoardTicket(ticket: BoardTicketRecord, now: Date): BoardTicket
     categories: ticket.problemCategories.map((value) => PROBLEM_CATEGORIES.find((category) => category.value === value)?.label ?? value),
     technician: ticket.technician ? { id: ticket.technician.id, name: ticket.technician.fullName } : null,
     zone: ticket.custody?.storageLocation ?? null,
+    atItOffice: ticket.custody?.location === "IT_OFFICE",
     since: since.toISOString(),
   };
 }
