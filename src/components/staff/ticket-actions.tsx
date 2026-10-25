@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { MessageButton } from "@/components/staff/message-button";
 import { PickupForm } from "@/components/staff/pickup-form";
+import { suggestedTemplate } from "@/lib/messaging/templates";
 import { PhotoUploader, type UploadedPhoto } from "@/components/public/photo-uploader";
 import { Badge, Button, ChoiceCard, ChoiceGroup, Field, Input, TagNumber, useToast } from "@/components/ui";
 import { neededSkills, rankTechnicians } from "@/lib/staff/skill-match";
@@ -13,7 +15,17 @@ import type { StaffTicketDetail } from "@/lib/tickets/ticket-detail";
 export type TechnicianOption = { id: string; name: string; openCount: number; skills: string[] };
 
 /** Desk actions for one ticket, chosen by its status. */
-export function DeskActions({ ticket, technicians, onDone }: { ticket: StaffTicketDetail; technicians: TechnicianOption[]; onDone: () => void }) {
+export function DeskActions(props: { ticket: StaffTicketDetail; technicians: TechnicianOption[]; onDone: () => void }) {
+  const template = suggestedTemplate(props.ticket.status);
+  return (
+    <>
+      <DeskStatusActions {...props} />
+      {template ? <MessageButton ticketId={props.ticket.id} template={template} sent={props.ticket.messagesSent} onSent={props.onDone} /> : null}
+    </>
+  );
+}
+
+function DeskStatusActions({ ticket, technicians, onDone }: { ticket: StaffTicketDetail; technicians: TechnicianOption[]; onDone: () => void }) {
   const toast = useToast();
   const [pending, startTransition] = useTransition();
   const [technicianId, setTechnicianId] = useState("");
