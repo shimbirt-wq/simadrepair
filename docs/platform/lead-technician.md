@@ -1,6 +1,6 @@
 # Lead Technician — Command Center
 
-Status: **draft — being grilled**. Section 1 is how the code works today. Section 3 is a proposal, not decided. Builds on the requester decisions in `requester.md` (event-week focus, ID pickup, WhatsApp messages, outcomes).
+Status: **agreed (2 rounds of grilling)**. Section 1 is how the code works today; section 3 is the proposal, refined by the decisions log in section 4 (the log wins where they differ). Builds on the requester decisions in `requester.md` (event-week focus, ID pickup, WhatsApp messages, outcomes).
 
 ---
 
@@ -63,7 +63,7 @@ Each card: code, device, category, age, technician, priority badge, **stuck** hi
 | Action | Proposal | Fixes |
 | --- | --- | --- |
 | **Desk registration** | Same form as the public one, compact, filled by the lead for walk-ins. | L2 |
-| **Check-in** | Find by code or university ID → check ID card → condition checklist (scratches, cracked screen, missing keys) + accessories received + optional photos → choose bin/shelf → **print label** (code + QR + name + bin). | L1, L3 |
+| **Check-in** | Find by code or university ID → check ID card → condition checklist (scratches, cracked screen, missing keys) + accessories received + optional photos → choose bin/shelf → **write sticker** (tag number + first name, see LD14). | L1, L3 |
 | **Triage** | Priority Normal / Urgent; confirm problem category. | L9 |
 | **Assign** | Technician picker shows each person's open load and skills; reassign requires a short reason. | L5, L8 |
 | **Pickup** | Search by university ID → shows that person's ready devices → check ID card, scan/enter label, tick accessories returned, enter collector name + phone. | L4 |
@@ -96,3 +96,8 @@ Retire the old `/repair-tickets` and `/devices` staff pages, or make them read-o
 | LD11 | **End-of-event bulk actions** (move uncollected to IT office + reminder; close unfinished). | 1 |
 | LD12 | **Leads can repair** (assign to themselves, use technician workspace). | 1 |
 | LD13 | **Retire old `/repair-tickets` and `/devices` staff pages**; keep read-only history. | 1 |
+| LD14 | **Tag number** per event (#001…#500), assigned at check-in, hand-written on the sticker with the first name (`#147 Amina`). Shown large on every card and searchable. Tracking code stays random for the public. | 2 |
+| LD15 | **Shelf zones** (single letter, optional) recorded at check-in and on each move. | 2 |
+| LD16 | **Claim cap:** a technician can hold at most 3 tickets in repair via self-claim; the lead can override by assigning directly. | 2 |
+| LD17 | **"Cannot be repaired"** is proposed by the technician with a reason and confirmed by the lead before the requester is told. | 2 |
+| LD18 | **Undo:** leads can undo check-in, assignment and status changes; undoing a pickup is admin-only. | 2 |
