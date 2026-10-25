@@ -1,41 +1,28 @@
 import { apiErrorResponse, internalErrorResponse } from "@/lib/api/responses";
+import { prisma } from "@/lib/db/prisma";
 import { checkRateLimit, getRequestIp } from "@/lib/rate-limit";
 import { getPublicTrackingInfo, PublicTrackingValidationError } from "@/lib/service-desk/public-tracking";
 
-type RouteContext = {
-  params: Promise<{
-    trackingCode?: string;
-  }>;
-};
+type RouteContext = { params: Promise<{ trackingCode?: string }> };
 
 export async function GET(request: Request, context: RouteContext) {
-  const rateLimit = checkRateLimit(`tracking:${getRequestIp(request)}`, 20, 60_000);
+  const rateLimit = await checkRateLimit(prisma, `tracking:${getRequestIp(request)}`, 20, 60_000);
 
   if (!rateLimit.allowed) {
-    return apiErrorResponse(429, "RATE_LIMITED", "Too many tracking lookups. Try again shortly.", {
-      retryAfterSeconds: rateLimit.retryAfterSeconds,
-    });
+    return apiErrorResponse(429, "RATE_LIMITED", "Too many lookups. Try again in a minute.", { retryAfterSeconds: rateLimit.retryAfterSeconds });
   }
 
   const { trackingCode } = await context.params;
-
-  if (!trackingCode) {
-    return apiErrorResponse(400, "BAD_REQUEST", "Invalid tracking code format.");
-  }
+  if (!trackingCode) return apiErrorResponse(400, "BAD_REQUEST", "Enter your tracking code, e.g. SIM-26-K7P3QX.");
 
   try {
-    const trackingInfo = await getPublicTrackingInfo(trackingCode);
-
-    if (!trackingInfo) {
-      return apiErrorResponse(404, "NOT_FOUND", "Tracking code not found.");
-    }
-
-    return Response.json(trackingInfo);
+    const info = await getPublicTrackingInfo(decodeURIComponent(trackingCode));
+    if (!info) return apiErrorResponse(404, "NOT_FOUND", "No repair found with this code.");
+    return Response.json(info);
   } catch (error) {
     if (error instanceof PublicTrackingValidationError) {
-      return apiErrorResponse(400, "BAD_REQUEST", "Invalid tracking code format.");
+      return apiErrorResponse(400, "BAD_REQUEST", "That doesn't look like a tracking code. It looks like SIM-26-K7P3QX.");
     }
-
     return internalErrorResponse();
   }
 }
