@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { PublicLayout } from "@/components/public/public-layout";
 import { TrackingView } from "@/components/public/tracking-view";
 
@@ -11,6 +12,12 @@ export default async function TrackPage({ searchParams }: { searchParams: Promis
     <PublicLayout width="form">
       <div className="mb-8 flex flex-col gap-2">
         <h1 className="text-h1 text-ink">Track your repair</h1>
+        <p className="text-body text-ink-secondary">
+          Lost your code?{" "}
+          <Link href="/find" className="font-medium text-ink-accent hover:underline">
+            Find my request
+          </Link>
+        </p>
       </div>
       <TrackingView initialCode={code} />
     </PublicLayout>

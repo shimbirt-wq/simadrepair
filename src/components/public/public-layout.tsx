@@ -50,6 +50,7 @@ export async function PublicLayout({ children, width = "content" }: { children: 
           <nav className="flex flex-wrap gap-x-5 gap-y-2" aria-label="Footer">
             <Link href="/track" className="hover:text-ink">Track repair</Link>
             <Link href="/request-repair" className="hover:text-ink">Request repair</Link>
+            <Link href="/find" className="hover:text-ink">Find my request</Link>
             <Link href="/auth/login" className="hover:text-ink">Staff sign-in</Link>
           </nav>
           <p className="text-caption text-ink-muted">© {new Date().getFullYear()} SIMAD University · Faculty of Computing</p>

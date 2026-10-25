@@ -1,9 +1,9 @@
 "use client";
 
-import { Check, MapPin, MessageCircle, Search } from "lucide-react";
+import { Check, MapPin, MessageCircle, Search, Star } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
-import { Button, buttonClasses, Card, Eyebrow, Input, StatusBadge, cn } from "@/components/ui";
+import { Button, buttonClasses, Card, Eyebrow, Field, Input, StatusBadge, Textarea, cn } from "@/components/ui";
 import { sendJson } from "@/lib/client/api";
 import { whatsappDisplay, whatsappLink } from "@/lib/phone";
 import type { PublicTrackingInfo } from "@/lib/service-desk/public-tracking";
@@ -61,7 +61,82 @@ function Progress({ status }: { status: string }) {
   );
 }
 
-function Result({ info }: { info: Info }) {
+function CancelPanel({ code, onDone }: { code: string; onDone: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [universityId, setUniversityId] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+  if (!open) {
+    return (
+      <button type="button" className="self-start text-small font-medium text-ink-secondary hover:text-ink" onClick={() => setOpen(true)}>
+        Cancel this request
+      </button>
+    );
+  }
+  return (
+    <Card className="flex flex-col gap-3 p-5">
+      <p className="text-small text-ink">Not bringing the device? Cancel so the desk knows.</p>
+      <Field label="Your university ID" error={error}>
+        <Input value={universityId} onChange={(e) => setUniversityId(e.target.value)} className="font-mono uppercase" placeholder="CS383833" />
+      </Field>
+      <div className="flex gap-2">
+        <Button
+          variant="destructive"
+          loading={pending}
+          onClick={() =>
+            startTransition(async () => {
+              const result = await sendJson(`/api/public/tracking/${encodeURIComponent(code)}/cancel`, "POST", { universityId });
+              if (result.ok) onDone();
+              else setError(result.issues.universityId?.[0] ?? result.error);
+            })
+          }
+        >
+          Cancel request
+        </Button>
+        <Button variant="ghost" onClick={() => setOpen(false)}>
+          Keep it
+        </Button>
+      </div>
+    </Card>
+  );
+}
+
+function RatingPanel({ code, onDone }: { code: string; onDone: () => void }) {
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+  return (
+    <Card className="flex flex-col gap-4 p-6">
+      <p className="text-h3 text-ink">How was the service?</p>
+      <div className="flex gap-1" role="radiogroup" aria-label="Rating">
+        {[1, 2, 3, 4, 5].map((value) => (
+          <button key={value} type="button" role="radio" aria-checked={rating === value} aria-label={`${value} star${value > 1 ? "s" : ""}`} onClick={() => setRating(value)} className="rounded-sm p-1 focus-visible:shadow-focus focus-visible:outline-none">
+            <Star className={cn("h-8 w-8", value <= rating ? "fill-warning text-warning" : "text-n-300")} strokeWidth={1.5} />
+          </button>
+        ))}
+      </div>
+      <Textarea rows={2} value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Anything we should improve? (optional)" />
+      {error ? <p className="text-caption text-error-text">{error}</p> : null}
+      <Button
+        className="self-start"
+        disabled={rating === 0}
+        loading={pending}
+        onClick={() =>
+          startTransition(async () => {
+            const result = await sendJson(`/api/public/tracking/${encodeURIComponent(code)}/rating`, "POST", { rating, comment });
+            if (result.ok) onDone();
+            else setError(result.error);
+          })
+        }
+      >
+        Send rating
+      </Button>
+    </Card>
+  );
+}
+
+function Result({ info, reload }: { info: Info; reload: () => void }) {
   const { title, body } = headline(info);
   const message = `Salaam, I'm ${info.requesterFirstName}. My repair code is ${info.trackingCode}.`;
 
@@ -111,6 +186,10 @@ function Result({ info }: { info: Info }) {
           </a>
         </Card>
       ) : null}
+
+      {info.status === "SUBMITTED" ? <CancelPanel code={info.trackingCode} onDone={reload} /> : null}
+      {info.status === "COLLECTED" && info.rating === null ? <RatingPanel code={info.trackingCode} onDone={reload} /> : null}
+      {info.status === "COLLECTED" && info.rating !== null ? <p className="text-small text-ink-secondary">Thank you for your rating ({info.rating}/5).</p> : null}
 
       {info.timeline.length > 0 ? (
         <Card className="p-6">
@@ -201,7 +280,7 @@ export function TrackingView({ initialCode }: { initialCode?: string }) {
         ) : null}
       </form>
 
-      {info ? <Result info={info} /> : null}
+      {info ? <Result info={info} reload={() => lookup(info.trackingCode)} /> : null}
     </div>
   );
 }
