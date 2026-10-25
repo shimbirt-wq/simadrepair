@@ -12,7 +12,7 @@ export function createTestPrisma() {
   return new PrismaClient({ datasourceUrl: testDatabaseUrl });
 }
 
-const TABLES = ["events", "repair_events", "device_custody", "repair_tickets", "devices", "requesters", "users", "rate_limit_buckets"];
+const TABLES = ["ticket_photos", "events", "repair_events", "device_custody", "repair_tickets", "devices", "requesters", "users", "rate_limit_buckets"];
 
 export async function resetDatabase(prisma: PrismaClient) {
   await prisma.$executeRawUnsafe(`TRUNCATE ${TABLES.map((table) => `"${table}"`).join(", ")} RESTART IDENTITY CASCADE`);

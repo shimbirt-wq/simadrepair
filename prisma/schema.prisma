@@ -174,7 +174,13 @@ model RepairTicket {
   wipeAllowed           Boolean        @default(false) @map("wipe_allowed")
   needsPassword         Boolean        @default(false) @map("needs_password")
   consentAt             DateTime?      @map("consent_at")
-  photoUrl              String?        @map("photo_url")
+  problemCategories     String[]       @default([]) @map("problem_categories")
+  /// { [category]: { [questionId]: answer } } — see src/lib/intake/diagnosis.ts
+  problemAnswers        Json?          @map("problem_answers")
+  startedWhen           String?        @map("started_when")
+  recentEvents          String[]       @default([]) @map("recent_events")
+  errorMessage          String?        @map("error_message")
+  photos                TicketPhoto[]
   status                TicketStatus   @default(SUBMITTED)
   events                RepairEvent[]
   custody               DeviceCustody?
@@ -248,6 +254,30 @@ model RepairEvent {
   @@index([eventType])
   @@index([createdAt])
   @@map("repair_events")
+}
+
+enum PhotoKind {
+  REQUESTER
+  DAMAGE
+}
+
+/// A private photo. Requester photos are uploaded before the ticket exists
+/// (ticketId null, claimed with uploadToken when the form is sent).
+model TicketPhoto {
+  id           String        @id @default(cuid())
+  ticketId     String?       @map("ticket_id")
+  ticket       RepairTicket? @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  kind         PhotoKind
+  storagePath  String        @map("storage_path")
+  mimeType     String        @map("mime_type")
+  sizeBytes    Int           @map("size_bytes")
+  uploadToken  String?       @unique @map("upload_token")
+  uploadedById String?       @map("uploaded_by_id")
+  createdAt    DateTime      @default(now()) @map("created_at")
+
+  @@index([ticketId])
+  @@index([createdAt])
+  @@map("ticket_photos")
 }
 
 /// Fixed-window rate limit counters, shared by every server instance.

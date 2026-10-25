@@ -2,6 +2,7 @@ import { Prisma, type RepairEventType, type TicketStatus, type UserRole } from "
 import type { PublicUser } from "@/lib/auth/public-user";
 
 import { prisma } from "@/lib/db/prisma";
+import { getIntakeDetail, type IntakeDetail } from "@/lib/tickets/intake-detail";
 
 type TechnicianWorkspaceErrorStatus = 403 | 404 | 409;
 
@@ -33,7 +34,7 @@ export type TechnicianQueueTicket = {
   } | null;
 };
 
-export type TechnicianTicketDetail = TechnicianQueueTicket & {
+export type TechnicianTicketDetail = { intake: IntakeDetail | null } & TechnicianQueueTicket & {
   technicianId: string | null;
   issueDescription: string;
   requester: TechnicianQueueTicket["requester"] & {
@@ -195,7 +196,7 @@ function toQueueTicket(ticket: TechnicianQueueTicketRecord): TechnicianQueueTick
   };
 }
 
-function toTicketDetail(ticket: TechnicianTicketDetailRecord): TechnicianTicketDetail {
+function toTicketDetail(ticket: TechnicianTicketDetailRecord, intake: IntakeDetail | null = null): TechnicianTicketDetail {
   return {
     ...toQueueTicket(ticket),
     technicianId: ticket.technicianId,
@@ -206,6 +207,7 @@ function toTicketDetail(ticket: TechnicianTicketDetailRecord): TechnicianTicketD
     },
     device: ticket.device,
     events: ticket.events,
+    intake,
   };
 }
 
@@ -260,6 +262,6 @@ export async function getTechnicianTicket(
 
   return {
     ok: true,
-    data: toTicketDetail(ticket),
+    data: toTicketDetail(ticket, await getIntakeDetail(prisma, ticket.id)),
   };
 }

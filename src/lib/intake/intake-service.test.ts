@@ -7,7 +7,7 @@ const form = (overrides: { requester?: object; device?: object; problem?: object
   ({
     requester: { requesterType: "STUDENT", fullName: "Amina Hassan", universityId: "cs 383833", phone: "061 234 5678", ...overrides.requester },
     device: { deviceType: "LAPTOP", brand: "HP", model: "ProBook 450 G8", operatingSystem: "WINDOWS_10", ram: "8", storageType: "HDD", ageBand: "3_5", accessories: ["CHARGER"], ...overrides.device },
-    problem: { description: "Very slow and shows pop-ups.", ...overrides.problem },
+    problem: { categories: ["SLOW_VIRUS"], answers: { SLOW_VIRUS: { popups: "YES" } }, startedWhen: "THIS_WEEK", recentEvents: [], description: "Very slow and shows pop-ups.", ...overrides.problem },
     wipeAllowed: true,
     needsPassword: true,
     consent: true,
@@ -27,6 +27,8 @@ describe("intake form validation", () => {
     ["device.brandOther", form({ device: { brand: "OTHER" } })],
     ["device.operatingSystem", form({ device: { operatingSystem: "" } })],
     ["problem.description", form({ problem: { description: "slow" } })],
+    ["problem.categories", form({ problem: { categories: [] } })],
+    ["problem.startedWhen", form({ problem: { startedWhen: "" } })],
     ["consent", form({ consent: false })],
   ])("reports %s", (path, value) => {
     const result = intakeSchema.safeParse(value);
@@ -53,6 +55,7 @@ describe.skipIf(!hasTestDatabase)("intake service (database)", () => {
     expect(ticket.device).toMatchObject({ deviceType: "Laptop", brand: "HP", operatingSystem: "WINDOWS_10", ram: "8" });
     expect(ticket.custody).not.toBeNull();
     expect(ticket.events.map((e) => e.eventType)).toEqual(["TICKET_CREATED"]);
+    expect(ticket).toMatchObject({ problemCategories: ["SLOW_VIRUS"], problemAnswers: { SLOW_VIRUS: { popups: "YES" } }, startedWhen: "THIS_WEEK" });
   });
 
   it("matches returning requesters by university ID and updates their contact details", async () => {

@@ -1,5 +1,7 @@
 "use client";
 
+import { IntakePanel } from "@/components/staff/intake-panel";
+import type { IntakeDetail } from "@/lib/tickets/intake-detail";
 import { StatusBadge } from "@/components/ui";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import type { RepairEventType, TicketStatus, UserRole } from "@prisma/client";
@@ -41,6 +43,7 @@ type LeadQueueTicket = {
 
 type LeadTicketDetail = LeadQueueTicket & {
   issueDescription: string;
+  intake: IntakeDetail | null;
   requester: LeadQueueTicket["requester"] & {
     email: string | null;
   };
@@ -402,8 +405,7 @@ export function LeadCommandCenter() {
 
             {/* Issue */}
             <div className="rounded-lg border border-[var(--border)] bg-white p-4">
-              <p className="eyebrow">Issue reported</p>
-              <p className="mt-2 text-sm leading-relaxed text-[var(--muted-strong)]">{selectedTicket.issueDescription}</p>
+              {selectedTicket.intake ? <IntakePanel intake={selectedTicket.intake} /> : (<><p className="eyebrow">Issue reported</p><p className="mt-2 text-sm leading-relaxed text-[var(--muted-strong)]">{selectedTicket.issueDescription}</p></>)}
             </div>
 
             {/* Step 1: Receive */}

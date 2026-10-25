@@ -3,6 +3,7 @@ import { getRegistration } from "@/lib/events/event-service";
 import type { RegistrationState } from "@/lib/events/event-window";
 import type { IntakeInput } from "@/lib/intake/intake-schema";
 import { BRANDS, DEVICE_TYPES, labelOf } from "@/lib/intake/options";
+import { claimRequesterPhotos } from "@/lib/photos/photo-service";
 import { generateTrackingCode } from "@/lib/tickets/tracking-code";
 
 /**
@@ -105,6 +106,11 @@ export async function createRepairRequest(prisma: PrismaClient, input: IntakeInp
             requesterId: savedRequester.id,
             deviceId: savedDevice.id,
             issueDescription: problem.description,
+            problemCategories: problem.categories,
+            problemAnswers: problem.answers,
+            startedWhen: problem.startedWhen,
+            recentEvents: problem.recentEvents,
+            errorMessage: problem.errorMessage ?? null,
             accessoriesLeft: device.accessories,
             wipeAllowed: input.wipeAllowed,
             needsPassword: input.needsPassword,
@@ -115,6 +121,7 @@ export async function createRepairRequest(prisma: PrismaClient, input: IntakeInp
         });
 
         await tx.deviceCustody.create({ data: { ticketId: ticket.id, deviceId: savedDevice.id } });
+        await claimRequesterPhotos(tx, ticket.id, problem.photoTokens, now);
         await tx.repairEvent.create({
           data: {
             ticketId: ticket.id,
