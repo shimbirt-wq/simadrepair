@@ -28,27 +28,23 @@ export default async function AboutPage() {
   return (
     <PublicLayout>
       <div className="flex flex-col gap-14">
-        <section className="grid gap-10 lg:grid-cols-[1fr_1fr] lg:items-center">
-          <div className="flex flex-col gap-4">
-            <Eyebrow>About</Eyebrow>
-            <h1 className="text-h1 text-ink">SIMAD University IT Service Desk</h1>
-            <p className="text-[17px] leading-relaxed text-ink-secondary">
+        <section className="relative overflow-hidden rounded-2xl">
+          <Image src={teamPhoto} alt="Volunteers and Faculty of Computing staff working together at the desk" fill priority placeholder="blur" sizes="(min-width: 1200px) 1150px, 100vw" className="object-cover object-[65%_40%]" />
+          <div className="photo-overlay-deep absolute inset-0" />
+          <div className="relative flex max-w-2xl flex-col gap-4 px-6 py-12 sm:px-12 sm:py-16">
+            <p className="font-mono text-[12px] font-medium uppercase tracking-[0.08em] text-green-200">About</p>
+            <h1 className="text-h1 text-white">SIMAD University IT Service Desk</h1>
+            <p className="text-[17px] leading-relaxed text-green-50">
               The Faculty of Computing&apos;s Computer Maintenance Program offers free repair and maintenance to SIMAD students and staff. SIMADRepair runs the program end to end: online registration, drop-off at the desk, repair by
               technicians, WhatsApp updates and pickup with a university ID card.
             </p>
-            <p className="text-[17px] leading-relaxed text-ink-secondary">
-              Each repair gets one tracking code, every handover of a device is recorded, and the university gets a report after every event.
-            </p>
+            <p className="text-[17px] leading-relaxed text-green-50">Each repair gets one tracking code, every handover of a device is recorded, and the university gets a report after every event.</p>
             {event && volunteers > 0 ? (
-              <p className="text-body font-semibold text-ink">
+              <p className="text-body font-semibold text-white">
                 {event.name} was delivered by {volunteers} student {volunteers === 1 ? "volunteer" : "volunteers"}.
               </p>
             ) : null}
           </div>
-          <figure className="flex flex-col gap-2">
-            <Image src={teamPhoto} alt="Volunteers and Faculty of Computing staff working together at the desk" placeholder="blur" priority sizes="(min-width: 1024px) 580px, 100vw" className="aspect-[3/2] w-full rounded-xl object-cover shadow-md" />
-            <figcaption className="text-caption text-ink-muted">Volunteers and faculty at a previous program, Main Campus.</figcaption>
-          </figure>
         </section>
 
         <section aria-labelledby="team-title" className="flex flex-col gap-4">

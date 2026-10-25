@@ -14,18 +14,21 @@ const PHOTOS: Array<{ src: StaticImageData; alt: string; caption: string; large?
 
 export function PastPrograms() {
   return (
-    <HomeSection id="past" eyebrow="From past programs" title="Students fixing laptops for students" tone="muted">
+    <HomeSection id="past" eyebrow="From past programs" title="Moments from the desk" tone="muted">
       <div className="grid gap-4 lg:grid-cols-3 lg:grid-rows-2">
         {PHOTOS.map((photo) => (
-          <figure key={photo.caption} className={cn("relative overflow-hidden rounded-xl", photo.large && "lg:col-span-2 lg:row-span-2")}>
+          <figure key={photo.caption} className={cn("group relative overflow-hidden rounded-xl", photo.large && "lg:col-span-2 lg:row-span-2")}>
             <Image
               src={photo.src}
               alt={photo.alt}
               placeholder="blur"
               sizes={photo.large ? "(min-width: 1024px) 780px, 100vw" : "(min-width: 1024px) 380px, 100vw"}
-              className="aspect-[3/2] h-full w-full object-cover"
+              className="aspect-[3/2] h-full w-full object-cover saturate-[.85] transition duration-base ease-brand group-hover:saturate-100"
             />
-            <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-4 pb-3 pt-10 text-small font-medium text-white">{photo.caption}</figcaption>
+            {/* Brand tint; fades on hover to show the photo in full colour. */}
+            <span className="absolute inset-0 bg-accent opacity-20 mix-blend-color transition-opacity duration-base ease-brand group-hover:opacity-0" aria-hidden />
+            <span className="photo-caption-fade absolute inset-0" aria-hidden />
+            <figcaption className="absolute inset-x-0 bottom-0 px-4 pb-3 text-small font-semibold text-white">{photo.caption}</figcaption>
           </figure>
         ))}
       </div>
