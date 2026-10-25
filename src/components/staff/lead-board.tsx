@@ -65,10 +65,10 @@ function TicketCard({ ticket, onOpen, now }: { ticket: BoardTicket; onOpen: () =
   );
 }
 
-export function LeadBoard({ isAdmin = false }: { isAdmin?: boolean }) {
+export function LeadBoard({ isAdmin = false, initialTicket = null }: { isAdmin?: boolean; initialTicket?: string | null }) {
   const [board, setBoard] = useState<Board | null>(null);
   const [query, setQuery] = useState("");
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string | null>(initialTicket);
   const [error, setError] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [walkIn, setWalkIn] = useState(false);

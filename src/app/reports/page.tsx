@@ -1,126 +1,125 @@
+import { BarChart3, Download, FileText } from "lucide-react";
 import Link from "next/link";
 import { AppShell } from "@/app/app-shell";
-import { redirect } from "next/navigation";
-import { getCurrentServerUser } from "@/lib/auth/server-user";
+import { BarList, DataTable, Section, StatTile } from "@/components/reports/report-parts";
+import { Badge, EmptyState, buttonClasses, cn } from "@/components/ui";
+import { requirePageRole } from "@/lib/auth/require-page-role";
 import { prisma } from "@/lib/db/prisma";
-import { getReportsOverview } from "@/lib/reports/report-service";
-import { reportDateRangeSchema } from "@/lib/validations/reports";
+import { getEventReport, listReportEvents, type GroupRow } from "@/lib/reports/event-report";
+import { formatHours, formatPercent, formatRating } from "@/lib/reports/format";
 
-type ReportsPageProps = {
-  searchParams: Promise<{
-    dateFrom?: string;
-    dateTo?: string;
-  }>;
-};
+type ReportsPageProps = { searchParams: Promise<{ event?: string | string[] }> };
 
-function readSearchParam(value: string | string[] | undefined) {
-  return Array.isArray(value) ? value[0] : value;
-}
+const groupRows = (rows: GroupRow[]) => rows.map((row) => [row.label, row.registered, row.fixed]);
 
 export default async function ReportsPage({ searchParams }: ReportsPageProps) {
-  const user = await getCurrentServerUser();
+  const user = await requirePageRole("/reports", ["ADMIN", "LEAD_TECHNICIAN"]);
+  const events = await listReportEvents(prisma);
+  const requested = [(await searchParams).event].flat()[0];
+  const selected = events.find((event) => event.id === requested) ?? events.find((event) => event.isActive) ?? events[0];
+  const report = selected ? await getEventReport(prisma, selected.id) : null;
 
-  if (!user) {
-    redirect("/auth/login?next=/reports");
+  if (!report) {
+    return (
+      <AppShell active="reports" eyebrow="Reports" title="Event report" user={user}>
+        <EmptyState icon={<BarChart3 className="h-8 w-8" strokeWidth={1.5} />} title="No Maintenance Week yet. The report appears once an event has requests." />
+      </AppShell>
+    );
   }
 
-  if (user.role !== "ADMIN" && user.role !== "LEAD_TECHNICIAN") {
-    redirect("/");
-  }
-
-  const params = await searchParams;
-  const parsedFilters = reportDateRangeSchema.safeParse({
-    dateFrom: readSearchParam(params.dateFrom),
-    dateTo: readSearchParam(params.dateTo),
-  });
-
-  if (!parsedFilters.success) {
-    redirect("/reports");
-  }
-
-  const filters = parsedFilters.data;
-  const overview = await getReportsOverview(prisma, filters);
+  const s = report.summary;
+  const base = `/api/reports/events/${report.event.id}`;
 
   return (
     <AppShell
       active="reports"
-      eyebrow="Admin reports"
-      title="Reports and analytics"
+      eyebrow={report.event.dates}
+      title={report.event.name}
       user={user}
       actions={
-        <Link href="/dashboard" className="btn-secondary">
-          Dashboard
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          {/* Plain links: these are file downloads, not pages to prefetch. */}
+          <a href={`${base}/pdf`} download className={buttonClasses("secondary", "md")}>
+            <FileText className="h-4 w-4" strokeWidth={2} aria-hidden />
+            PDF summary
+          </a>
+          <a href={`${base}/csv`} download className={buttonClasses("secondary", "md")}>
+            <Download className="h-4 w-4" strokeWidth={2} aria-hidden />
+            CSV of tickets
+          </a>
+        </div>
       }
     >
+      <div className="flex flex-col gap-6">
+        {events.length > 1 ? (
+          <nav aria-label="Events" className="flex flex-wrap gap-2">
+            {events.map((event) => (
+              <Link
+                key={event.id}
+                href={`/reports?event=${event.id}`}
+                aria-current={event.id === report.event.id ? "page" : undefined}
+                className={cn(
+                  "flex items-center gap-2 rounded-full border px-3 py-1.5 text-small font-medium",
+                  event.id === report.event.id ? "border-accent bg-accent-soft text-ink-accent" : "border-line bg-surface text-ink-secondary hover:text-ink",
+                )}
+              >
+                {event.name}
+                {event.isActive ? <Badge tone="accent">Active</Badge> : null}
+              </Link>
+            ))}
+          </nav>
+        ) : null}
 
-      <form className="grid gap-4 rounded-xl border border-[var(--border)] bg-white p-5 sm:grid-cols-[1fr_1fr_auto]">
-        <label className="grid gap-2 text-sm font-medium text-[var(--foreground)]">
-          From
-          <input name="dateFrom" type="date" defaultValue={filters.dateFrom ?? ""} className="field-control" />
-        </label>
-        <label className="grid gap-2 text-sm font-medium text-[var(--foreground)]">
-          To
-          <input name="dateTo" type="date" defaultValue={filters.dateTo ?? ""} className="field-control" />
-        </label>
-        <button className="btn-primary self-end">Apply</button>
-      </form>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          <StatTile label="Registered" value={s.registered} detail={s.cancelled ? `${s.cancelled} cancelled` : undefined} />
+          <StatTile label="Received" value={s.received} detail={s.inProgress ? `${s.inProgress} in progress` : undefined} />
+          <StatTile label="Fixed" value={s.fixed} emphasis />
+          <StatTile label="Cannot repair" value={s.cannotRepair} />
+          <StatTile label="Collected" value={s.collected} />
+          <StatTile label="Uncollected" value={s.uncollected} />
+        </div>
 
-      <section className="mt-8 grid gap-4 sm:grid-cols-3">
-        <article className="panel p-5">
-          <p className="text-sm text-[var(--muted)]">Tickets</p>
-          <p className="metric-value mt-2 text-3xl font-semibold">{overview.totals.tickets}</p>
-        </article>
-        <article className="panel p-5">
-          <p className="text-sm text-[var(--muted)]">Active</p>
-          <p className="metric-value mt-2 text-3xl font-semibold">{overview.totals.active}</p>
-        </article>
-        <article className="panel p-5">
-          <p className="text-sm text-[var(--muted)]">Completed</p>
-          <p className="metric-value mt-2 text-3xl font-semibold">{overview.totals.completed}</p>
-        </article>
-      </section>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <StatTile label="Fix rate" value={formatPercent(s.fixRate)} detail="of finished devices" />
+          <StatTile label="Median time to ready" value={formatHours(s.medianHoursToReady)} detail="from drop-off" />
+          <StatTile label="Average rating" value={formatRating(s.averageRating)} detail={`${s.ratings} ${s.ratings === 1 ? "rating" : "ratings"}`} />
+        </div>
 
-      <section className="mt-8 grid gap-6 lg:grid-cols-2">
-        <ReportTable title="Repairs by faculty" rows={overview.byFaculty.map((row) => [row.faculty, row.count])} />
-        <ReportTable title="Repairs by device type" rows={overview.byDeviceType.map((row) => [row.deviceType, row.count])} />
-        <ReportTable title="Status mix" rows={overview.byStatus.map((row) => [row.label, row.count])} />
-        <ReportTable title="Monthly trend" rows={overview.monthlyTrend.map((row) => [row.month, row.count])} />
-        <ReportTable title="Common problem keywords" rows={overview.commonProblems.map((row) => [row.keyword, row.count])} />
-        <ReportTable
-          title="Technician performance"
-          rows={overview.technicianPerformance.map((row) => [
-            row.fullName,
-            `${row.completedTickets}/${row.assignedTickets} completed${row.averageRepairHours === null ? "" : `, ${row.averageRepairHours}h avg`}`,
-          ])}
-        />
-      </section>
-    </AppShell>
-  );
-}
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Section title="Top faults found">
+            <BarList rows={report.topFaults} empty="No repairs recorded yet." />
+          </Section>
+          <Section title="Top work done">
+            <BarList rows={report.topActions} empty="No repairs recorded yet." />
+          </Section>
+          <Section title="By faculty">
+            <DataTable columns={[{ label: "Faculty" }, { label: "Registered", align: "right" }, { label: "Fixed", align: "right" }]} rows={groupRows(report.byFaculty)} empty="No requests yet." />
+          </Section>
+          <Section title="By device type">
+            <DataTable columns={[{ label: "Device" }, { label: "Registered", align: "right" }, { label: "Fixed", align: "right" }]} rows={groupRows(report.byDeviceType)} empty="No requests yet." />
+          </Section>
+        </div>
 
-function ReportTable({ title, rows }: { title: string; rows: Array<[string, string | number]> }) {
-  return (
-    <article className="panel p-5">
-      <h2 className="text-lg font-semibold text-[var(--foreground)]">{title}</h2>
-      <div className="mt-4 overflow-x-auto">
-        <table className="data-table text-left text-sm">
-          <tbody>
-            {rows.length === 0 ? (
-              <tr>
-                <td className="py-3 text-[var(--muted)]">No report data</td>
-              </tr>
-            ) : (
-              rows.map(([label, value]) => (
-                <tr key={`${title}-${label}`} className="border-t border-[var(--border)]">
-                  <th className="py-3 pr-4 font-medium text-[var(--foreground)]">{label}</th>
-                  <td className="py-3 text-right text-[var(--muted)]">{value}</td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+        <Section title="Technicians">
+          <DataTable
+            columns={[{ label: "Technician" }, { label: "Fixed", align: "right" }, { label: "Cannot repair", align: "right" }, { label: "Open", align: "right" }, { label: "Rating", align: "right" }]}
+            rows={report.byTechnician.map((t) => [t.name, t.fixed, t.cannotRepair, t.open, formatRating(t.averageRating)])}
+            empty="No technician work recorded yet."
+          />
+        </Section>
+
+        <Section title="Compared with previous events">
+          <DataTable
+            columns={[{ label: "Event" }, { label: "Registered", align: "right" }, { label: "Fixed", align: "right" }, { label: "Fix rate", align: "right" }, { label: "Rating", align: "right" }]}
+            rows={
+              report.previous.length
+                ? [{ name: `${report.event.name} (this event)`, summary: s }, ...report.previous].map((e) => [e.name, e.summary.registered, e.summary.fixed, formatPercent(e.summary.fixRate), formatRating(e.summary.averageRating)])
+                : []
+            }
+            empty="This is the first event, so there is nothing to compare yet."
+          />
+        </Section>
       </div>
-    </article>
+    </AppShell>
   );
 }
