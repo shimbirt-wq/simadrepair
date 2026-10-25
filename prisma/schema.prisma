@@ -199,6 +199,10 @@ model RepairTicket {
   startedWhen           String?        @map("started_when")
   recentEvents          String[]       @default([]) @map("recent_events")
   errorMessage          String?        @map("error_message")
+  /// Personal details erased by the retention job (AD4), 12 months after the event.
+  anonymizedAt          DateTime?      @map("anonymized_at")
+  /// Kept after erasure so reports can still group by faculty.
+  requesterFaculty      String?        @map("requester_faculty")
   photos                TicketPhoto[]
   status                TicketStatus   @default(SUBMITTED)
   events                RepairEvent[]
@@ -222,6 +226,7 @@ model RepairTicket {
   @@index([readyForPickupAt])
   @@index([closedAt])
   @@index([createdAt])
+  @@index([anonymizedAt])
   @@map("repair_tickets")
 }
 

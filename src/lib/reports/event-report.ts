@@ -56,6 +56,7 @@ const reportSelect = {
   repairFaults: true,
   repairActions: true,
   rating: true,
+  requesterFaculty: true,
   requester: { select: { faculty: true } },
   device: { select: { deviceType: true } },
   technician: { select: { id: true, fullName: true } },
@@ -69,6 +70,8 @@ type ReportTicket = {
   repairFaults: string[];
   repairActions: string[];
   rating: number | null;
+  /** Snapshot kept after personal data is erased. */
+  requesterFaculty: string | null;
   requester: { faculty: string | null } | null;
   device: { deviceType: string };
   technician: { id: string; fullName: string } | null;
@@ -176,7 +179,7 @@ export async function getEventReport(prisma: PrismaClient, eventId: string, now 
     summary: summarize(tickets),
     topFaults: countValues(fixed.map((t) => t.repairFaults), FAULTS),
     topActions: countValues(fixed.map((t) => t.repairActions), REPAIR_ACTIONS),
-    byFaculty: groupBy(tickets, (t) => t.requester?.faculty?.trim() || "Not given"),
+    byFaculty: groupBy(tickets, (t) => (t.requester?.faculty ?? t.requesterFaculty)?.trim() || "Not given"),
     byDeviceType: groupBy(tickets, (t) => deviceLabel(t.device.deviceType)),
     byTechnician: byTechnician(tickets),
     previous,
