@@ -1,10 +1,11 @@
 "use client";
 
-import { Clock, RefreshCw, Search } from "lucide-react";
+import { Clock, RefreshCw, Search, UserPlus } from "lucide-react";
+import { RequestForm } from "@/components/public/request-form";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DeskActions } from "@/components/staff/ticket-actions";
 import { TicketSheet } from "@/components/staff/ticket-sheet";
-import { BoardColumn, Card, EmptyState, Input, TagNumber, UrgentBadge, cn } from "@/components/ui";
+import { BoardColumn, Button, Card, Dialog, EmptyState, Input, TagNumber, UrgentBadge, cn } from "@/components/ui";
 import { BOARD_COLUMNS, type BoardColumnKey } from "@/lib/board/board-rules";
 import type { Board, BoardTicket } from "@/lib/board/board-service";
 import { sendJson } from "@/lib/client/api";
@@ -68,6 +69,7 @@ export function LeadBoard() {
   const [selected, setSelected] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  const [walkIn, setWalkIn] = useState(false);
 
   const load = useCallback(async () => {
     const result = await sendJson<Board>("/api/lead/board", "GET");
@@ -103,6 +105,9 @@ export function LeadBoard() {
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" strokeWidth={1.75} />
           <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Tag, code, university ID, name…" className="pl-9" aria-label="Search tickets" />
         </div>
+        <Button icon={<UserPlus className="h-4 w-4" strokeWidth={1.75} />} onClick={() => setWalkIn(true)} disabled={!board?.event}>
+          Register walk-in
+        </Button>
         {stuckCount ? <span className="rounded-full bg-warning-soft px-3 py-1 text-caption font-semibold text-warning-text">{stuckCount} stuck</span> : null}
         <button type="button" onClick={() => void load()} className="ml-auto flex items-center gap-1.5 text-caption text-ink-muted hover:text-ink" aria-label="Refresh">
           <RefreshCw className="h-3.5 w-3.5" strokeWidth={1.75} />
@@ -124,6 +129,22 @@ export function LeadBoard() {
           );
         })}
       </div>
+
+      {board?.event ? (
+        <Dialog open={walkIn} onClose={() => setWalkIn(false)} variant="sheet" title="Register walk-in">
+          {walkIn ? (
+            <RequestForm
+              event={board.event}
+              endpoint="/api/staff/requests"
+              onCreated={(code) => {
+                setWalkIn(false);
+                setSelected(code);
+                void load();
+              }}
+            />
+          ) : null}
+        </Dialog>
+      ) : null}
 
       <TicketSheet
         ticketId={selected}
