@@ -134,6 +134,27 @@ describe("ticket workflow — rules", () => {
     expect(decide(t, tech, { type: "MARK_READY", record: { ...READY_RECORD, tests: ["BOOTS"] } })).toMatchObject({ ok: false, code: "INVALID_INPUT", message: "Tick every test before marking ready." });
   });
 
+  it("undoes a step back to its previous status and technician, desk only, with a reason", () => {
+    const step = { eventId: "e1", eventType: "TECHNICIAN_ASSIGNED" as const, statusFrom: "RECEIVED" as const, statusTo: "RECEIVED" as const, technicianFrom: null, note: null };
+    const result = expectMove(decide(ticket("RECEIVED", "tech"), lead, { type: "UNDO", reason: "Wrong technician", step }), "RECEIVED");
+    expect(result.technicianId).toBeNull();
+    expect(result.event).toMatchObject({ type: "STEP_UNDONE", metadata: { undoneEventId: "e1" } });
+    expect(decide(ticket("RECEIVED", "tech"), tech, { type: "UNDO", reason: "Oops", step })).toMatchObject({ ok: false, code: "FORBIDDEN" });
+    expect(decide(ticket("RECEIVED", "tech"), lead, { type: "UNDO", reason: "", step })).toMatchObject({ ok: false, code: "INVALID_INPUT" });
+    expect(decide(ticket("RECEIVED"), lead, { type: "UNDO", reason: "Oops", step: null })).toMatchObject({ ok: false, code: "INVALID_TRANSITION" });
+  });
+
+  it("lets only an admin undo a pickup", () => {
+    const step = { eventId: "e2", eventType: "PICKUP_CONFIRMED" as const, statusFrom: "READY_FOR_PICKUP" as const, statusTo: "COLLECTED" as const, technicianFrom: undefined, note: null };
+    expect(decide(ticket("COLLECTED", "tech"), lead, { type: "UNDO", reason: "Wrong person", step })).toMatchObject({ ok: false, code: "FORBIDDEN" });
+    expect(expectMove(decide(ticket("COLLECTED", "tech"), admin, { type: "UNDO", reason: "Wrong person", step }), "READY_FOR_PICKUP").technicianId).toBe("tech");
+  });
+
+  it("refuses to undo a step when the ticket moved on", () => {
+    const step = { eventId: "e3", eventType: "REPAIR_STARTED" as const, statusFrom: "RECEIVED" as const, statusTo: "IN_REPAIR" as const, technicianFrom: undefined, note: null };
+    expect(decide(ticket("READY_FOR_PICKUP", "tech"), lead, { type: "UNDO", reason: "Oops", step })).toMatchObject({ ok: false, code: "INVALID_TRANSITION" });
+  });
+
   it("cannot start without a technician", () => {
     expect(decide(ticket("RECEIVED"), lead, { type: "START" })).toMatchObject({ ok: false, code: "INVALID_TRANSITION" });
   });

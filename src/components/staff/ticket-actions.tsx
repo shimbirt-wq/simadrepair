@@ -239,3 +239,53 @@ function CheckInForm({ ticket, onDone }: { ticket: StaffTicketDetail; onDone: ()
     </div>
   );
 }
+
+/** "Undo last step" with a required reason (LD9, LD18). */
+export function UndoControl({ ticket, isAdmin, onDone }: { ticket: StaffTicketDetail; isAdmin: boolean; onDone: () => void }) {
+  const toast = useToast();
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState("");
+  const [pending, startTransition] = useTransition();
+  if (!ticket.undoable || (ticket.undoable.adminOnly && !isAdmin)) return null;
+
+  if (!open) {
+    return (
+      <button type="button" className="self-start text-caption font-medium text-ink-muted hover:text-ink" onClick={() => setOpen(true)}>
+        Undo: {ticket.undoable.note ?? ticket.undoable.type.toLowerCase().replaceAll("_", " ")}
+      </button>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-2 rounded-md border border-line p-3">
+      <Field label={`Undo "${ticket.undoable.note ?? ticket.undoable.type}" — why?`}>
+        <Input autoFocus value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Checked in the wrong device" />
+      </Field>
+      <div className="flex gap-2">
+        <Button
+          variant="destructive"
+          size="sm"
+          disabled={reason.trim().length < 3}
+          loading={pending}
+          onClick={() =>
+            startTransition(async () => {
+              const result = await sendJson(`/api/staff/tickets/${ticket.id}/actions`, "POST", { type: "UNDO", reason });
+              if (!result.ok) toast.error(result.error);
+              else {
+                toast.success("Step undone");
+                setOpen(false);
+                setReason("");
+                onDone();
+              }
+            })
+          }
+        >
+          Undo
+        </Button>
+        <Button variant="ghost" size="sm" onClick={() => setOpen(false)}>
+          Cancel
+        </Button>
+      </div>
+    </div>
+  );
+}

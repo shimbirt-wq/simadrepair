@@ -74,6 +74,45 @@ describe.skipIf(!hasTestDatabase)("ticket service (database)", () => {
     expect(event.note).toBe("Needs a network specialist");
   });
 
+  it("undoes steps one by one, reversing their side data", async () => {
+    const lead = staff(await createStaff(prisma, "LEAD_TECHNICIAN"));
+    const tech = staff(await createStaff(prisma, "TECHNICIAN"));
+    const ticket = await createSubmittedTicket(prisma);
+    await performTicketAction(prisma, ticket.id, lead, { action: { type: "CHECK_IN" }, checkIn: { idChecked: true } });
+    await performTicketAction(prisma, ticket.id, lead, { action: { type: "ASSIGN", technicianId: tech.id } });
+    await performTicketAction(prisma, ticket.id, tech, { action: { type: "START" } });
+
+    expect(await performTicketAction(prisma, ticket.id, lead, { action: { type: "UNDO", reason: "Started by mistake" } })).toMatchObject({ ok: true, status: "RECEIVED" });
+    expect(await prisma.repairTicket.findUniqueOrThrow({ where: { id: ticket.id } })).toMatchObject({ status: "RECEIVED", startedAt: null, technicianId: tech.id });
+
+    expect(await performTicketAction(prisma, ticket.id, lead, { action: { type: "UNDO", reason: "Wrong technician" } })).toMatchObject({ ok: true });
+    expect((await prisma.repairTicket.findUniqueOrThrow({ where: { id: ticket.id } })).technicianId).toBeNull();
+
+    expect(await performTicketAction(prisma, ticket.id, lead, { action: { type: "UNDO", reason: "Wrong device checked in" } })).toMatchObject({ ok: true, status: "SUBMITTED" });
+    const back = await prisma.repairTicket.findUniqueOrThrow({ where: { id: ticket.id }, include: { custody: true } });
+    expect(back).toMatchObject({ status: "SUBMITTED", tagNumber: null });
+    expect(back.custody).toMatchObject({ receivedAt: null, idChecked: false });
+
+    expect(await performTicketAction(prisma, ticket.id, lead, { action: { type: "UNDO", reason: "Nothing left" } })).toMatchObject({ ok: false, status: 409 });
+  });
+
+  it("lets only an admin undo a pickup", async () => {
+    const lead = staff(await createStaff(prisma, "LEAD_TECHNICIAN"));
+    const admin = staff(await createStaff(prisma, "ADMIN"));
+    const ticket = await createSubmittedTicket(prisma);
+    await performTicketAction(prisma, ticket.id, lead, { action: { type: "CHECK_IN" }, checkIn: { idChecked: true } });
+    await performTicketAction(prisma, ticket.id, lead, { action: { type: "ASSIGN", technicianId: lead.id } });
+    await performTicketAction(prisma, ticket.id, lead, { action: { type: "START" } });
+    await performTicketAction(prisma, ticket.id, lead, { action: { type: "MARK_READY", record: READY_RECORD } });
+    await performTicketAction(prisma, ticket.id, lead, { action: { type: "PICKUP" }, pickup: { collectedByName: "Wrong Person" } });
+
+    expect(await performTicketAction(prisma, ticket.id, lead, { action: { type: "UNDO", reason: "Handed to the wrong person" } })).toMatchObject({ ok: false, status: 403 });
+    expect(await performTicketAction(prisma, ticket.id, admin, { action: { type: "UNDO", reason: "Handed to the wrong person" } })).toMatchObject({ ok: true, status: "READY_FOR_PICKUP" });
+    const back = await prisma.repairTicket.findUniqueOrThrow({ where: { id: ticket.id }, include: { custody: true } });
+    expect(back.closedAt).toBeNull();
+    expect(back.custody).toMatchObject({ collectedAt: null, collectedByName: null });
+  });
+
   it("refuses to assign an expired volunteer", async () => {
     const lead = staff(await createStaff(prisma, "LEAD_TECHNICIAN"));
     const expired = await prisma.user.create({ data: { fullName: "Old", email: "old@test.so", passwordHash: "x", role: "TECHNICIAN", accessExpiresOn: new Date("2024-01-01T00:00:00Z") } });

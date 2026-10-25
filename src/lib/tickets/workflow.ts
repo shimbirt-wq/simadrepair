@@ -1,5 +1,6 @@
 import type { RepairEventType, TicketStatus, UserRole } from "@prisma/client";
 import { repairRecordSchema, type RepairRecord } from "@/lib/tickets/repair-record";
+import type { UndoStep } from "@/lib/tickets/undo";
 
 /**
  * The ticket workflow: the only place that decides whether an action is
@@ -35,7 +36,8 @@ export type WorkflowAction =
   | { type: "PICKUP" }
   | { type: "CANCEL" }
   | { type: "CLOSE_EVENT_ENDED" }
-  | { type: "ADD_NOTE"; note: string };
+  | { type: "ADD_NOTE"; note: string }
+  | { type: "UNDO"; reason: string; step: UndoStep | null };
 
 export type WorkflowEvent = {
   type: RepairEventType;
@@ -221,6 +223,20 @@ export function decide(ticket: WorkflowTicket, actor: WorkflowActor, action: Wor
       const noteError = requireText(action.note, "A note");
       if (noteError) return noteError;
       return move(ticket, status, "NOTE_ADDED", action.note.trim(), { metadata: { kind: "note" } });
+    }
+
+    case "UNDO": {
+      if (!isDesk(actor)) return forbidden("Only the desk can undo steps.");
+      const { step } = action;
+      if (!step) return invalid("There is nothing to undo.");
+      if (step.eventType === "PICKUP_CONFIRMED" && !(actor.kind === "staff" && actor.role === "ADMIN")) return forbidden("Only an admin can undo a pickup.");
+      if (step.statusTo !== status) return invalid("This ticket changed since that step. Refresh and try again.");
+      const reasonError = requireText(action.reason, "A reason");
+      if (reasonError) return reasonError;
+      return move(ticket, step.statusFrom, "STEP_UNDONE", action.reason.trim(), {
+        technicianId: step.technicianFrom === undefined ? ticket.technicianId : step.technicianFrom,
+        metadata: { undoneEventId: step.eventId, undoneEventType: step.eventType },
+      });
     }
 
     case "CLOSE_EVENT_ENDED": {

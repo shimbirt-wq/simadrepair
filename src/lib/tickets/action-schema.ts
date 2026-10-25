@@ -50,6 +50,7 @@ export const staffTicketActionSchema = z.discriminatedUnion("type", [
   }),
   z.object({ type: z.literal("CANCEL") }),
   z.object({ type: z.literal("ADD_NOTE"), note: text("A note", 1000) }),
+  z.object({ type: z.literal("UNDO"), reason: text("A reason", 300) }),
 ]);
 
 export type StaffTicketAction = z.infer<typeof staffTicketActionSchema>;

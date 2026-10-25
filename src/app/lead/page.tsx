@@ -7,7 +7,7 @@ export default async function LeadBoardPage() {
 
   return (
     <AppShell active="lead" eyebrow="Desk" title="Board" user={user} width="wide">
-      <LeadBoard />
+      <LeadBoard isAdmin={user.role === "ADMIN"} />
     </AppShell>
   );
 }

@@ -2,6 +2,7 @@ import type { Prisma, PrismaClient } from "@prisma/client";
 import { hasAccess } from "@/lib/auth/public-user";
 import { encryptDevicePassword } from "@/lib/secrets/device-password";
 import { repairRecordSchema } from "@/lib/tickets/repair-record";
+import { findUndoStep, type UndoStep } from "@/lib/tickets/undo";
 import { decide, OPEN_REPAIR_STATUSES, type WorkflowAction, type WorkflowActor } from "@/lib/tickets/workflow";
 
 /**
@@ -22,10 +23,11 @@ export type CheckInData = {
 export type PickupData = { collectedByName: string; collectedByPhone?: string | null; accessoriesReturned?: string[] };
 
 export type TicketActionInput =
-  | { action: Exclude<WorkflowAction, { type: "CHECK_IN" } | { type: "PICKUP" } | { type: "CLAIM" }> }
+  | { action: Exclude<WorkflowAction, { type: "CHECK_IN" } | { type: "PICKUP" } | { type: "CLAIM" } | { type: "UNDO" }> }
   | { action: { type: "CHECK_IN" }; checkIn?: CheckInData }
   | { action: { type: "PICKUP" }; pickup: PickupData }
-  | { action: { type: "CLAIM" } };
+  | { action: { type: "CLAIM" } }
+  | { action: { type: "UNDO"; reason: string } };
 
 export type TicketActionResult =
   | { ok: true; ticketId: string; status: string; tagNumber?: number | null }
@@ -55,10 +57,21 @@ export async function performTicketAction(
 
     if (!ticket) return { ok: false, status: 404, message: "Repair ticket not found." } as const;
 
-    const action: WorkflowAction =
-      input.action.type === "CLAIM" && actor.kind === "staff"
-        ? { type: "CLAIM", openRepairCount: await countOpenRepairs(tx, actor.id) }
-        : (input.action as WorkflowAction);
+    let action: WorkflowAction;
+    let undoStep: UndoStep | null = null;
+    if (input.action.type === "CLAIM" && actor.kind === "staff") {
+      action = { type: "CLAIM", openRepairCount: await countOpenRepairs(tx, actor.id) };
+    } else if (input.action.type === "UNDO") {
+      const events = await tx.repairEvent.findMany({
+        where: { ticketId: ticket.id },
+        orderBy: { createdAt: "desc" },
+        select: { id: true, eventType: true, statusFrom: true, statusTo: true, note: true, actorId: true, metadata: true },
+      });
+      undoStep = findUndoStep(events);
+      action = { type: "UNDO", reason: input.action.reason, step: undoStep };
+    } else {
+      action = input.action as WorkflowAction;
+    }
 
     const now0 = new Date();
     if (action.type === "ASSIGN") {
@@ -98,6 +111,26 @@ export async function performTicketAction(
     if (decision.status === "CANNOT_BE_REPAIRED") ticketData.completedAt = now;
     if (decision.status === "COLLECTED") ticketData.closedAt = now;
     if (decision.status === "CANCELLED") ticketData.cancelledAt = now;
+
+    if (undoStep) {
+      // Reverse the side data the undone step wrote.
+      const reversals: Partial<Record<string, Prisma.RepairTicketUpdateManyMutationInput & { tagNumber?: null }>> = {
+        CHECKED_IN: { tagNumber: null },
+        REPAIR_STARTED: { startedAt: null },
+        READY_FOR_PICKUP: { readyForPickupAt: null, completedAt: null },
+        CANNOT_REPAIR_CONFIRMED: { completedAt: null },
+        PICKUP_CONFIRMED: { closedAt: null },
+        TICKET_CANCELLED: { cancelledAt: null },
+      };
+      Object.assign(ticketData, reversals[undoStep.eventType] ?? {});
+      if (undoStep.technicianFrom === undefined) ticketData.technicianId = ticket.technicianId;
+      if (undoStep.eventType === "CHECKED_IN" && ticket.custody) {
+        await tx.deviceCustody.update({ where: { id: ticket.custody.id }, data: { receivedAt: null, receivedById: null, idChecked: false } });
+      }
+      if (undoStep.eventType === "PICKUP_CONFIRMED" && ticket.custody) {
+        await tx.deviceCustody.update({ where: { id: ticket.custody.id }, data: { collectedAt: null, collectedByName: null, collectedByPhone: null, releasedById: null, accessoriesReturned: [] } });
+      }
+    }
 
     // Optimistic check: the ticket must still be in the status we decided from.
     const updated = await tx.repairTicket.updateMany({ where: { id: ticket.id, status: ticket.status }, data: ticketData });
@@ -156,6 +189,8 @@ export async function performTicketAction(
         statusTo: decision.event.statusTo,
         note: decision.event.note,
         metadata: {
+          technicianFrom: ticket.technicianId,
+          technicianTo: decision.technicianId,
           ...(decision.event.metadata ?? {}),
           ...("pickup" in input ? { collectedByName: input.pickup.collectedByName, collectedByPhone: input.pickup.collectedByPhone ?? null } : {}),
           ...(tagNumber !== null ? { tagNumber } : {}),

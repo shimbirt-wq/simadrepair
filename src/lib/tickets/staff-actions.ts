@@ -25,6 +25,8 @@ export function performStaffTicketAction(prisma: PrismaClient, user: PublicUser,
       return performTicketAction(prisma, ticketRef, actor, { action: { type: "PICKUP" }, pickup: { collectedByName: body.collectedByName, collectedByPhone: body.collectedByPhone, accessoriesReturned: body.accessoriesReturned } });
     case "CLAIM":
       return performTicketAction(prisma, ticketRef, actor, { action: { type: "CLAIM" } });
+    case "UNDO":
+      return performTicketAction(prisma, ticketRef, actor, { action: { type: "UNDO", reason: body.reason } });
     default:
       return performTicketAction(prisma, ticketRef, actor, { action: body });
   }

@@ -4,7 +4,7 @@ import { Clock, HandHelping, RefreshCw, Search, UserPlus } from "lucide-react";
 import { PickupSearch } from "@/components/staff/pickup-search";
 import { RequestForm } from "@/components/public/request-form";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { DeskActions } from "@/components/staff/ticket-actions";
+import { DeskActions, UndoControl } from "@/components/staff/ticket-actions";
 import { TicketSheet } from "@/components/staff/ticket-sheet";
 import { BoardColumn, Button, Card, Dialog, EmptyState, Input, TagNumber, UrgentBadge, cn } from "@/components/ui";
 import { BOARD_COLUMNS, type BoardColumnKey } from "@/lib/board/board-rules";
@@ -64,7 +64,7 @@ function TicketCard({ ticket, onOpen, now }: { ticket: BoardTicket; onOpen: () =
   );
 }
 
-export function LeadBoard() {
+export function LeadBoard({ isAdmin = false }: { isAdmin?: boolean }) {
   const [board, setBoard] = useState<Board | null>(null);
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
@@ -158,16 +158,18 @@ export function LeadBoard() {
       <TicketSheet
         ticketId={selected}
         onClose={() => setSelected(null)}
-        actions={(ticket, reload) => (
-          <DeskActions
-            ticket={ticket}
-            technicians={board?.technicians ?? []}
-            onDone={() => {
-              reload();
-              void load();
-            }}
-          />
-        )}
+        actions={(ticket, reload) => {
+          const done = () => {
+            reload();
+            void load();
+          };
+          return (
+            <>
+              <DeskActions ticket={ticket} technicians={board?.technicians ?? []} onDone={done} />
+              <UndoControl ticket={ticket} isAdmin={isAdmin} onDone={done} />
+            </>
+          );
+        }}
       />
     </div>
   );
