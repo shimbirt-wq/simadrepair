@@ -1,22 +1,13 @@
-import { redirect } from "next/navigation";
 import { AppShell } from "@/app/app-shell";
-import { LeadCommandCenter } from "@/components/service-desk/lead-command-center";
-import { getCurrentServerUser } from "@/lib/auth/server-user";
+import { LeadBoard } from "@/components/staff/lead-board";
+import { requirePageRole } from "@/lib/auth/require-page-role";
 
-export default async function LeadCommandCenterPage() {
-  const user = await getCurrentServerUser();
-
-  if (!user) {
-    redirect("/auth/login?next=/lead");
-  }
-
-  if (user.role !== "LEAD_TECHNICIAN" && user.role !== "ADMIN") {
-    redirect("/profile?denied=lead-command");
-  }
+export default async function LeadBoardPage() {
+  const user = await requirePageRole("/lead", ["LEAD_TECHNICIAN", "ADMIN"]);
 
   return (
-    <AppShell active="lead" eyebrow="Lead technician" title="Command center" user={user}>
-      <LeadCommandCenter />
+    <AppShell active="lead" eyebrow="Desk" title="Board" user={user} width="wide">
+      <LeadBoard />
     </AppShell>
   );
 }
