@@ -1,5 +1,7 @@
 import { CalendarDays, Clock, MapPin, MessageCircle, Search } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
+import heroPhoto from "../../../../public/images/program/volunteers-repairing.jpg";
 import { ButtonLink, Card, cn } from "@/components/ui";
 import type { ActiveEvent } from "@/lib/events/event-service";
 import { formatDay, formatEventDates, isEventRunning, type RegistrationState } from "@/lib/events/event-window";
@@ -60,36 +62,44 @@ export function Hero({ state, event, now = new Date() }: { state: RegistrationSt
           <HeroTrack />
         </div>
 
-        {event ? (
-          <Card className="flex flex-col gap-5 p-6 sm:p-7">
-            <p className="text-small font-semibold text-ink">Where to bring your device</p>
-            <dl className="flex flex-col gap-4 text-small">
-              <Detail icon={<CalendarDays className="h-5 w-5" strokeWidth={1.75} />} label="Dates" value={formatEventDates(event.startsOn, event.endsOn)} />
-              <Detail icon={<MapPin className="h-5 w-5" strokeWidth={1.75} />} label="Desk" value={event.venue} />
-              <Detail icon={<Clock className="h-5 w-5" strokeWidth={1.75} />} label="Hours" value={event.hours} />
-              <Detail
-                icon={<MessageCircle className="h-5 w-5" strokeWidth={1.75} />}
-                label="Desk WhatsApp"
-                value={
-                  <a className="font-mono text-ink-accent hover:underline" href={whatsappLink(event.deskWhatsapp, "Salaam, I have a question about the maintenance program.")} target="_blank" rel="noreferrer">
-                    {whatsappDisplay(event.deskWhatsapp)}
-                  </a>
-                }
-              />
-            </dl>
-            {state === "OPEN" ? (
-              <p className="border-t border-line pt-4 text-caption text-ink-muted">Registration closes {formatDay(event.registrationClosesOn)}.</p>
-            ) : null}
-          </Card>
-        ) : (
-          <Card className="flex flex-col gap-3 p-6">
-            <p className="text-small font-semibold text-ink">Lost your tracking code?</p>
-            <p className="text-small text-ink-secondary">Find your request with your university ID and the last 4 digits of your phone.</p>
-            <Link href="/find" className="text-small font-semibold text-ink-accent hover:underline">
-              Find my request
-            </Link>
-          </Card>
-        )}
+        <div className="flex flex-col">
+          <Image
+            src={heroPhoto}
+            alt="Two student volunteers repairing laptops at a previous Computer Maintenance Program"
+            priority
+            placeholder="blur"
+            sizes="(min-width: 1024px) 480px, 100vw"
+            className="aspect-[4/3] w-full rounded-xl object-cover shadow-md"
+          />
+          {event ? (
+            <Card className="relative z-10 mx-3 -mt-12 flex flex-col gap-4 p-5 shadow-lg sm:mx-6">
+              <p className="text-small font-semibold text-ink">Where to bring your device</p>
+              <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-small">
+                <Detail icon={<CalendarDays className="h-5 w-5" strokeWidth={1.75} />} label="Dates" value={formatEventDates(event.startsOn, event.endsOn)} />
+                <Detail icon={<Clock className="h-5 w-5" strokeWidth={1.75} />} label="Hours" value={event.hours} />
+                <Detail icon={<MapPin className="h-5 w-5" strokeWidth={1.75} />} label="Desk" value={event.venue} />
+                <Detail
+                  icon={<MessageCircle className="h-5 w-5" strokeWidth={1.75} />}
+                  label="Desk WhatsApp"
+                  value={
+                    <a className="font-mono text-ink-accent hover:underline" href={whatsappLink(event.deskWhatsapp, "Salaam, I have a question about the maintenance program.")} target="_blank" rel="noreferrer">
+                      {whatsappDisplay(event.deskWhatsapp)}
+                    </a>
+                  }
+                />
+              </dl>
+              {state === "OPEN" ? <p className="border-t border-line pt-3 text-caption text-ink-muted">Registration closes {formatDay(event.registrationClosesOn)}.</p> : null}
+            </Card>
+          ) : (
+            <Card className="relative z-10 mx-3 -mt-12 flex flex-col gap-2 p-5 shadow-lg sm:mx-6">
+              <p className="text-small font-semibold text-ink">Lost your tracking code?</p>
+              <p className="text-small text-ink-secondary">Find your request with your university ID and the last 4 digits of your phone.</p>
+              <Link href="/find" className="text-small font-semibold text-ink-accent hover:underline">
+                Find my request
+              </Link>
+            </Card>
+          )}
+        </div>
       </div>
     </section>
   );

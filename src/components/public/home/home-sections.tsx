@@ -53,7 +53,7 @@ export function BeforeYouCome() {
     { icon: <KeyRound {...icon} />, title: "Know your password", body: "Technicians may need to sign in. It's stored encrypted and deleted at pickup." },
   ];
   return (
-    <HomeSection id="before" eyebrow="Before you come" title="Bring the right things" tone="muted">
+    <HomeSection id="before" eyebrow="Before you come" title="Bring the right things">
       <ul className="grid gap-x-8 gap-y-6 sm:grid-cols-2">
         {items.map((item) => (
           <li key={item.title} className="flex gap-4">
@@ -84,7 +84,7 @@ export function WhatWeFix() {
     "Promising your files survive a failing drive",
   ];
   return (
-    <HomeSection id="fix" eyebrow="What we do" title="A free tune-up for your laptop">
+    <HomeSection id="fix" eyebrow="What we do" title="A free tune-up for your laptop" tone="muted">
       <div className="grid gap-8 lg:grid-cols-[3fr_2fr]">
         <div className="flex flex-col gap-4">
           <ul className="grid gap-3 sm:grid-cols-2">
@@ -123,7 +123,7 @@ export function Faq({ holdDays }: { holdDays: number }) {
     { q: "What if I can't collect during the event?", a: `Uncollected devices move to the IT office after the event. Collect yours there within ${holdDays} days with your university ID card.` },
   ];
   return (
-    <HomeSection id="faq" eyebrow="Questions" title="Good to know" tone="muted">
+    <HomeSection id="faq" eyebrow="Questions" title="Good to know">
       <div className="flex max-w-3xl flex-col divide-y divide-line rounded-lg border border-line bg-app">
         {items.map((item) => (
           <details key={item.q} className="group px-5 [&_summary::-webkit-details-marker]:hidden">

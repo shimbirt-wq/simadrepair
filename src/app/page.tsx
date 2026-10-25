@@ -1,5 +1,6 @@
 import { BeforeYouCome, Faq, HowItWorks, WhatWeFix } from "@/components/public/home/home-sections";
 import { Hero } from "@/components/public/home/hero";
+import { PastPrograms } from "@/components/public/home/past-programs";
 import { LiveNumbers } from "@/components/public/home/live-numbers";
 import { PublicLayout } from "@/components/public/public-layout";
 import { unstable_cache } from "next/cache";
@@ -29,6 +30,7 @@ export default async function HomePage() {
       <Hero state={state} event={event} />
       {numbers ? <LiveNumbers numbers={numbers} /> : null}
       <HowItWorks />
+      <PastPrograms />
       <BeforeYouCome />
       <WhatWeFix />
       <Faq holdDays={event?.holdDays ?? 30} />
