@@ -78,7 +78,7 @@ export function TechnicianTicketView({
   const toast = useToast();
   const [ticket, setTicket] = useState<StaffTicketDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [mode, setMode] = useState<"none" | "release">("none");
+  const [mode, setMode] = useState<"none" | "release" | "parts" | "action" | "cannot">("none");
   const [note, setNote] = useState("");
   const [pending, startTransition] = useTransition();
 
@@ -119,6 +119,17 @@ export function TechnicianTicketView({
   else if (mine && ticket.status === "RECEIVED") primary = <Button size="lg" className="w-full" loading={pending} onClick={() => run({ type: "START" }, "Repair started")}>Start repair</Button>;
   else if (mine && ticket.status === "IN_REPAIR" && !renderInProgress)
     primary = <Button size="lg" className="w-full" loading={pending} onClick={() => run({ type: "MARK_READY" }, "Marked ready")}>Mark ready</Button>;
+  else if (mine && (ticket.status === "WAITING_FOR_PARTS" || ticket.status === "ACTION_NEEDED"))
+    primary = <Button size="lg" className="w-full" loading={pending} onClick={() => run({ type: "RESUME" }, "Repair resumed")}>Resume repair</Button>;
+
+  const blockedNote = ticket.timeline.find((event) => event.type === "REPAIR_BLOCKED")?.note;
+  const proposal = ticket.timeline.find((event) => event.type === "CANNOT_REPAIR_PROPOSED")?.note;
+  const reasonForms = {
+    parts: { label: "Which part does the student need to buy?", placeholder: "Dell 65W USB-C charger", submit: "Waiting for parts", body: (detail: string) => ({ type: "BLOCK", kind: "WAITING_FOR_PARTS", detail }) },
+    action: { label: "What do you need from the student?", placeholder: "Permission to reinstall Windows", submit: "Ask the student", body: (detail: string) => ({ type: "BLOCK", kind: "ACTION_NEEDED", detail }) },
+    cannot: { label: "Why can't it be repaired?", placeholder: "Motherboard failure — repair costs more than the device", submit: "Send to the lead", body: (reason: string) => ({ type: "PROPOSE_CANNOT_REPAIR", reason }) },
+  } as const;
+  const success = { parts: "Marked waiting for parts", action: "Marked action needed", cannot: "Sent to the lead to confirm" } as const;
 
   return (
     <div className="mx-auto flex max-w-form flex-col gap-5">
@@ -140,8 +151,43 @@ export function TechnicianTicketView({
           </div>
         </div>
         <p className="text-h3 text-ink">{ticket.intake.device.name}</p>
+        {mine && (ticket.status === "WAITING_FOR_PARTS" || ticket.status === "ACTION_NEEDED") && blockedNote ? (
+          <p className="rounded-md bg-warning-soft px-4 py-3 text-small text-warning-text">
+            <span className="font-semibold">{ticket.status === "WAITING_FOR_PARTS" ? "Part: " : "Needed: "}</span>
+            {blockedNote}
+          </p>
+        ) : null}
+        {ticket.status === "CANNOT_REPAIR_PROPOSED" ? (
+          <p className="rounded-md bg-warning-soft px-4 py-3 text-small text-warning-text">Waiting for the lead to confirm: {proposal}</p>
+        ) : null}
         {primary}
-        {mine && renderInProgress ? renderInProgress(ticket, run) : null}
+        {mine && ticket.status === "IN_REPAIR" && renderInProgress ? renderInProgress(ticket, run) : null}
+        {mine && mode !== "none" && mode !== "release" ? (
+          <ReasonForm
+            label={reasonForms[mode].label}
+            placeholder={reasonForms[mode].placeholder}
+            submitLabel={reasonForms[mode].submit}
+            onSubmit={(text) => void run(reasonForms[mode].body(text), success[mode])}
+            onCancel={() => setMode("none")}
+          />
+        ) : null}
+        {mine && mode === "none" && ["IN_REPAIR", "WAITING_FOR_PARTS", "ACTION_NEEDED"].includes(ticket.status) ? (
+          <div className="flex flex-wrap gap-2">
+            {ticket.status === "IN_REPAIR" ? (
+              <>
+                <Button variant="secondary" size="sm" onClick={() => setMode("parts")}>
+                  Waiting for parts
+                </Button>
+                <Button variant="secondary" size="sm" onClick={() => setMode("action")}>
+                  Need the student
+                </Button>
+              </>
+            ) : null}
+            <Button variant="ghost" size="sm" onClick={() => setMode("cannot")}>
+              Can&apos;t repair
+            </Button>
+          </div>
+        ) : null}
         {mine && (ticket.status === "RECEIVED" || ticket.status === "IN_REPAIR") ? (
           mode === "release" ? (
             <ReasonForm
