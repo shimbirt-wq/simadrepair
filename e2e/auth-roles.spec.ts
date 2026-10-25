@@ -11,7 +11,7 @@ const staffFixtures = [
   {
     department: "Service Desk",
     email: "playwright-lead@example.invalid",
-    expectedHeading: /command center/i,
+    expectedHeading: /^board$/i,
     expectedUrl: /\/lead$/,
     fullName: "Playwright Lead Technician",
     label: "lead technician",
@@ -22,7 +22,7 @@ const staffFixtures = [
   {
     department: "Computer Maintenance",
     email: "playwright-tech@example.invalid",
-    expectedHeading: /assigned repair work/i,
+    expectedHeading: /^salaam, playwright$/i,
     expectedUrl: /\/technician\/workspace$/,
     fullName: "Playwright Technician",
     label: "technician",
@@ -41,7 +41,8 @@ const users: ReadonlyArray<{
 }> = [
   {
     email: bootstrapAdminEmail,
-    expectedHeading: /overview/i,
+    // The live overview is titled with the active event, or "No active event".
+    expectedHeading: /maintenance week|no active event/i,
     expectedUrl: /\/dashboard$/,
     label: "admin",
     password: bootstrapAdminPassword,
