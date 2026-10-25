@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { PhotoUploader, type UploadedPhoto } from "@/components/public/photo-uploader";
-import { Button, ChoiceCard, ChoiceGroup, Field, Input, Select, TagNumber, useToast } from "@/components/ui";
+import { Badge, Button, ChoiceCard, ChoiceGroup, Field, Input, TagNumber, useToast } from "@/components/ui";
+import { neededSkills, rankTechnicians } from "@/lib/staff/skill-match";
 import { ACCESSORIES } from "@/lib/intake/options";
 import { CONDITION_CHECKS, MAX_DAMAGE_PHOTOS } from "@/lib/tickets/check-in-options";
 import { sendJson } from "@/lib/client/api";
@@ -71,18 +72,34 @@ export function DeskActions({ ticket, technicians, onDone }: { ticket: StaffTick
 
       {assignable ? (
         <div className="flex flex-col gap-3">
-          <Field label={ticket.technician ? "Reassign to" : "Assign to"}>
-            <Select value={technicianId} onChange={(e) => setTechnicianId(e.target.value)}>
-              <option value="">Choose a technician…</option>
-              {technicians
-                .filter((technician) => technician.id !== ticket.technician?.id)
-                .map((technician) => (
-                  <option key={technician.id} value={technician.id}>
-                    {technician.name} · {technician.openCount} open{technician.skills.length ? ` · ${technician.skills.join(", ")}` : ""}
-                  </option>
-                ))}
-            </Select>
-          </Field>
+          <fieldset className="flex flex-col gap-2">
+            <legend className="mb-1 text-small font-semibold text-ink">{ticket.technician ? "Reassign to" : "Assign to"}</legend>
+            <div className="flex max-h-72 flex-col gap-1.5 overflow-y-auto">
+              {rankTechnicians(
+                technicians.filter((technician) => technician.id !== ticket.technician?.id),
+                neededSkills(ticket.intake.categories),
+              ).map((technician) => (
+                <ChoiceCard
+                  key={technician.id}
+                  name={`assign-${ticket.id}`}
+                  checked={technicianId === technician.id}
+                  onChange={() => setTechnicianId(technician.id)}
+                  label={
+                    <span className="flex items-center gap-2">
+                      {technician.name}
+                      {technician.matches ? (
+                        <Badge tone="accent" className="h-5 px-2">
+                          Good match
+                        </Badge>
+                      ) : null}
+                    </span>
+                  }
+                  description={`${technician.openCount} open${technician.skills.length ? ` · ${technician.skills.join(", ")}` : ""}`}
+                />
+              ))}
+              {technicians.length === 0 ? <p className="text-caption text-ink-muted">No active technicians. Add volunteers on the Staff page.</p> : null}
+            </div>
+          </fieldset>
           {ticket.technician ? (
             <Field label="Reason">
               <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Needs a hardware specialist" />

@@ -58,6 +58,28 @@ describe.skipIf(!hasTestDatabase)("ticket service (database)", () => {
     expect(await performTicketAction(prisma, tickets[3].id, tech, { action: { type: "CLAIM" } })).toMatchObject({ ok: false, status: 409 });
   });
 
+  it("requires and records a reason when reassigning", async () => {
+    const lead = staff(await createStaff(prisma, "LEAD_TECHNICIAN"));
+    const first = await createStaff(prisma, "TECHNICIAN");
+    const second = await createStaff(prisma, "TECHNICIAN");
+    const ticket = await createSubmittedTicket(prisma);
+    await performTicketAction(prisma, ticket.id, lead, { action: { type: "CHECK_IN" } });
+    await performTicketAction(prisma, ticket.id, lead, { action: { type: "ASSIGN", technicianId: first.id } });
+
+    expect(await performTicketAction(prisma, ticket.id, lead, { action: { type: "ASSIGN", technicianId: second.id } })).toMatchObject({ ok: false, status: 400 });
+    expect(await performTicketAction(prisma, ticket.id, lead, { action: { type: "ASSIGN", technicianId: second.id, reason: "Needs a network specialist" } })).toMatchObject({ ok: true });
+    const event = await prisma.repairEvent.findFirstOrThrow({ where: { ticketId: ticket.id, eventType: "TECHNICIAN_REASSIGNED" } });
+    expect(event.note).toBe("Needs a network specialist");
+  });
+
+  it("refuses to assign an expired volunteer", async () => {
+    const lead = staff(await createStaff(prisma, "LEAD_TECHNICIAN"));
+    const expired = await prisma.user.create({ data: { fullName: "Old", email: "old@test.so", passwordHash: "x", role: "TECHNICIAN", accessExpiresOn: new Date("2024-01-01T00:00:00Z") } });
+    const ticket = await createSubmittedTicket(prisma);
+    await performTicketAction(prisma, ticket.id, lead, { action: { type: "CHECK_IN" } });
+    expect(await performTicketAction(prisma, ticket.id, lead, { action: { type: "ASSIGN", technicianId: expired.id } })).toMatchObject({ ok: false, status: 409 });
+  });
+
   it("refuses to assign an inactive or non-technician user", async () => {
     const lead = staff(await createStaff(prisma, "LEAD_TECHNICIAN"));
     const admin = await createStaff(prisma, "ADMIN");
