@@ -4,15 +4,15 @@ from lib import *
 from html import escape
 items = [
  ("01-platform-overview.html", "Platform overview", "One platform for students, the lead desk, volunteer technicians and the admin."),
- ("02-end-to-end-swimlane.html", "The week, end to end", "Every handoff between people happens in the platform, from registration to the report."),
+ ("02-end-to-end-swimlane.html", "The program, end to end", "Every handoff between people happens in the platform, from registration to the report."),
  ("03-ticket-lifecycle.html", "One repair, start to finish", "One status system; every repair ends with a clear outcome the student can see."),
  ("04-student-journey.html", "Student journey", "Six stages on a phone, each with a concrete improvement over today."),
  ("05-lead-desk.html", "Lead technician desk", "Check-in, assignment, a live board and pickup against the university ID card."),
  ("06-technician-flow.html", "Volunteer technician", "Claim, repair and record the fix; nothing is marked ready without tests."),
- ("07-admin-event-cycle.html", "Admin", "Set the week up once; registration, accounts, report and clean-up follow its dates."),
+ ("07-admin-event-cycle.html", "Admin", "Set the event up once; registration, accounts, report and clean-up follow its dates."),
  ("08-before-after.html", "What changes", "Five weaknesses of today’s system and the change that removes each one."),
 ]
-facts = [("200–500", "devices repaired per Maintenance Week"), ("4", "roles on one platform"),
+facts = [("200–500", "devices repaired per Maintenance Program"), ("4", "roles on one platform"),
          ("1", "tracked lifecycle for every repair"), ("WhatsApp", "updates in Somali and English")]
 def svg_for(f, i):
     import re as _re
@@ -68,7 +68,7 @@ html = f'''<!DOCTYPE html>
   <main class="wrap">
     <p class="eyebrow">Leadership briefing</p>
     <h1>SIMADRepair — SIMAD University IT Service Desk</h1>
-    <p class="sub">Computer Maintenance Week platform · Faculty of Computing</p>
+    <p class="sub">Computer Maintenance Program platform · Faculty of Computing</p>
     <section class="facts" aria-label="Headline facts">
 {fact_html}
     </section>
