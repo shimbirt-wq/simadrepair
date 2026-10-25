@@ -1,6 +1,7 @@
 import type { PrismaClient, TicketPriority, TicketStatus } from "@prisma/client";
 import { boardColumn, isStuck, type BoardColumnKey } from "@/lib/board/board-rules";
 import { getActiveEvent } from "@/lib/events/event-service";
+import { formatEventDates } from "@/lib/events/event-window";
 import { PROBLEM_CATEGORIES } from "@/lib/intake/diagnosis";
 import { OPEN_REPAIR_STATUSES } from "@/lib/tickets/workflow";
 
@@ -25,7 +26,9 @@ export type BoardTicket = {
 
 export type BoardTechnician = { id: string; name: string; role: string; openCount: number; skills: string[] };
 
-export type Board = { event: { id: string; name: string } | null; tickets: BoardTicket[]; technicians: BoardTechnician[]; generatedAt: string };
+export type BoardEvent = { id: string; name: string; venue: string; hours: string; dates: string; holdDays: number };
+
+export type Board = { event: BoardEvent | null; tickets: BoardTicket[]; technicians: BoardTechnician[]; generatedAt: string };
 
 export async function getBoard(prisma: PrismaClient, now = new Date()): Promise<Board> {
   const event = await getActiveEvent(prisma);
@@ -84,7 +87,12 @@ export async function getBoard(prisma: PrismaClient, now = new Date()): Promise<
     });
   }
 
-  return { event: { id: event.id, name: event.name }, tickets, technicians, generatedAt: now.toISOString() };
+  return {
+    event: { id: event.id, name: event.name, venue: event.venue, hours: event.hours, dates: formatEventDates(event.startsOn, event.endsOn), holdDays: event.holdDays },
+    tickets,
+    technicians,
+    generatedAt: now.toISOString(),
+  };
 }
 
 export async function listTechniciansWithLoad(prisma: PrismaClient): Promise<BoardTechnician[]> {
