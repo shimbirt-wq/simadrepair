@@ -53,6 +53,8 @@ export type PublicTrackingInfo = {
   timeline: Array<{ label: string; at: Date }>;
   /** Set once the requester rated the service. */
   rating: number | null;
+  /** Moved to the IT office after the event (D11). */
+  atItOffice: boolean;
 };
 
 function firstName(fullName: string | null | undefined) {
@@ -71,6 +73,7 @@ export async function getPublicTrackingInfo(input: string, prisma: PrismaClient 
       status: true,
       createdAt: true,
       rating: true,
+      custody: { select: { location: true } },
       requester: { select: { fullName: true } },
       device: { select: { deviceType: true, brand: true, model: true } },
       technician: { select: { fullName: true, phone: true } },
@@ -106,6 +109,7 @@ export async function getPublicTrackingInfo(input: string, prisma: PrismaClient 
     contact,
     event: legacy ? null : { name: ticket.event.name, venue: ticket.event.venue, hours: ticket.event.hours, holdDays: ticket.event.holdDays },
     rating: ticket.rating,
+    atItOffice: ticket.custody?.location === "IT_OFFICE",
     timeline: ticket.events.filter(isPublicRepairEvent).map((event) => ({ label: PUBLIC_EVENT_LABELS[event.eventType]!, at: event.createdAt })),
   };
 }

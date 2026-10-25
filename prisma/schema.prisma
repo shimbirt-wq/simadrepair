@@ -239,6 +239,8 @@ model DeviceCustody {
   condition            String?
   accessoriesReceived  String[]      @default([]) @map("accessories_received")
   storageLocation      String?       @map("storage_location")
+  /// EVENT_DESK during the event; IT_OFFICE once uncollected devices are moved after it (D11).
+  location             String        @default("EVENT_DESK")
   releasedById         String?       @map("released_by_id")
   releasedBy           User?         @relation("CustodyReleasedBy", fields: [releasedById], references: [id], onDelete: SetNull)
   readyForCollectionAt DateTime?     @map("ready_for_collection_at")

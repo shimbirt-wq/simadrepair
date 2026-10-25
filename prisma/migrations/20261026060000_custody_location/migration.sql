@@ -1,0 +1,1 @@
+ALTER TABLE "device_custody" ADD COLUMN "location" TEXT NOT NULL DEFAULT 'EVENT_DESK';
