@@ -1,4 +1,4 @@
-import type { CustodyStatus, RepairEventType, RepairStatus } from "@prisma/client";
+import type { RepairEventType, TicketStatus } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 
@@ -8,14 +8,18 @@ const publicTrackingCodeSchema = z
   .toUpperCase()
   .regex(/^SIM-\d{4}-\d+$/, "Tracking code format is invalid");
 
+/** Events a requester may see; internal ones (proposals, notes, reassignments) stay hidden. */
 const PUBLIC_REPAIR_EVENT_TYPES = new Set<RepairEventType>([
   "TICKET_CREATED",
-  "STATUS_CHANGED",
-  "CUSTODY_CHANGED",
+  "CHECKED_IN",
   "TECHNICIAN_ASSIGNED",
+  "TICKET_CLAIMED",
+  "REPAIR_STARTED",
+  "REPAIR_BLOCKED",
+  "REPAIR_RESUMED",
+  "CANNOT_REPAIR_CONFIRMED",
   "READY_FOR_PICKUP",
   "PICKUP_CONFIRMED",
-  "TICKET_CLOSED",
   "TICKET_CANCELLED",
 ]);
 
@@ -24,13 +28,11 @@ export type PublicRepairTimelineEvent = {
   occurredAt: Date;
   statusFrom: string | null;
   statusTo: string | null;
-  custodyFrom: CustodyStatus | null;
-  custodyTo: CustodyStatus | null;
 };
 
 export type PublicTrackingInfo = {
   trackingCode: string;
-  status: RepairStatus;
+  status: TicketStatus;
   submittedAt: Date;
   assignedAt: Date | null;
   readyForPickupAt: Date | null;
@@ -45,7 +47,6 @@ export type PublicTrackingInfo = {
     phone: string | null;
   } | null;
   custody: {
-    status: CustodyStatus;
     storageLocation: string | null;
     receivedAt: Date | null;
     readyForCollectionAt: Date | null;
@@ -69,8 +70,6 @@ type PublicTrackingEventRecord = PublicRepairEventCandidate & {
   createdAt: Date;
   statusFrom: string | null;
   statusTo: string | null;
-  custodyFrom: CustodyStatus | null;
-  custodyTo: CustodyStatus | null;
 };
 
 export function isPublicRepairEvent(event: PublicRepairEventCandidate) {
@@ -99,8 +98,6 @@ function toPublicTimelineEvent(event: PublicTrackingEventRecord): PublicRepairTi
     occurredAt: event.createdAt,
     statusFrom: event.statusFrom,
     statusTo: event.statusTo,
-    custodyFrom: event.custodyFrom,
-    custodyTo: event.custodyTo,
   };
 }
 
@@ -135,7 +132,6 @@ export async function getPublicTrackingInfo(trackingCode: string): Promise<Publi
       },
       custody: {
         select: {
-          status: true,
           storageLocation: true,
           receivedAt: true,
           readyForCollectionAt: true,
@@ -149,8 +145,6 @@ export async function getPublicTrackingInfo(trackingCode: string): Promise<Publi
           createdAt: true,
           statusFrom: true,
           statusTo: true,
-          custodyFrom: true,
-          custodyTo: true,
         },
       },
     },
@@ -180,7 +174,6 @@ export async function getPublicTrackingInfo(trackingCode: string): Promise<Publi
       : null,
     custody: ticket.custody
       ? {
-          status: ticket.custody.status,
           storageLocation: ticket.custody.storageLocation,
           receivedAt: ticket.custody.receivedAt,
           readyForCollectionAt: ticket.custody.readyForCollectionAt,

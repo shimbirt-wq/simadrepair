@@ -1,14 +1,10 @@
-import { Prisma, type RepairStatus } from "@prisma/client";
+import { Prisma, type TicketStatus } from "@prisma/client";
 import type { PrismaClient } from "@prisma/client";
 import type { PublicUser } from "@/lib/auth/public-user";
-import { REPAIR_STATUS_LABELS } from "@/lib/constants/repair-status";
+import { TICKET_STATUS_LABELS as REPAIR_STATUS_LABELS } from "@/lib/tickets/status-display";
+import { OPEN_REPAIR_STATUSES } from "@/lib/tickets/workflow";
 
-const ACTIVE_REPAIR_STATUSES: RepairStatus[] = [
-  "REGISTRATION_COMPLETED",
-  "DEVICE_RECEIVED",
-  "REPAIR_IN_PROGRESS",
-  "READY_FOR_COLLECTION",
-];
+const ACTIVE_REPAIR_STATUSES: TicketStatus[] = ["SUBMITTED", ...OPEN_REPAIR_STATUSES, "READY_FOR_PICKUP"];
 
 const READY_PICKUP_OVERDUE_DAYS = 7;
 const OPEN_TICKET_RISK_DAYS = 4;
@@ -22,7 +18,7 @@ export type DashboardTicketSummary = {
   id: string;
   ticketId: string;
   trackingCode: string;
-  status: RepairStatus;
+  status: TicketStatus;
   statusLabel: string;
   requesterName: string;
   faculty: string;
@@ -34,7 +30,7 @@ export type DashboardTicketSummary = {
 };
 
 export type DashboardStatusCount = {
-  status: RepairStatus;
+  status: TicketStatus;
   label: string;
   count: number;
 };
@@ -82,7 +78,7 @@ export type TechnicianDashboard = DashboardBase & {
   readyForPickup: number;
   overdue: number;
   statusColumns: Array<{
-    status: RepairStatus;
+    status: TicketStatus;
     label: string;
     tickets: DashboardTicketSummary[];
   }>;
@@ -159,7 +155,7 @@ function toTicketSummary(ticket: TicketSummaryRecord): DashboardTicketSummary {
   };
 }
 
-async function buildStatusCounts(prisma: PrismaClient, statuses: RepairStatus[], where: Prisma.RepairTicketWhereInput = {}) {
+async function buildStatusCounts(prisma: PrismaClient, statuses: TicketStatus[], where: Prisma.RepairTicketWhereInput = {}) {
   const rows = await prisma.repairTicket.groupBy({
     by: ["status"],
     where: { ...where, status: { in: statuses } },
@@ -269,22 +265,23 @@ async function buildAdminDashboard(prisma: PrismaClient): Promise<AdminDashboard
   ] = await Promise.all([
     prisma.repairTicket.count(),
     prisma.repairTicket.count({ where: { status: { in: ACTIVE_REPAIR_STATUSES } } }),
-    prisma.repairTicket.count({ where: { status: "DEVICE_COLLECTED" } }),
+    prisma.repairTicket.count({ where: { status: "COLLECTED" } }),
     prisma.repairTicket.count({ where: { status: { in: ACTIVE_REPAIR_STATUSES }, technicianId: null } }),
-    prisma.repairTicket.count({ where: { status: "READY_FOR_COLLECTION" } }),
-    prisma.deviceCustody.count({ where: { status: "NOT_RECEIVED" } }),
-    prisma.deviceCustody.count({ where: { status: { in: ["RECEIVED", "IN_REPAIR_ROOM", "READY_FOR_COLLECTION"] }, collectedAt: null } }),
+    prisma.repairTicket.count({ where: { status: "READY_FOR_PICKUP" } }),
+    prisma.repairTicket.count({ where: { status: "SUBMITTED" } }),
+    prisma.repairTicket.count({ where: { status: { in: [...OPEN_REPAIR_STATUSES, "READY_FOR_PICKUP", "CANNOT_BE_REPAIRED"] } } }),
     prisma.deviceCustody.count({
       where: {
-        status: { in: ["RECEIVED", "IN_REPAIR_ROOM", "READY_FOR_COLLECTION"] },
+        receivedAt: { not: null },
         collectedAt: null,
+        ticket: { status: { notIn: ["COLLECTED", "CANCELLED"] } },
         OR: [{ storageLocation: null }, { readyForCollectionAt: { lte: overdueDate } }],
       },
     }),
     prisma.user.count({ where: { role: { in: ["ADMIN", "LEAD_TECHNICIAN", "TECHNICIAN"] }, isActive: true } }),
     prisma.user.count({ where: { role: "TECHNICIAN", isActive: true } }),
     prisma.repairTicket.findMany({
-      where: { status: "DEVICE_COLLECTED", updatedAt: { gte: sixWeeksAgo } },
+      where: { status: "COLLECTED", updatedAt: { gte: sixWeeksAgo } },
       select: { closedAt: true, completedAt: true, updatedAt: true },
     }),
     buildStatusCounts(prisma, ACTIVE_REPAIR_STATUSES),
@@ -323,16 +320,11 @@ async function buildLeadTechnicianDashboard(prisma: PrismaClient): Promise<LeadT
 
   const [newRequests, waitingAssignment, waitingForDevice, inRepair, readyForPickup, overdue, atRisk, workload] =
     await Promise.all([
-      prisma.repairTicket.count({ where: { status: "REGISTRATION_COMPLETED" } }),
+      prisma.repairTicket.count({ where: { status: "SUBMITTED" } }),
       prisma.repairTicket.count({ where: { status: { in: ACTIVE_REPAIR_STATUSES }, technicianId: null } }),
-      prisma.repairTicket.count({
-        where: {
-          status: { in: ["REGISTRATION_COMPLETED", "DEVICE_RECEIVED"] },
-          custody: { is: { status: "NOT_RECEIVED" } },
-        },
-      }),
-      prisma.repairTicket.count({ where: { status: "REPAIR_IN_PROGRESS" } }),
-      prisma.repairTicket.count({ where: { status: "READY_FOR_COLLECTION" } }),
+      prisma.repairTicket.count({ where: { status: "SUBMITTED" } }),
+      prisma.repairTicket.count({ where: { status: "IN_REPAIR" } }),
+      prisma.repairTicket.count({ where: { status: "READY_FOR_PICKUP" } }),
       prisma.repairTicket.count({ where: { status: { in: ACTIVE_REPAIR_STATUSES }, createdAt: { lte: riskCutoff } } }),
       prisma.repairTicket.findMany({
         where: {
@@ -378,10 +370,10 @@ async function buildTechnicianDashboard(prisma: PrismaClient, user: PublicUser):
     unreadNotifications: 0,
     activeRepairs: ticketSummaries.length,
     overdue: ticketSummaries.filter((ticket) => ticket.ageHours >= OPEN_TICKET_RISK_DAYS * 24).length,
-    waitingToStart: ticketSummaries.filter((ticket) => ticket.status === "DEVICE_RECEIVED").length,
-    inRepair: ticketSummaries.filter((ticket) => ticket.status === "REPAIR_IN_PROGRESS").length,
-    readyForPickup: ticketSummaries.filter((ticket) => ticket.status === "READY_FOR_COLLECTION").length,
-    statusColumns: (["DEVICE_RECEIVED", "REPAIR_IN_PROGRESS", "READY_FOR_COLLECTION"] satisfies RepairStatus[]).map((status) => ({
+    waitingToStart: ticketSummaries.filter((ticket) => ticket.status === "RECEIVED").length,
+    inRepair: ticketSummaries.filter((ticket) => ticket.status === "IN_REPAIR").length,
+    readyForPickup: ticketSummaries.filter((ticket) => ticket.status === "READY_FOR_PICKUP").length,
+    statusColumns: (["RECEIVED", "IN_REPAIR", "READY_FOR_PICKUP"] satisfies TicketStatus[]).map((status) => ({
       status,
       label: REPAIR_STATUS_LABELS[status],
       tickets: ticketSummaries.filter((ticket) => ticket.status === status),

@@ -1,8 +1,5 @@
-import { Prisma, type CustodyStatus, type RepairEventType, type RepairStatus, type UserRole } from "@prisma/client";
-import { ZodError } from "zod";
-import type { PublicUser } from "@/lib/auth/public-user";
+import { Prisma, type RepairEventType, type TicketStatus, type UserRole } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
-import { serviceDeskAssignmentInputSchema } from "@/lib/service-desk/validations";
 
 type LeadWorkspaceErrorStatus = 403 | 404 | 409;
 
@@ -10,7 +7,7 @@ export type LeadQueueTicket = {
   id: string;
   ticketId: string;
   trackingCode: string | null;
-  status: RepairStatus;
+  status: TicketStatus;
   createdAt: Date;
   assignedAt: Date | null;
   requester: {
@@ -33,7 +30,6 @@ export type LeadQueueTicket = {
     phone: string | null;
   } | null;
   custody: {
-    status: CustodyStatus;
     receivedAt: Date | null;
     storageLocation: string | null;
     readyForCollectionAt: Date | null;
@@ -57,8 +53,6 @@ export type LeadTicketDetail = LeadQueueTicket & {
     actorRole: UserRole | null;
     statusFrom: string | null;
     statusTo: string | null;
-    custodyFrom: CustodyStatus | null;
-    custodyTo: CustodyStatus | null;
     note: string | null;
     metadata: Prisma.JsonValue;
     createdAt: Date;
@@ -80,13 +74,6 @@ export type LeadWorkspaceResult<T> =
       status: LeadWorkspaceErrorStatus;
       message: string;
     };
-
-export class LeadWorkspaceValidationError extends Error {
-  constructor(readonly validationError: ZodError) {
-    super("Invalid lead workspace data.");
-    this.name = "LeadWorkspaceValidationError";
-  }
-}
 
 const leadQueueTicketSelect = Prisma.validator<Prisma.RepairTicketSelect>()({
   id: true,
@@ -122,7 +109,6 @@ const leadQueueTicketSelect = Prisma.validator<Prisma.RepairTicketSelect>()({
   },
   custody: {
     select: {
-      status: true,
       receivedAt: true,
       storageLocation: true,
       readyForCollectionAt: true,
@@ -165,8 +151,6 @@ const leadTicketDetailSelect = Prisma.validator<Prisma.RepairTicketSelect>()({
       actorRole: true,
       statusFrom: true,
       statusTo: true,
-      custodyFrom: true,
-      custodyTo: true,
       note: true,
       metadata: true,
       createdAt: true,
@@ -232,9 +216,7 @@ function toTicketDetail(ticket: LeadTicketDetailRecord): LeadTicketDetail {
 export async function listLeadQueue(): Promise<LeadQueueTicket[]> {
   const tickets = await prisma.repairTicket.findMany({
     where: {
-      status: {
-        not: "DEVICE_COLLECTED",
-      },
+      status: { notIn: ["COLLECTED", "CANCELLED"] },
     },
     select: leadQueueTicketSelect,
     orderBy: [{ createdAt: "asc" }, { id: "asc" }],
@@ -260,123 +242,5 @@ export async function getLeadTicket(ticketIdOrTrackingCode: string): Promise<Lea
   return {
     ok: true,
     data: toTicketDetail(ticket),
-  };
-}
-
-export async function assignTicketToTechnician(input: {
-  actor: PublicUser;
-  ticketIdOrTrackingCode: string;
-  data: unknown;
-}): Promise<LeadWorkspaceResult<LeadTicketDetail>> {
-  const parsedInput = serviceDeskAssignmentInputSchema.safeParse(input.data);
-
-  if (!parsedInput.success) {
-    throw new LeadWorkspaceValidationError(parsedInput.error);
-  }
-
-  const result = await prisma.$transaction(async (tx) => {
-    const ticket = await tx.repairTicket.findFirst({
-      where: buildTicketLookupFilter(input.ticketIdOrTrackingCode),
-      select: {
-        id: true,
-        status: true,
-        technicianId: true,
-      },
-    });
-
-    if (!ticket) {
-      return { kind: "not-found" as const };
-    }
-
-    if (ticket.status === "DEVICE_COLLECTED") {
-      return { kind: "closed" as const };
-    }
-
-    const technician = await tx.user.findFirst({
-      where: {
-        id: parsedInput.data.technicianId,
-        isActive: true,
-        role: {
-          in: ["TECHNICIAN", "LEAD_TECHNICIAN"],
-        },
-      },
-      select: {
-        id: true,
-      },
-    });
-
-    if (!technician) {
-      return { kind: "bad-technician" as const };
-    }
-
-    const assignedAt = new Date();
-    await tx.repairTicket.update({
-      where: { id: ticket.id },
-      data: {
-        technicianId: technician.id,
-        assignedAt,
-      },
-    });
-
-    await tx.repairEvent.create({
-      data: {
-        ticketId: ticket.id,
-        actorId: input.actor.id,
-        actorRole: input.actor.role,
-        eventType: "TECHNICIAN_ASSIGNED",
-        statusFrom: ticket.status,
-        statusTo: ticket.status,
-        note: "Ticket assigned to technician.",
-        metadata: {
-          technicianId: technician.id,
-          source: "lead_workspace",
-        },
-      },
-    });
-
-    return {
-      kind: "updated" as const,
-      ticket: await tx.repairTicket.findUnique({
-        where: { id: ticket.id },
-        select: leadTicketDetailSelect,
-      }),
-    };
-  });
-
-  if (result.kind === "not-found") {
-    return {
-      ok: false,
-      status: 404,
-      message: "Repair ticket not found.",
-    };
-  }
-
-  if (result.kind === "closed") {
-    return {
-      ok: false,
-      status: 409,
-      message: "Collected tickets cannot be assigned.",
-    };
-  }
-
-  if (result.kind === "bad-technician") {
-    return {
-      ok: false,
-      status: 409,
-      message: "Choose an active technician.",
-    };
-  }
-
-  if (!result.ticket) {
-    return {
-      ok: false,
-      status: 404,
-      message: "Repair ticket not found.",
-    };
-  }
-
-  return {
-    ok: true,
-    data: toTicketDetail(result.ticket),
   };
 }

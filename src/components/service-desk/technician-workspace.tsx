@@ -1,15 +1,15 @@
 "use client";
 
+import { StatusBadge } from "@/components/ui";
 import { useEffect, useMemo, useState, useTransition } from "react";
-import type { CustodyStatus, RepairEventType, RepairStatus, UserRole } from "@prisma/client";
-import { REPAIR_STATUS_LABELS } from "@/lib/constants/repair-status";
-import { CUSTODY_STATUS_LABELS } from "@/lib/service-desk/constants";
+import type { RepairEventType, TicketStatus, UserRole } from "@prisma/client";
+import { TICKET_STATUS_LABELS as REPAIR_STATUS_LABELS } from "@/lib/tickets/status-display";
 
 type TechnicianQueueTicket = {
   id: string;
   ticketId: string;
   trackingCode: string | null;
-  status: RepairStatus;
+  status: TicketStatus;
   createdAt: string;
   assignedAt: string | null;
   requester: {
@@ -27,7 +27,6 @@ type TechnicianQueueTicket = {
     serialNumber: string | null;
   };
   custody: {
-    status: CustodyStatus;
     receivedAt: string | null;
     storageLocation: string | null;
     readyForCollectionAt: string | null;
@@ -51,8 +50,6 @@ type TechnicianTicketDetail = TechnicianQueueTicket & {
     actorRole: UserRole | null;
     statusFrom: string | null;
     statusTo: string | null;
-    custodyFrom: CustodyStatus | null;
-    custodyTo: CustodyStatus | null;
     note: string | null;
     createdAt: string;
     actor: {
@@ -66,19 +63,11 @@ type TechnicianTicketDetail = TechnicianQueueTicket & {
 
 type QueueFilter = "ALL" | "READY_TO_START" | "IN_REPAIR" | "READY";
 
-const statusClassName: Record<RepairStatus, string> = {
-  REGISTRATION_COMPLETED: "status-registration",
-  DEVICE_RECEIVED: "status-received",
-  REPAIR_IN_PROGRESS: "status-repair",
-  READY_FOR_COLLECTION: "status-ready",
-  DEVICE_COLLECTED: "status-collected",
-};
-
 type WorkflowStep = "start" | "in-progress" | "done";
 
-function getWorkflowStep(status: RepairStatus): WorkflowStep {
-  if (status === "DEVICE_RECEIVED") return "start";
-  if (status === "REPAIR_IN_PROGRESS") return "in-progress";
+function getWorkflowStep(status: TicketStatus): WorkflowStep {
+  if (status === "RECEIVED") return "start";
+  if (status === "IN_REPAIR") return "in-progress";
   return "done";
 }
 
@@ -114,9 +103,9 @@ function formatDateTime(value: string | null) {
 }
 
 function matchesFilter(ticket: TechnicianQueueTicket, filter: QueueFilter) {
-  if (filter === "READY_TO_START") return ticket.status === "DEVICE_RECEIVED";
-  if (filter === "IN_REPAIR") return ticket.status === "REPAIR_IN_PROGRESS";
-  if (filter === "READY") return ticket.status === "READY_FOR_COLLECTION";
+  if (filter === "READY_TO_START") return ticket.status === "RECEIVED";
+  if (filter === "IN_REPAIR") return ticket.status === "IN_REPAIR";
+  if (filter === "READY") return ticket.status === "READY_FOR_PICKUP";
   return true;
 }
 
@@ -191,26 +180,26 @@ export function TechnicianWorkspace() {
   const stats = useMemo(
     () => ({
       total: tickets.length,
-      readyToStart: tickets.filter((t) => t.status === "DEVICE_RECEIVED").length,
-      inRepair: tickets.filter((t) => t.status === "REPAIR_IN_PROGRESS").length,
-      ready: tickets.filter((t) => t.status === "READY_FOR_COLLECTION").length,
+      readyToStart: tickets.filter((t) => t.status === "RECEIVED").length,
+      inRepair: tickets.filter((t) => t.status === "IN_REPAIR").length,
+      ready: tickets.filter((t) => t.status === "READY_FOR_PICKUP").length,
     }),
     [tickets],
   );
 
-  function mutateStatus(status: "REPAIR_IN_PROGRESS" | "READY_FOR_COLLECTION") {
+  function mutateStatus(status: "IN_REPAIR" | "READY_FOR_PICKUP") {
     if (!selectedTicket) return;
     setMessage(null);
     setError(null);
     startTransition(async () => {
       try {
-        const response = await fetch(`/api/technician/workspace/tickets/${encodeURIComponent(selectedTicket.id)}/status`, {
-          method: "PATCH",
+        const response = await fetch(`/api/staff/tickets/${encodeURIComponent(selectedTicket.id)}/actions`, {
+          method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status }),
+          body: JSON.stringify({ type: status === "IN_REPAIR" ? "START" : "MARK_READY" }),
         });
         if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? "Unable to update status.");
-        setMessage(status === "REPAIR_IN_PROGRESS" ? "Repair started." : "Marked as ready for pickup.");
+        setMessage(status === "IN_REPAIR" ? "Repair started." : "Marked as ready for pickup.");
         await loadTickets();
         await loadTicketDetail(selectedTicket.id);
       } catch (mutationError) {
@@ -289,9 +278,7 @@ export function TechnicianWorkspace() {
                         {ticket.requester.fullName ?? "Requester"} &middot; {ticket.requester.phone ?? "No phone"}
                       </p>
                     </div>
-                    <span className={`status-badge flex-shrink-0 ${statusClassName[ticket.status]}`}>
-                      {REPAIR_STATUS_LABELS[ticket.status]}
-                    </span>
+                    <StatusBadge status={ticket.status} />
                   </div>
                   <div className="mt-3 flex items-center justify-between gap-3 text-sm">
                     <p className="text-[var(--muted)]">{getDeviceName(ticket)}</p>
@@ -350,7 +337,7 @@ export function TechnicianWorkspace() {
               <InfoBlock
                 label="Status"
                 value={REPAIR_STATUS_LABELS[selectedTicket.status]}
-                detail={selectedTicket.custody ? CUSTODY_STATUS_LABELS[selectedTicket.custody.status] : "No custody"}
+                detail={selectedTicket.custody?.storageLocation ?? "At the desk"}
               />
             </div>
 
@@ -377,23 +364,23 @@ export function TechnicianWorkspace() {
                 <button
                   type="button"
                   className="btn-primary"
-                  disabled={isPending || selectedTicket.status !== "DEVICE_RECEIVED"}
-                  onClick={() => mutateStatus("REPAIR_IN_PROGRESS")}
+                  disabled={isPending || selectedTicket.status !== "RECEIVED"}
+                  onClick={() => mutateStatus("IN_REPAIR")}
                 >
                   Start repair
                 </button>
                 <button
                   type="button"
                   className="btn-primary"
-                  disabled={isPending || selectedTicket.status !== "REPAIR_IN_PROGRESS"}
-                  onClick={() => mutateStatus("READY_FOR_COLLECTION")}
+                  disabled={isPending || selectedTicket.status !== "IN_REPAIR"}
+                  onClick={() => mutateStatus("READY_FOR_PICKUP")}
                 >
                   Mark ready for pickup
                 </button>
                 {whatsAppUrl ? (
                   <a
-                    className={`btn-secondary ${selectedTicket.status === "READY_FOR_COLLECTION" ? "" : "pointer-events-none opacity-40"}`}
-                    href={selectedTicket.status === "READY_FOR_COLLECTION" ? whatsAppUrl : undefined}
+                    className={`btn-secondary ${selectedTicket.status === "READY_FOR_PICKUP" ? "" : "pointer-events-none opacity-40"}`}
+                    href={selectedTicket.status === "READY_FOR_PICKUP" ? whatsAppUrl : undefined}
                     target="_blank"
                     rel="noreferrer"
                   >
@@ -402,9 +389,9 @@ export function TechnicianWorkspace() {
                 ) : null}
               </div>
               <p className="mt-4 text-xs text-[var(--muted)]">
-                {selectedTicket.status === "DEVICE_RECEIVED"
+                {selectedTicket.status === "RECEIVED"
                   ? "Start repair when you have the device in front of you and are ready to begin."
-                  : selectedTicket.status === "REPAIR_IN_PROGRESS"
+                  : selectedTicket.status === "IN_REPAIR"
                     ? "Mark ready when the device is fully repaired and ready for the requester to collect."
                     : "Repair complete. The lead technician will confirm collection with the requester."}
               </p>

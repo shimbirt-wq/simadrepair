@@ -14,20 +14,18 @@ enum UserRole {
   ADMIN
 }
 
-enum RepairStatus {
-  REGISTRATION_COMPLETED
-  DEVICE_RECEIVED
-  REPAIR_IN_PROGRESS
-  READY_FOR_COLLECTION
-  DEVICE_COLLECTED
-}
-
-enum CustodyStatus {
-  NOT_RECEIVED
+/// One ticket lifecycle; see docs/platform/spec.md and src/lib/tickets/workflow.ts.
+enum TicketStatus {
+  SUBMITTED
   RECEIVED
-  IN_REPAIR_ROOM
-  READY_FOR_COLLECTION
+  IN_REPAIR
+  WAITING_FOR_PARTS
+  ACTION_NEEDED
+  CANNOT_REPAIR_PROPOSED
+  CANNOT_BE_REPAIRED
+  READY_FOR_PICKUP
   COLLECTED
+  CANCELLED
 }
 
 enum RequesterType {
@@ -46,6 +44,20 @@ enum RepairEventType {
   PICKUP_CONFIRMED
   TICKET_CLOSED
   TICKET_CANCELLED
+  CHECKED_IN
+  TECHNICIAN_REASSIGNED
+  TICKET_CLAIMED
+  TICKET_RELEASED
+  REPAIR_STARTED
+  REPAIR_BLOCKED
+  REPAIR_RESUMED
+  CANNOT_REPAIR_PROPOSED
+  CANNOT_REPAIR_CONFIRMED
+  CANNOT_REPAIR_REJECTED
+  STEP_UNDONE
+  NOTE_ADDED
+  MESSAGE_SENT
+  RATED
 }
 
 model User {
@@ -59,7 +71,6 @@ model User {
   passwordHash       String               @map("password_hash")
   role               UserRole             @default(TECHNICIAN)
   isActive           Boolean              @default(true) @map("is_active")
-  devices            Device[]
   assignedTickets    RepairTicket[]       @relation("TechnicianTickets")
   repairEvents       RepairEvent[]        @relation("RepairEventActor")
   custodyReceived    DeviceCustody[]      @relation("CustodyReceivedBy")
@@ -98,8 +109,6 @@ model Requester {
 
 model Device {
   id           String          @id @default(cuid())
-  ownerId      String?         @map("owner_id")
-  owner        User?           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   requesterId  String?         @map("requester_id")
   requester    Requester?      @relation(fields: [requesterId], references: [id], onDelete: SetNull)
   deviceType   String          @map("device_type")
@@ -113,7 +122,6 @@ model Device {
   createdAt    DateTime        @default(now()) @map("created_at")
   updatedAt    DateTime        @updatedAt @map("updated_at")
 
-  @@index([ownerId])
   @@index([requesterId])
   @@index([serialNumber])
   @@index([assetTag])
@@ -134,8 +142,7 @@ model RepairTicket {
   technician            User?          @relation("TechnicianTickets", fields: [technicianId], references: [id], onDelete: SetNull)
   issueDescription      String         @map("issue_description")
   photoUrl              String?        @map("photo_url")
-  status                RepairStatus   @default(REGISTRATION_COMPLETED)
-  pickupCodeHash        String?        @map("pickup_code_hash")
+  status                TicketStatus   @default(SUBMITTED)
   events                RepairEvent[]
   custody               DeviceCustody?
   assignedAt            DateTime?      @map("assigned_at")
@@ -164,7 +171,6 @@ model DeviceCustody {
   ticket               RepairTicket  @relation(fields: [ticketId], references: [id], onDelete: Cascade)
   deviceId             String?       @map("device_id")
   device               Device?       @relation(fields: [deviceId], references: [id], onDelete: SetNull)
-  status               CustodyStatus @default(NOT_RECEIVED)
   receivedById         String?       @map("received_by_id")
   receivedBy           User?         @relation("CustodyReceivedBy", fields: [receivedById], references: [id], onDelete: SetNull)
   receivedAt           DateTime?     @map("received_at")
@@ -176,12 +182,10 @@ model DeviceCustody {
   collectedByName      String?       @map("collected_by_name")
   collectedByPhone     String?       @map("collected_by_phone")
   collectedAt          DateTime?     @map("collected_at")
-  pickupCodeVerifiedAt DateTime?     @map("pickup_code_verified_at")
   createdAt            DateTime      @default(now()) @map("created_at")
   updatedAt            DateTime      @updatedAt @map("updated_at")
 
   @@index([deviceId])
-  @@index([status])
   @@index([receivedById])
   @@index([releasedById])
   @@index([receivedAt])
@@ -201,8 +205,6 @@ model RepairEvent {
   eventType   RepairEventType @map("event_type")
   statusFrom  String?         @map("status_from")
   statusTo    String?         @map("status_to")
-  custodyFrom CustodyStatus?  @map("custody_from")
-  custodyTo   CustodyStatus?  @map("custody_to")
   note        String?
   metadata    Json?
   createdAt   DateTime        @default(now()) @map("created_at")

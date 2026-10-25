@@ -1,5 +1,5 @@
-import type { RepairStatus } from "@prisma/client";
 import Link from "next/link";
+import { StatusBadge } from "@/components/ui";
 import { redirect } from "next/navigation";
 import { AppShell } from "@/app/app-shell";
 import { ROLE_LABELS } from "@/lib/auth/roles";
@@ -23,14 +23,6 @@ const metricToneClasses: Record<MetricTone, string> = {
   success: "border-[var(--border)] bg-white border-l-[3px] border-l-[var(--green-700)]",
   warning: "border-[var(--border)] bg-white border-l-[3px] border-l-[var(--amber-600)]",
   danger: "border-[var(--border)] bg-white border-l-[3px] border-l-[var(--red-600)]",
-};
-
-const statusClassName: Record<RepairStatus, string> = {
-  REGISTRATION_COMPLETED: "status-registration",
-  DEVICE_RECEIVED: "status-received",
-  REPAIR_IN_PROGRESS: "status-repair",
-  READY_FOR_COLLECTION: "status-ready",
-  DEVICE_COLLECTED: "status-collected",
 };
 
 function formatNumber(value: number) {
@@ -82,10 +74,6 @@ function DashboardSection({
       <div className="p-5">{children}</div>
     </section>
   );
-}
-
-function StatusBadge({ status, label }: { status: RepairStatus; label: string }) {
-  return <span className={`status-badge ${statusClassName[status]}`}>{label}</span>;
 }
 
 function StatusList({ rows }: { rows: DashboardStatusCount[] }) {
@@ -173,7 +161,7 @@ function TicketTable({ emptyText, tickets }: { emptyText: string; tickets: Dashb
               </td>
               <td className="font-medium text-[var(--foreground)]">{ticket.deviceName}</td>
               <td>
-                <StatusBadge status={ticket.status} label={ticket.statusLabel} />
+                <StatusBadge status={ticket.status} />
               </td>
               <td className="text-[var(--muted-strong)]">{ticket.technicianName ?? "Unassigned"}</td>
               <td className="metric-value text-right font-semibold text-[var(--foreground)]">{ticket.ageLabel}</td>

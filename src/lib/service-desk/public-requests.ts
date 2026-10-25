@@ -1,4 +1,4 @@
-import { Prisma, type RepairStatus } from "@prisma/client";
+import { Prisma, type TicketStatus } from "@prisma/client";
 import { ZodError } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { publicRepairRequestInputSchema, type PublicRepairRequestInput } from "@/lib/service-desk/validations";
@@ -7,7 +7,7 @@ export type PublicRepairRequestResponse = {
   trackingCode: string;
   requesterName: string;
   submittedAt: Date;
-  status: RepairStatus;
+  status: TicketStatus;
   message: string;
 };
 
@@ -178,7 +178,6 @@ async function createPublicRepairRequestRecord(data: PublicRepairRequestInput) {
       const requester = await createOrReuseRequester(tx, data.requester);
       const device = await tx.device.create({
         data: {
-          ownerId: null,
           requesterId: requester.id,
           deviceType: data.deviceType,
           brand: data.brand,
@@ -201,8 +200,7 @@ async function createPublicRepairRequestRecord(data: PublicRepairRequestInput) {
           readyForPickupAt: null,
           closedAt: null,
           cancelledAt: null,
-          pickupCodeHash: null,
-          status: "REGISTRATION_COMPLETED",
+          status: "SUBMITTED",
         },
         select: {
           id: true,
@@ -217,7 +215,6 @@ async function createPublicRepairRequestRecord(data: PublicRepairRequestInput) {
         data: {
           ticketId: ticket.id,
           deviceId: device.id,
-          status: "NOT_RECEIVED",
         },
       });
 
@@ -228,9 +225,7 @@ async function createPublicRepairRequestRecord(data: PublicRepairRequestInput) {
           actorRole: null,
           eventType: "TICKET_CREATED",
           statusFrom: null,
-          statusTo: "REGISTRATION_COMPLETED",
-          custodyFrom: null,
-          custodyTo: "NOT_RECEIVED",
+          statusTo: "SUBMITTED",
           note: "Public repair request submitted",
           metadata: {
             source: "public_repair_request",

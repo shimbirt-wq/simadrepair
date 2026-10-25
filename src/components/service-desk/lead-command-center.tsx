@@ -1,15 +1,15 @@
 "use client";
 
+import { StatusBadge } from "@/components/ui";
 import { useEffect, useMemo, useState, useTransition } from "react";
-import type { CustodyStatus, RepairEventType, RepairStatus, UserRole } from "@prisma/client";
-import { REPAIR_STATUS_LABELS } from "@/lib/constants/repair-status";
-import { CUSTODY_STATUS_LABELS } from "@/lib/service-desk/constants";
+import type { RepairEventType, TicketStatus, UserRole } from "@prisma/client";
+import { TICKET_STATUS_LABELS as REPAIR_STATUS_LABELS } from "@/lib/tickets/status-display";
 
 type LeadQueueTicket = {
   id: string;
   ticketId: string;
   trackingCode: string | null;
-  status: RepairStatus;
+  status: TicketStatus;
   createdAt: string;
   assignedAt: string | null;
   requester: {
@@ -32,7 +32,6 @@ type LeadQueueTicket = {
     phone: string | null;
   } | null;
   custody: {
-    status: CustodyStatus;
     receivedAt: string | null;
     storageLocation: string | null;
     readyForCollectionAt: string | null;
@@ -56,8 +55,6 @@ type LeadTicketDetail = LeadQueueTicket & {
     actorRole: UserRole | null;
     statusFrom: string | null;
     statusTo: string | null;
-    custodyFrom: CustodyStatus | null;
-    custodyTo: CustodyStatus | null;
     note: string | null;
     createdAt: string;
     actor: {
@@ -78,19 +75,11 @@ type QueueFilter = "ALL" | "NOT_RECEIVED" | "UNASSIGNED" | "IN_REPAIR" | "READY"
 
 type NextAction = "receive" | "assign" | "in-repair" | "pickup" | "done";
 
-const statusClassName: Record<RepairStatus, string> = {
-  REGISTRATION_COMPLETED: "status-registration",
-  DEVICE_RECEIVED: "status-received",
-  REPAIR_IN_PROGRESS: "status-repair",
-  READY_FOR_COLLECTION: "status-ready",
-  DEVICE_COLLECTED: "status-collected",
-};
-
 function getNextAction(ticket: LeadQueueTicket): NextAction {
-  if (ticket.status === "DEVICE_COLLECTED") return "done";
-  if (ticket.status === "READY_FOR_COLLECTION") return "pickup";
-  if (ticket.status === "REPAIR_IN_PROGRESS") return "in-repair";
-  if (!ticket.custody || ticket.custody.status === "NOT_RECEIVED") return "receive";
+  if (ticket.status === "COLLECTED") return "done";
+  if (ticket.status === "READY_FOR_PICKUP") return "pickup";
+  if (ticket.status === "IN_REPAIR") return "in-repair";
+  if (ticket.status === "SUBMITTED") return "receive";
   if (!ticket.technician) return "assign";
   return "in-repair";
 }
@@ -137,10 +126,10 @@ function getDeviceName(ticket: Pick<LeadQueueTicket, "device">) {
 }
 
 function matchesFilter(ticket: LeadQueueTicket, filter: QueueFilter) {
-  if (filter === "NOT_RECEIVED") return ticket.custody?.status === "NOT_RECEIVED";
-  if (filter === "UNASSIGNED") return !ticket.technician && ticket.status !== "DEVICE_COLLECTED";
-  if (filter === "IN_REPAIR") return ticket.status === "REPAIR_IN_PROGRESS";
-  if (filter === "READY") return ticket.status === "READY_FOR_COLLECTION";
+  if (filter === "NOT_RECEIVED") return ticket.status === "SUBMITTED";
+  if (filter === "UNASSIGNED") return !ticket.technician && ticket.status !== "COLLECTED";
+  if (filter === "IN_REPAIR") return ticket.status === "IN_REPAIR";
+  if (filter === "READY") return ticket.status === "READY_FOR_PICKUP";
   return true;
 }
 
@@ -227,9 +216,9 @@ export function LeadCommandCenter() {
   const stats = useMemo(
     () => ({
       total: tickets.length,
-      notReceived: tickets.filter((t) => !t.custody || t.custody.status === "NOT_RECEIVED").length,
-      unassigned: tickets.filter((t) => !t.technician && t.status !== "DEVICE_COLLECTED").length,
-      ready: tickets.filter((t) => t.status === "READY_FOR_COLLECTION").length,
+      notReceived: tickets.filter((t) => t.status === "SUBMITTED").length,
+      unassigned: tickets.filter((t) => !t.technician && t.status !== "COLLECTED").length,
+      ready: tickets.filter((t) => t.status === "READY_FOR_PICKUP").length,
     }),
     [tickets],
   );
@@ -251,30 +240,31 @@ export function LeadCommandCenter() {
 
   async function receiveDevice() {
     if (!selectedTicket) return;
-    const response = await fetch(`/api/lead/tickets/${encodeURIComponent(selectedTicket.id)}/custody`, {
+    const response = await fetch(`/api/staff/tickets/${encodeURIComponent(selectedTicket.id)}/actions`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ storageLocation }),
+      body: JSON.stringify({ type: "CHECK_IN", storageLocation }),
     });
     if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? "Unable to receive device.");
   }
 
   async function assignTechnician() {
     if (!selectedTicket || !technicianId) return;
-    const response = await fetch(`/api/lead/tickets/${encodeURIComponent(selectedTicket.id)}/assign`, {
-      method: "PATCH",
+    const response = await fetch(`/api/staff/tickets/${encodeURIComponent(selectedTicket.id)}/actions`, {
+      method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ technicianId }),
+      body: JSON.stringify({ type: "ASSIGN", technicianId, reason: selectedTicket.technician ? "Reassigned by the desk." : undefined }),
     });
     if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? "Unable to assign technician.");
   }
 
   async function confirmPickup() {
     if (!selectedTicket) return;
-    const response = await fetch(`/api/lead/tickets/${encodeURIComponent(selectedTicket.id)}/custody/pickup`, {
-      method: "PATCH",
+    const response = await fetch(`/api/staff/tickets/${encodeURIComponent(selectedTicket.id)}/actions`, {
+      method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        type: "PICKUP",
         collectedByName: selectedTicket.requester.fullName ?? "Requester",
         collectedByPhone: selectedTicket.requester.phone ?? undefined,
       }),
@@ -286,8 +276,8 @@ export function LeadCommandCenter() {
   const selectedNextAction = selectedTicket ? getNextAction(selectedTicket) : null;
   const nextActionInfo = selectedNextAction ? nextActionConfig[selectedNextAction] : null;
 
-  const canReceive = selectedTicket?.custody?.status === "NOT_RECEIVED" || !selectedTicket?.custody;
-  const canConfirmPickup = selectedTicket?.status === "READY_FOR_COLLECTION";
+  const canReceive = selectedTicket?.status === "SUBMITTED";
+  const canConfirmPickup = selectedTicket?.status === "READY_FOR_PICKUP";
 
   return (
     <div className="grid gap-5 xl:grid-cols-[minmax(360px,0.85fr)_minmax(480px,1.15fr)]">
@@ -355,9 +345,7 @@ export function LeadCommandCenter() {
                         {ticket.requester.fullName ?? "Requester"} &middot; {ticket.requester.phone ?? "No phone"}
                       </p>
                     </div>
-                    <span className={`status-badge flex-shrink-0 ${statusClassName[ticket.status]}`}>
-                      {REPAIR_STATUS_LABELS[ticket.status]}
-                    </span>
+                    <StatusBadge status={ticket.status} />
                   </div>
                   <div className="mt-3 flex items-center justify-between gap-3 text-sm">
                     <p className="text-[var(--muted)]">{getDeviceName(ticket)}</p>
@@ -408,7 +396,7 @@ export function LeadCommandCenter() {
               <InfoBlock
                 label="Status"
                 value={REPAIR_STATUS_LABELS[selectedTicket.status]}
-                detail={selectedTicket.custody ? CUSTODY_STATUS_LABELS[selectedTicket.custody.status] : "Not received"}
+                detail={selectedTicket.custody?.storageLocation ?? "Not received"}
               />
             </div>
 

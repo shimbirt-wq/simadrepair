@@ -7,7 +7,6 @@ import {
   requireAuthenticatedRole,
   requireAuthenticatedUser,
   requireRole,
-  requireTicketAccess,
 } from "./authorization";
 import type { PublicUser } from "./public-user";
 import { SESSION_COOKIE_NAME, signSessionToken } from "./session";
@@ -192,72 +191,3 @@ describe("role guards", () => {
     vi.unstubAllEnvs();
   });
 });
-
-describe("requireTicketAccess", () => {
-  it("allows a technician to access an assigned ticket", async () => {
-    const { prisma, repairTicketFindUnique } = buildMockPrisma();
-    const technician = buildPublicUser({ id: "technician_assigned", role: "TECHNICIAN" });
-    repairTicketFindUnique.mockResolvedValue({
-      id: "ticket_1",
-      technicianId: "technician_assigned",
-      device: { ownerId: "student_owner" },
-    });
-
-    const result = await requireTicketAccess(prisma, technician, "ticket_1");
-
-    expect(result.ok).toBe(true);
-  });
-
-  it("rejects a technician accessing an unassigned ticket", async () => {
-    const { prisma, repairTicketFindUnique } = buildMockPrisma();
-    const technician = buildPublicUser({ id: "technician_assigned", role: "TECHNICIAN" });
-    repairTicketFindUnique.mockResolvedValue({
-      id: "ticket_1",
-      technicianId: null,
-      device: { ownerId: "student_owner" },
-    });
-
-    const result = await requireTicketAccess(prisma, technician, "ticket_1");
-
-    expect(result).toEqual(AUTHORIZATION_ERRORS.forbidden);
-  });
-
-  it("rejects a technician accessing another technician's ticket", async () => {
-    const { prisma, repairTicketFindUnique } = buildMockPrisma();
-    const technician = buildPublicUser({ id: "technician_other", role: "TECHNICIAN" });
-    repairTicketFindUnique.mockResolvedValue({
-      id: "ticket_1",
-      technicianId: "technician_assigned",
-      device: { ownerId: "student_owner" },
-    });
-
-    const result = await requireTicketAccess(prisma, technician, "ticket_1");
-
-    expect(result).toEqual(AUTHORIZATION_ERRORS.forbidden);
-  });
-
-  it("allows admins to access any ticket", async () => {
-    const { prisma, repairTicketFindUnique } = buildMockPrisma();
-    const admin = buildPublicUser({ id: "admin_user", role: "ADMIN" });
-    repairTicketFindUnique.mockResolvedValue({
-      id: "ticket_1",
-      technicianId: "technician_assigned",
-      device: { ownerId: "student_owner" },
-    });
-
-    const result = await requireTicketAccess(prisma, admin, "ticket_1");
-
-    expect(result.ok).toBe(true);
-  });
-
-  it("returns not found for missing tickets", async () => {
-    const { prisma, repairTicketFindUnique } = buildMockPrisma();
-    const admin = buildPublicUser({ id: "admin_user", role: "ADMIN" });
-    repairTicketFindUnique.mockResolvedValue(null);
-
-    const result = await requireTicketAccess(prisma, admin, "missing_ticket");
-
-    expect(result).toEqual(AUTHORIZATION_ERRORS.notFound);
-  });
-});
-
