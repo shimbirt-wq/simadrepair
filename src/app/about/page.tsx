@@ -11,7 +11,7 @@ import muscab from "../../../public/images/team/muscab.jpg";
 import ruweydo from "../../../public/images/team/ruweydo.jpg";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: "About", description: "Who runs the SIMAD University IT Service Desk and the Computer Maintenance Week." };
+export const metadata: Metadata = { title: "About", description: "Who runs the SIMAD University IT Service Desk and the Computer Maintenance Program." };
 
 const TEAM = [
   { name: "Eng. Muscab Abdirashid", title: "Team Lead Engineer", photo: muscab },
@@ -31,7 +31,7 @@ export default async function AboutPage() {
           <Eyebrow>About</Eyebrow>
           <h1 className="text-h1 text-ink">SIMAD University IT Service Desk</h1>
           <p className="text-[17px] leading-relaxed text-ink-secondary">
-            Every year the Computer Maintenance Week offers free repair and maintenance to SIMAD students and staff. SIMADRepair runs the week end to end: online registration, drop-off at the desk, repair by
+            The Faculty of Computing&apos;s Computer Maintenance Program offers free repair and maintenance to SIMAD students and staff. SIMADRepair runs the program end to end: online registration, drop-off at the desk, repair by
             technicians, WhatsApp updates and pickup with a university ID card.
           </p>
           <p className="text-[17px] leading-relaxed text-ink-secondary">

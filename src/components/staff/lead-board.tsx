@@ -99,7 +99,7 @@ export function LeadBoard({ isAdmin = false, initialTicket = null }: { isAdmin?:
   const stuckCount = board?.tickets.filter((ticket) => ticket.stuck).length ?? 0;
 
   if (board && !board.event) {
-    return <EmptyState title="No active event. An admin needs to create and activate this year's Maintenance Week." />;
+    return <EmptyState title="No active event. An admin needs to create and activate this year's maintenance program." />;
   }
 
   return (

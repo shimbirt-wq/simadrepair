@@ -13,8 +13,8 @@ const copy: Record<Exclude<RegistrationState, "OPEN">, { title: string; body: (e
     body: (event) => (event ? `Requests for ${event.name} closed on ${formatDay(event.registrationClosesOn)}.` : null),
   },
   NO_EVENT: {
-    title: "No Maintenance Week scheduled",
-    body: () => "The next Computer Maintenance Week will be announced by SIMAD University.",
+    title: "No maintenance program scheduled",
+    body: () => "The next Computer Maintenance Program will be announced by SIMAD University.",
   },
 };
 

@@ -10,7 +10,7 @@ export default async function NewEventPage() {
     <AppShell active="events" eyebrow="Events" title="New event" user={user}>
       <EventForm
         initial={{
-          name: `Computer Maintenance Week ${year}`,
+          name: `Computer Maintenance Program ${year}`,
           startsOn: "",
           endsOn: "",
           registrationOpensOn: "",

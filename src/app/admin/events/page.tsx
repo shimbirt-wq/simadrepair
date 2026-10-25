@@ -30,7 +30,7 @@ export default async function EventsPage() {
       {events.length === 0 ? (
         <EmptyState
           icon={<CalendarDays className="h-8 w-8" strokeWidth={1.5} />}
-          title="No Maintenance Week yet. Create one to open registration."
+          title="No maintenance program yet. Create one to open registration."
           action={<ButtonLink href="/admin/events/new">New event</ButtonLink>}
         />
       ) : (
