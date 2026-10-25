@@ -170,6 +170,10 @@ model RepairTicket {
   technicianId          String?        @map("technician_id")
   technician            User?          @relation("TechnicianTickets", fields: [technicianId], references: [id], onDelete: SetNull)
   issueDescription      String         @map("issue_description")
+  /// Hand-written sticker number, unique within the event (#001…). Set at check-in.
+  tagNumber             Int?           @map("tag_number")
+  priority              TicketPriority @default(NORMAL)
+  startedAt             DateTime?      @map("started_at")
   accessoriesLeft       String[]       @default([]) @map("accessories_left")
   wipeAllowed           Boolean        @default(false) @map("wipe_allowed")
   needsPassword         Boolean        @default(false) @map("needs_password")
@@ -192,6 +196,7 @@ model RepairTicket {
   createdAt             DateTime       @default(now()) @map("created_at")
   updatedAt             DateTime       @updatedAt @map("updated_at")
 
+  @@unique([eventId, tagNumber])
   @@index([eventId])
   @@index([deviceId])
   @@index([requesterId])
@@ -254,6 +259,11 @@ model RepairEvent {
   @@index([eventType])
   @@index([createdAt])
   @@map("repair_events")
+}
+
+enum TicketPriority {
+  NORMAL
+  URGENT
 }
 
 enum PhotoKind {

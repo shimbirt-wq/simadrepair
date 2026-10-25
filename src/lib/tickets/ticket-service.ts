@@ -72,6 +72,7 @@ export async function performTicketAction(
 
     if (decision.technicianId && decision.technicianId !== ticket.technicianId) ticketData.assignedAt = now;
     if (!decision.technicianId) ticketData.assignedAt = null;
+    if (decision.event.type === "REPAIR_STARTED") ticketData.startedAt = now;
     if (decision.status === "READY_FOR_PICKUP") {
       ticketData.readyForPickupAt = now;
       ticketData.completedAt = now;

@@ -20,7 +20,7 @@ export async function resetDatabase(prisma: PrismaClient) {
 
 let sequence = 0;
 
-export async function createStaff(prisma: PrismaClient, role: "ADMIN" | "LEAD_TECHNICIAN" | "TECHNICIAN", name = role) {
+export async function createStaff(prisma: PrismaClient, role: "ADMIN" | "LEAD_TECHNICIAN" | "TECHNICIAN", name: string = role) {
   sequence += 1;
   return prisma.user.create({
     data: { fullName: name, email: `${role.toLowerCase()}-${sequence}@test.local`, passwordHash: "x", role },
