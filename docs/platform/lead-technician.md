@@ -81,4 +81,18 @@ Retire the old `/repair-tickets` and `/devices` staff pages, or make them read-o
 
 ## 4. Decisions log
 
-_Filled in as we grill._
+| # | Decision | Round |
+| --- | --- | --- |
+| LD1 | **Scale:** 200–500 devices per event, 1–2 leads, 8–15 technicians. Search by typing is enough; no barcode/QR scanning. | 1 |
+| LD2 | **No printer.** Labels are hand-written stickers. | 1 |
+| LD3 | **Desk registration** for walk-ins (compact version of the public form). | 1 |
+| LD4 | **Check-in records:** ID card checked, condition checklist, accessories received, up to 2 optional damage photos. | 1 |
+| LD5 | **Assignment = both:** technicians claim from the "To assign" pool; the lead can assign/reassign any time. | 1 |
+| LD6 | **Skill tags** (Hardware, Software/OS, Network) + open workload shown in the picker. No auto-assign. | 1 |
+| LD7 | **Priority:** Normal / Urgent, set at check-in. | 1 |
+| LD8 | **Pickup screen:** search by university ID → that person's ready devices → check label, tick accessories returned, enter collector name + phone. | 1 |
+| LD9 | **Undo last step** with required reason, lead/admin only, logged in timeline. | 1 |
+| LD10 | **Board view**, refresh every 30 s; red when received + unassigned > 1 h or in repair > 1 day. | 1 |
+| LD11 | **End-of-event bulk actions** (move uncollected to IT office + reminder; close unfinished). | 1 |
+| LD12 | **Leads can repair** (assign to themselves, use technician workspace). | 1 |
+| LD13 | **Retire old `/repair-tickets` and `/devices` staff pages**; keep read-only history. | 1 |
